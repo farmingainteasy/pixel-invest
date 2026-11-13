@@ -1,0 +1,9 @@
+{
+  "capital": 10000.0,
+  "top_n": 10,
+  "exit_rank": 20,
+  "lookback": 63,
+  "sma_days": 200,
+  "cost_pct": 0.0,
+  "start_date": "2026-11-11"
+}
