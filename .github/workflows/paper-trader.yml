@@ -1,8 +1,8 @@
-# Runs the paper trader every weekend after Friday's US market close, saves the
+# Runs Pixel Invest (the paper trader) every weekend after Friday's US market close, saves the
 # updated account back to the repo, and refreshes the web page (docs/).
-# To update right now: Actions tab -> "Paper trader" -> "Run workflow"
+# To update right now: Actions tab -> "Pixel Invest" -> "Run workflow"
 # (works from the GitHub phone app too).
-name: Paper trader
+name: Pixel Invest
 
 on:
   schedule:
@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: paper-trader          # never two runs at once
+  group: pixel-invest          # never two runs at once
   cancel-in-progress: false
 
 jobs:
