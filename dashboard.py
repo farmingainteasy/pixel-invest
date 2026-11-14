@@ -107,8 +107,8 @@ def account_chart(acct, w=380, h=200):
             f'<defs><linearGradient id="af" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="{GOLD_TEXT}" stop-opacity=".22"/>'
             f'<stop offset="1" stop-color="{GOLD_TEXT}" stop-opacity="0"/></linearGradient></defs>{grid}{xl}'
             f'<polygon points="{area}" fill="url(#af)"/>'
-            f'<polyline vector-effect="non-scaling-stroke" points="{pts(q)}" fill="none" stroke="{T4}" stroke-width="2" stroke-dasharray="5 4"/>'
-            f'<polyline vector-effect="non-scaling-stroke" points="{pts(a)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="3" stroke-linejoin="round"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(q)}" fill="none" stroke="{T4}" stroke-width="1.5" stroke-dasharray="4 3"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(a)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="2" stroke-linejoin="round"/>'
             f'<circle cx="{xs[-1]:.1f}" cy="{y(a.iloc[-1]):.1f}" r="4.5" fill="{GOLD_TEXT}"/>{dots}</svg>')
 
 
@@ -144,14 +144,14 @@ def switch_chart(sw, w=380, h=200):
     last_q, last_s = sw["qqq"].iloc[-1], sw["sma"].iloc[-1]
     return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="{LABEL} {last_q:.2f} against its '
             f'200-day average {last_s:.2f}; shaded where the rules sit in cash">{grid}{"".join(shade)}{"".join(months)}'
-            f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["sma"])}" fill="none" stroke="{GOLD}" stroke-width="2" stroke-dasharray="6 4"/>'
-            f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["qqq"])}" fill="none" stroke="{T1}" stroke-width="2" stroke-linejoin="round"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["sma"])}" fill="none" stroke="{GOLD}" stroke-width="1.5" stroke-dasharray="5 3"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["qqq"])}" fill="none" stroke="{T1}" stroke-width="1.5" stroke-linejoin="round"/>'
             f'<circle cx="{xs[-1]:.1f}" cy="{y(last_q):.1f}" r="4" fill="{T1}"/></svg>')
 
 
 def backtest_chart(bt, w=380, h=210):
     c = bt["curve"]
-    c = c[::4] + ([c[-1]] if (len(c) - 1) % 4 else [])     # about monthly: smooth, readable on a phone
+    c = c[::2] + ([c[-1]] if (len(c) - 1) % 2 else [])     # every 2 weeks: detail without jitter
     n = len(c)
     pl, pr, pt_, pb = 42, 8, 10, 24
     vals = [v for r in c for v in r[1:]]
@@ -166,8 +166,8 @@ def backtest_chart(bt, w=380, h=210):
             f'{money(c[-1][1], False)} with the rules and {money(c[-1][2], False)} in {LABEL}">{grid}'
             f'<text x="{pl}" y="{h - 8}" class="ax">{c[0][0][:4]}</text>'
             f'<text x="{w - pr}" y="{h - 8}" text-anchor="end" class="ax">{c[-1][0][:4]}</text>'
-            f'<polyline vector-effect="non-scaling-stroke" points="{pts(2)}" fill="none" stroke="{T4}" stroke-width="1.75" stroke-linejoin="round"/>'
-            f'<polyline vector-effect="non-scaling-stroke" points="{pts(1)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="2.5" stroke-linejoin="round"/></svg>')
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(2)}" fill="none" stroke="{T4}" stroke-width="1.25" stroke-linejoin="round"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(1)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="1.5" stroke-linejoin="round"/></svg>')
 
 
 def sector_bar(holdings, cash):
@@ -308,6 +308,17 @@ table{{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}}
 th{{text-align:left;color:{T4};font-weight:600;font-size:12px;padding:8px;border-bottom:1px solid {LINE}}}
 td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-variant-numeric:tabular-nums}}
 .note{{font-size:12px;color:{T5};line-height:1.6;margin:4px 0 0}}
+.bt-read{{display:flex;flex-direction:column;gap:2px;min-height:56px}}
+.bt-read .rv{{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}}
+.bt-read .rs{{font-size:13px;color:{T3};font-variant-numeric:tabular-nums}}
+.pill{{font-weight:700;font-size:12px;padding:2px 8px;border-radius:7px;margin-left:6px;white-space:nowrap}}
+.pill.pos{{background:rgba(107,211,90,.14);color:{GREEN}}} .pill.neg{{background:rgba(255,90,78,.14);color:{RED}}}
+.bt-plot{{touch-action:pan-y;user-select:none;-webkit-user-select:none}}
+.bt-plot svg{{display:block;width:100%;height:auto;overflow:visible}} .bt-plot text{{font-family:var(--sans);font-variant-numeric:tabular-nums}}
+.bt-chips{{display:flex;gap:6px}}
+.bt-chips button{{font:inherit;font-size:13px;font-weight:700;color:{T3};background:transparent;border:1px solid {LINE};border-radius:999px;padding:7px 14px;min-height:36px;cursor:pointer}}
+.bt-chips button[aria-pressed="true"]{{background:{GOLD};color:#1C1A14;border-color:{GOLD}}}
+.bt-chips button:focus-visible{{outline:2px solid {GOLD};outline-offset:2px}}
 /* Home */
 .mcards{{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}}
 @media(min-width:900px){{.mcards{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}
@@ -366,19 +377,85 @@ def backtest_block(cfg, bt, open_=False):
     if not bt:
         return ""
     r, q = bt["rules"], bt["qqq"]
-    return f'''<details class="card tuck"{" open" if open_ else ""}><summary>How these rules did in testing</summary>
+    data = json.dumps({"curve": [[d, round(a, 2), round(b, 2)] for d, a, b in bt["curve"]],
+                       "sym": SYM, "bench": LABEL})
+    return f'''<details class="card tuck bt"{" open" if open_ else ""}><summary>How these rules did in testing</summary>
 <div class="sec" style="margin-top:12px">
 <p class="lead">{money(10_000, False)} run through the same rules every week since {bt["start"][:4]}, with {bt["cost_pct"] * 100:.1f}% trading costs
-and dividends included. The rules end at {money(bt["curve"][-1][1], False)}; {LABEL} at {money(bt["curve"][-1][2], False)}.</p>
+and dividends included. Drag along the chart to read any date.</p>
+<div class="bt-read" aria-live="polite"></div>
+<div class="bt-plot">{backtest_chart(bt)}</div>
+<div class="bt-chips" role="group" aria-label="Time range">
+<button type="button" data-y="1" aria-pressed="false">1Y</button><button type="button" data-y="3" aria-pressed="false">3Y</button>
+<button type="button" data-y="5" aria-pressed="false">5Y</button><button type="button" data-y="0" aria-pressed="true">All</button></div>
 <div class="key"><span><i style="background:{GOLD_TEXT}"></i>The rules</span><span><i style="background:{T4}"></i>Just holding {LABEL}</span></div>
-{backtest_chart(bt)}
+<p class="lead bt-note" hidden>Both lines restart at {money(10_000, False)} at the start of the range.</p>
 <div class="stats">
 <div class="stat"><span class="k">Yearly return</span><span class="v">{r["cagr"] * 100:.1f}% <small>vs {q["cagr"] * 100:.1f}%</small></span></div>
 <div class="stat"><span class="k">Worst drop</span><span class="v">&minus;{abs(r["drop"]) * 100:.1f}% <small>vs &minus;{abs(q["drop"]) * 100:.1f}%</small></span></div>
 <div class="stat"><span class="k">Winning trades</span><span class="v">{(bt["win_rate"] or 0) * 100:.0f}%</span></div>
 <div class="stat"><span class="k">Trades a year</span><span class="v">{bt["trades_per_year"]:.0f}</span></div></div>
 <p class="warn">This test uses today's {esc(cfg["name"])} list, so it includes later winners and leaves out companies that dropped out of the index.
-Real results would very likely have been lower. Refreshed {pd.Timestamp(bt["computed_on"]):%b %d, %Y}.</p></div></details>'''
+Real results would very likely have been lower. Refreshed {pd.Timestamp(bt["computed_on"]):%b %d, %Y}.</p></div>
+<script type="application/json" class="bt-data">{data}</script>{BT_SCRIPT}</details>'''
+
+
+# Interactive backtest chart ("stock app" style): drag to read, 1Y/3Y/5Y/All.
+# The static SVG inside .bt-plot is the fallback if scripts don't run.
+BT_SCRIPT = """<script>
+(function(){
+var box=document.currentScript.closest('details'); if(!box) return;
+var D=JSON.parse(box.querySelector('.bt-data').textContent), C=D.curve, NS='http://www.w3.org/2000/svg';
+var GOLD='#E2C067', GREY='#A39D8E', GRID='rgba(255,255,255,.07)', T4='#A39D8E', T5='#7E7866', years=0;
+function el(t,a,p){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+function day(s){return new Date(s+'T12:00:00');}
+function money(v){return D.sym+Math.round(v).toLocaleString('en-US');}
+function short(v){return v>=1e5?D.sym+Math.round(v/1e3)+'k':v>=1e4?D.sym+(v/1e3).toFixed(0)+'k':D.sym+(v/1e3).toFixed(1).replace(/\.0$/,'')+'k';}
+function slice(){ if(!years) return C;
+  var end=day(C[C.length-1][0]); end.setFullYear(end.getFullYear()-years);
+  var p=C.filter(function(r){return day(r[0])>=end;}), a0=p[0][1], b0=p[0][2];
+  return p.map(function(r){return [r[0], r[1]/a0*1e4, r[2]/b0*1e4];}); }
+function ticks(lo,hi){ var c=[5e3,7e3,1e4,1.2e4,1.5e4,2e4,3e4,5e4,1e5,2e5,3e5,5e5,1e6], t=c.filter(function(v){return v>=lo&&v<=hi;});
+  return t.length>4?[t[0],t[Math.floor(t.length/3)],t[Math.floor(2*t.length/3)],t[t.length-1]]:t; }
+function read(r){ var d=r[1]-r[2];
+  box.querySelector('.bt-read').innerHTML='<span class="rv">'+money(r[1])+'</span><span class="rs">'+day(r[0]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+
+  ' &middot; '+D.bench+' '+money(r[2])+'<span class="pill '+(d>=0?'pos':'neg')+'">'+(d>=0?'+':'&minus;')+money(Math.abs(d))+' vs '+D.bench+'</span></span>'; }
+function draw(){
+  var host=box.querySelector('.bt-plot'), w=host.clientWidth; if(!w) return;
+  var data=slice(), h=Math.round(Math.min(260,Math.max(200,w*.55))), pl=4, pr=46, pt=10, pb=22, n=data.length;
+  var vals=[]; data.forEach(function(r){vals.push(r[1],r[2]);});
+  var lo=Math.min.apply(null,vals)*.97, hi=Math.max.apply(null,vals)*1.03, L=Math.log;
+  function x(i){return pl+i/(n-1)*(w-pl-pr);} function y(v){return pt+(1-(L(v)-L(lo))/(L(hi)-L(lo)))*(h-pt-pb);}
+  host.innerHTML=''; var svg=el('svg',{viewBox:'0 0 '+w+' '+h,width:w,height:h,role:'img','aria-label':'The rules against '+D.bench},host);
+  var g=el('linearGradient',{id:'btglow',x1:0,x2:0,y1:0,y2:1},el('defs',{},svg));
+  el('stop',{offset:0,'stop-color':GOLD,'stop-opacity':.28},g); el('stop',{offset:1,'stop-color':GOLD,'stop-opacity':0},g);
+  ticks(lo,hi).forEach(function(v){ el('line',{x1:pl,x2:w-pr,y1:y(v),y2:y(v),stroke:GRID},svg);
+    el('text',{x:w-pr+6,y:y(v)+4,'font-size':11,fill:T4},svg).textContent=short(v); });
+  var seen={}, yrs=[]; data.forEach(function(r,i){var k=r[0].slice(0,4); if(!seen[k]){seen[k]=1;yrs.push([k,i]);}});
+  var step=Math.ceil(yrs.length/5); yrs.forEach(function(p,k){ if(k%step||x(p[1])>w-pr-26) return;
+    el('text',{x:x(p[1]),y:h-6,'font-size':11,fill:T5},svg).textContent = n<70 ? day(data[p[1]][0]).toLocaleDateString('en-US',{month:'short'})+" '"+p[0].slice(2) : p[0]; });
+  function path(k){return data.map(function(r,i){return (i?'L':'M')+x(i).toFixed(1)+','+y(r[k]).toFixed(1);}).join('');}
+  el('path',{d:path(1)+'L'+x(n-1)+','+(h-pb)+'L'+x(0)+','+(h-pb)+'Z',fill:'url(#btglow)'},svg);
+  el('path',{d:path(2),fill:'none',stroke:GREY,'stroke-width':1.25,'stroke-opacity':.85,'stroke-linejoin':'round'},svg);
+  el('path',{d:path(1),fill:'none',stroke:GOLD,'stroke-width':1.75,'stroke-linejoin':'round'},svg);
+  var v=el('line',{y1:pt,y2:h-pb,stroke:'rgba(244,240,230,.35)',visibility:'hidden'},svg),
+      d1=el('circle',{r:4.5,fill:GOLD,stroke:'#1B1812','stroke-width':2,visibility:'hidden'},svg),
+      d2=el('circle',{r:3.5,fill:GREY,stroke:'#1B1812','stroke-width':2,visibility:'hidden'},svg);
+  function at(e){var b=svg.getBoundingClientRect(),px=(e.clientX-b.left)/b.width*w;return Math.max(0,Math.min(n-1,Math.round((px-pl)/(w-pl-pr)*(n-1))));}
+  function show(i){var r=data[i];[v,d1,d2].forEach(function(e){e.setAttribute('visibility','visible');});
+    v.setAttribute('x1',x(i));v.setAttribute('x2',x(i));d1.setAttribute('cx',x(i));d1.setAttribute('cy',y(r[1]));d2.setAttribute('cx',x(i));d2.setAttribute('cy',y(r[2]));read(r);}
+  host.onpointermove=function(e){show(at(e));}; host.onpointerdown=function(e){show(at(e));};
+  host.onpointerleave=function(){[v,d1,d2].forEach(function(e){e.setAttribute('visibility','hidden');});read(data[n-1]);};
+  read(data[n-1]);
+}
+box.querySelectorAll('.bt-chips button').forEach(function(b){ b.addEventListener('click',function(){ years=+b.dataset.y;
+  box.querySelectorAll('.bt-chips button').forEach(function(o){o.setAttribute('aria-pressed',String(o===b));});
+  box.querySelector('.bt-note').hidden=!years; draw(); }); });
+box.addEventListener('toggle',draw);
+var t; window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(draw,150);});
+draw();
+})();
+</script>"""
 
 
 def rules_block(cfg, cls="o5"):

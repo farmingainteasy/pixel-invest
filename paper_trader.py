@@ -424,6 +424,7 @@ def run_market(m, a, cutoff):
                    spark=[[r.paper_account, r.qqq_same_money] for r in values.tail(60).itertuples()],
                    updated=str(date.today()))
     atomic_write(p["summary"], json.dumps(summary, default=float))
+    dashboard._SUMMARIES[m["slug"]] = json.loads(json.dumps(summary, default=float))
 
     sym = cfg["symbol"]
     print(f"[{m['name']}] prices settled through {ledger['last_processed']}")
@@ -467,6 +468,7 @@ def main():
     cutoff = date.fromisoformat(a.today) if a.today else final_cutoff(now_eastern())
 
     failed, opened = [], None
+    dashboard.load_summaries(MARKETS, lambda slug: paths(slug)["summary"])   # menu statuses
     for m in MARKETS:
         if a.market and m["slug"] != a.market:
             continue
