@@ -1,0 +1,293 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Paper Trader &mdash; $9,844</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:"Segoe UI",system-ui,Arial,sans-serif;background:#f1f4f9;color:#111827;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding:28px 22px 40px}
+h2{font-size:18px;margin:34px 0 12px} h2 small{font-weight:400;color:#6b7280;font-size:14px}
+.muted{color:#6b7280} .pos{color:#16a34a} .neg{color:#dc2626}
+.box{background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(15,23,42,.05)}
+.hero{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:16px}
+.hero .box{padding:20px 22px}
+.k{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;font-weight:600}
+.big{font-size:38px;font-weight:800;letter-spacing:-.02em;margin:6px 0}
+.mid{font-size:26px;font-weight:700;margin:6px 0}
+.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px}
+.top h1{margin:0;font-size:26px} .top .sub{color:#6b7280;margin-top:4px}
+.status{font-weight:700;padding:7px 14px;border-radius:20px;font-size:14px}
+.status.on{background:#dcfce7;color:#166534} .status.off{background:#fee2e2;color:#991b1b}
+.pill{display:inline-block;font-weight:700;font-size:13px;padding:3px 9px;border-radius:12px;white-space:nowrap}
+.pill.pos{background:#dcfce7;color:#166534} .pill.neg{background:#fee2e2;color:#991b1b}
+.pill.big{font-size:15px}
+.switch{padding:14px 18px;margin-top:16px;display:flex;gap:12px;align-items:center;color:#374151}
+.switch b{font-size:20px}
+.acts{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ac{border-radius:14px;padding:14px 16px;background:#fff;border-left:6px solid}
+.ac.buy{border-color:#16a34a} .ac.sell{border-color:#dc2626}
+.ac-top{display:flex;justify-content:space-between;font-weight:800;font-size:13px}
+.ac.buy .ac-act{color:#16a34a} .ac.sell .ac-act{color:#dc2626}
+.ac-name{font-size:17px;font-weight:700;margin-top:6px} .ac-sub{color:#6b7280;font-size:13px}
+.ac-why{font-size:13px;margin-top:8px;color:#374151} .ac-gain{margin-top:6px;font-size:13px}
+.empty{padding:18px;color:#6b7280;background:#fff;border-radius:14px}
+.chartbox{padding:16px 16px 6px}
+.chart{width:100%;height:auto;display:block}
+.chart .grid{stroke:#eef0f4} .chart .axis{fill:#9ca3af;font-size:12px}
+.chart .base{stroke:#cbd5e1;stroke-dasharray:2 4}
+.chart .hot{fill:transparent;cursor:crosshair} .chart .hot:hover{fill:#2563eb;fill-opacity:.25}
+.key{display:flex;gap:18px;font-size:13px;color:#4b5563;padding:4px 6px 8px}
+.key i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.hc{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.hc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.hc-name{font-weight:700;font-size:16px} .hc-sub{color:#6b7280;font-size:13px}
+.hc-mid{display:flex;justify-content:space-between;align-items:center;margin:12px 0 10px}
+.hc-val{font-size:20px;font-weight:700} .hc-small{color:#6b7280;font-size:12px;margin-top:2px}
+.spark{width:150px;height:40px}
+.meter .track{position:relative;display:flex;height:8px;border-radius:5px;overflow:visible}
+.meter .track span{height:8px} .z1{background:#bbf7d0;border-radius:5px 0 0 5px} .z2{background:#fde68a}
+.z3{flex:1;background:#fecaca;border-radius:0 5px 5px 0}
+.meter i{position:absolute;top:-4px;width:4px;height:16px;background:#111827;border-radius:2px;transform:translateX(-2px)}
+.mlabel{font-size:12px;margin-top:6px;font-weight:600} .mlabel.ok{color:#166534} .mlabel.warn{color:#92400e} .mlabel.bad{color:#991b1b}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pad{padding:16px 18px}
+.stack{display:flex;height:22px;border-radius:8px;overflow:hidden;margin:6px 0 12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px} .lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.wrow{display:grid;grid-template-columns:24px 1.6fr 1fr 48px;gap:8px;align-items:center;padding:5px 0;font-size:13px}
+.wn{color:#9ca3af;text-align:right} .wname small{color:#9ca3af}
+.held{font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:8px;margin-left:4px}
+.wbar{background:#f1f5f9;height:10px;border-radius:5px;overflow:hidden} .wbar span{display:block;height:10px;border-radius:5px}
+.wpct{text-align:right;font-weight:700}
+.cut{font-size:11px;color:#d97706;border-top:2px dashed #fcd34d;margin:6px 0;padding-top:4px;text-align:center}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:#6b7280;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:10px 8px;border-bottom:1px solid #e5e7eb}
+td{padding:9px 8px;border-bottom:1px solid #f3f4f6}
+.tag{font-size:11px;font-weight:800;padding:3px 9px;border-radius:10px}
+.tag.buy{background:#dcfce7;color:#166534} .tag.sell{background:#fee2e2;color:#991b1b}
+.scroll{max-height:420px;overflow:auto}
+.note{font-size:12px;color:#9ca3af;margin-top:26px;line-height:1.6}
+@media(max-width:800px){.hero,.two{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+
+<div class="top"><div><h1>Paper Trader</h1>
+<div class="sub">Nasdaq-100 momentum &middot; pretend money &middot; prices as of Friday, November 13, 2026</div></div>
+<span class="status off">&#9679; In cash (safety switch)</span></div>
+
+<div class="hero">
+ <div class="box"><div class="k">Your paper account</div><div class="big">$9,844.05</div>
+  <span class="pill neg big">&#9660; 1.6%</span> <span class="muted">since Nov 11 (2 days) &middot; started with $10,000</span></div>
+ <div class="box"><div class="k">Same money in QQQ</div><div class="mid">$9,848.05</div><span class="pill neg">&#9660; 1.5%</span>
+  <div class="muted" style="margin-top:8px">You're <span class="neg">$4.00 behind</span> QQQ</div></div>
+ <div class="box"><div class="k">Cash &amp; positions</div><div class="mid">0 of 10 stocks</div>
+  <div class="muted">$9,844.05 in cash</div><div class="muted" style="margin-top:8px">3 of 10 sells were winners</div></div>
+</div>
+
+<div class="box switch"><b>&#128308;</b><div><b style="font-size:15px">Safety switch: Cash</b><br>The Nasdaq-100 (QQQ 679.89) is below its 200-day average (682.24), so the rules say sit in cash until it climbs back above.</div></div>
+
+<h2>This week's trades <small>&middot; at the close on Friday, November 13</small></h2>
+<div class="acts"><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$1,011</span></div>
+<div class="ac-name">AppLovin</div><div class="ac-sub">APP &middot; Software &middot; at $409.10</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill pos">&#9650; 1.1%</span></div></div><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$912</span></div>
+<div class="ac-name">Strategy (MicroStrategy, holds Bitcoin)</div><div class="ac-sub">MSTR &middot; Software &amp; Bitcoin &middot; at $111.62</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill neg">&#9660; 8.8%</span></div></div><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$1,002</span></div>
+<div class="ac-name">IDEXX Laboratories (vet tests)</div><div class="ac-sub">IDXX &middot; Animal health &middot; at $704.23</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill pos">&#9650; 0.2%</span></div></div><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$950</span></div>
+<div class="ac-name">Keurig Dr Pepper</div><div class="ac-sub">KDP &middot; Food &amp; drink &middot; at $36.34</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill neg">&#9660; 5.0%</span></div></div><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$990</span></div>
+<div class="ac-name">Gilead Sciences</div><div class="ac-sub">GILD &middot; Biotech &middot; at $168.08</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill neg">&#9660; 1.0%</span></div></div><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$992</span></div>
+<div class="ac-name">CDW</div><div class="ac-sub">CDW &middot; IT services &middot; at $171.65</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill neg">&#9660; 0.8%</span></div></div><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$986</span></div>
+<div class="ac-name">Marriott International</div><div class="ac-sub">MAR &middot; Hotels &middot; at $423.16</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill neg">&#9660; 1.4%</span></div></div><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$1,000</span></div>
+<div class="ac-name">Biogen</div><div class="ac-sub">BIIB &middot; Biotech &middot; at $253.40</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill pos">&#9650; 0.0%</span></div></div><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$1,005</span></div>
+<div class="ac-name">Roper Technologies</div><div class="ac-sub">ROP &middot; Software &middot; at $479.98</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill pos">&#9650; 0.5%</span></div></div><div class="ac sell">
+<div class="ac-top"><span class="ac-act">SELL</span><span class="ac-amt">$996</span></div>
+<div class="ac-name">Regeneron Pharmaceuticals</div><div class="ac-sub">REGN &middot; Biotech &middot; at $955.47</div>
+<div class="ac-why">Safety switch: QQQ below 200-day avg</div><div class="ac-gain">Result: <span class="pill neg">&#9660; 0.4%</span></div></div></div>
+
+<h2>Your account vs. just holding QQQ</h2>
+<div class="box chartbox"><div class="key"><span><i style="background:#2563eb"></i>Your paper account</span>
+<span><i style="background:#9ca3af"></i>Same money in QQQ</span><span class="muted">Hover the line for daily values</span></div>
+<svg viewBox="0 0 960 300" class="chart">
+<defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0" stop-color="#2563eb" stop-opacity=".18"/><stop offset="1" stop-color="#2563eb" stop-opacity="0"/></linearGradient></defs>
+<line x1="70" x2="940" y1="264.0" y2="264.0" class="grid"/><text x="62" y="268.0" class="axis" text-anchor="end">$9,752</text><line x1="70" x2="940" y1="203.0" y2="203.0" class="grid"/><text x="62" y="207.0" class="axis" text-anchor="end">$9,822</text><line x1="70" x2="940" y1="142.0" y2="142.0" class="grid"/><text x="62" y="146.0" class="axis" text-anchor="end">$9,892</text><line x1="70" x2="940" y1="81.0" y2="81.0" class="grid"/><text x="62" y="85.0" class="axis" text-anchor="end">$9,962</text><line x1="70" x2="940" y1="20.0" y2="20.0" class="grid"/><text x="62" y="24.0" class="axis" text-anchor="end">$10,032</text><text x="70.0" y="290" class="axis" text-anchor="middle">Nov 11</text><text x="505.0" y="290" class="axis" text-anchor="middle">Nov 12</text><text x="940.0" y="290" class="axis" text-anchor="middle">Nov 13</text><text x="940.0" y="290" class="axis" text-anchor="middle">Nov 13</text><line x1="70" x2="940" y1="48.2" y2="48.2" class="base"/>
+<path d="M70.0,48.2 L505.0,235.8 L940.0,184.2 L940.0,264 L70.0,264 Z" fill="url(#fill)"/>
+<path d="M70.0,48.2 L505.0,76.1 L940.0,180.7" fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="5 4"/>
+<path d="M70.0,48.2 L505.0,235.8 L940.0,184.2" fill="none" stroke="#2563eb" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="940.0" cy="184.2" r="4.5" fill="#2563eb"/><circle cx="940.0" cy="180.7" r="3.5" fill="#9ca3af"/><circle cx="70.0" cy="48.2" r="7" class="hot"><title>Wed Nov 11
+Your account: $10,000.00
+QQQ: $10,000.00</title></circle><circle cx="505.0" cy="235.8" r="7" class="hot"><title>Thu Nov 12
+Your account: $9,784.78
+QQQ: $9,967.99</title></circle><circle cx="940.0" cy="184.2" r="7" class="hot"><title>Fri Nov 13
+Your account: $9,844.05
+QQQ: $9,848.05</title></circle></svg></div>
+
+<h2>What you own <small>&middot; the bar shows each stock's rank: green = top 10, yellow = keep, red = sell</small></h2>
+<div class="hgrid"><div class="empty">No holdings &mdash; the account is all cash.</div></div>
+
+<div class="two">
+ <div><h2>Where your money is</h2><div class="box pad"><div class="muted">All cash right now.</div></div></div>
+ <div><h2>Biggest 3-month gainers <small>&middot; top 20 of 98</small></h2>
+ <div class="box pad"><div class="wrow"><span class="wn">1</span>
+<span class="wname"><b>AppLovin</b> <small>APP</small> </span>
+<span class="wbar"><span style="width:100.0%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+31%</span></div>
+<div class="wrow"><span class="wn">2</span>
+<span class="wname"><b>IDEXX Laboratories (vet tests)</b> <small>IDXX</small> </span>
+<span class="wbar"><span style="width:93.0%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+29%</span></div>
+<div class="wrow"><span class="wn">3</span>
+<span class="wname"><b>CDW</b> <small>CDW</small> </span>
+<span class="wbar"><span style="width:86.3%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+27%</span></div>
+<div class="wrow"><span class="wn">4</span>
+<span class="wname"><b>Roper Technologies</b> <small>ROP</small> </span>
+<span class="wbar"><span style="width:74.4%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+23%</span></div>
+<div class="wrow"><span class="wn">5</span>
+<span class="wname"><b>Biogen</b> <small>BIIB</small> </span>
+<span class="wbar"><span style="width:68.0%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+21%</span></div>
+<div class="wrow"><span class="wn">6</span>
+<span class="wname"><b>Gilead Sciences</b> <small>GILD</small> </span>
+<span class="wbar"><span style="width:67.4%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+21%</span></div>
+<div class="wrow"><span class="wn">7</span>
+<span class="wname"><b>Keurig Dr Pepper</b> <small>KDP</small> </span>
+<span class="wbar"><span style="width:64.3%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+20%</span></div>
+<div class="wrow"><span class="wn">8</span>
+<span class="wname"><b>Marriott International</b> <small>MAR</small> </span>
+<span class="wbar"><span style="width:60.0%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+19%</span></div>
+<div class="wrow"><span class="wn">9</span>
+<span class="wname"><b>Regeneron Pharmaceuticals</b> <small>REGN</small> </span>
+<span class="wbar"><span style="width:59.6%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+19%</span></div>
+<div class="wrow"><span class="wn">10</span>
+<span class="wname"><b>Verisk Analytics</b> <small>VRSK</small> </span>
+<span class="wbar"><span style="width:58.9%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+18%</span></div>
+<div class="cut">&#8593; buy zone (top 10) &middot; hold zone &#8595;</div><div class="wrow"><span class="wn">11</span>
+<span class="wname"><b>AstraZeneca</b> <small>AZN</small> </span>
+<span class="wbar"><span style="width:56.4%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+18%</span></div>
+<div class="wrow"><span class="wn">12</span>
+<span class="wname"><b>The Trade Desk</b> <small>TTD</small> </span>
+<span class="wbar"><span style="width:54.7%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+17%</span></div>
+<div class="wrow"><span class="wn">13</span>
+<span class="wname"><b>Apple</b> <small>AAPL</small> </span>
+<span class="wbar"><span style="width:53.3%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+17%</span></div>
+<div class="wrow"><span class="wn">14</span>
+<span class="wname"><b>ADP (payroll)</b> <small>ADP</small> </span>
+<span class="wbar"><span style="width:53.0%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+16%</span></div>
+<div class="wrow"><span class="wn">15</span>
+<span class="wname"><b>Costco</b> <small>COST</small> </span>
+<span class="wbar"><span style="width:51.4%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+16%</span></div>
+<div class="wrow"><span class="wn">16</span>
+<span class="wname"><b>Tesla</b> <small>TSLA</small> </span>
+<span class="wbar"><span style="width:48.2%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+15%</span></div>
+<div class="wrow"><span class="wn">17</span>
+<span class="wname"><b>GE HealthCare</b> <small>GEHC</small> </span>
+<span class="wbar"><span style="width:47.3%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+15%</span></div>
+<div class="wrow"><span class="wn">18</span>
+<span class="wname"><b>Cintas (uniforms)</b> <small>CTAS</small> </span>
+<span class="wbar"><span style="width:46.2%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+14%</span></div>
+<div class="wrow"><span class="wn">19</span>
+<span class="wname"><b>Strategy (MicroStrategy, holds Bitcoin)</b> <small>MSTR</small> </span>
+<span class="wbar"><span style="width:45.8%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+14%</span></div>
+<div class="wrow"><span class="wn">20</span>
+<span class="wname"><b>NXP Semiconductors</b> <small>NXPI</small> </span>
+<span class="wbar"><span style="width:44.7%;background:#cbd5e1"></span></span>
+<span class="wpct pos">+14%</span></div></div></div>
+</div>
+
+<h2>Trade history</h2>
+<div class="box scroll"><table><tr><th>Date</th><th>Action</th><th>Company</th><th>Price</th><th>Amount</th><th>Result</th></tr>
+<tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>Regeneron Pharmaceuticals</b> <small class="muted">REGN</small></td>
+<td>$955.47</td><td>$996</td><td><span class="pill neg">&#9660; 0.4%</span></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>Roper Technologies</b> <small class="muted">ROP</small></td>
+<td>$479.98</td><td>$1,005</td><td><span class="pill pos">&#9650; 0.5%</span></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>Biogen</b> <small class="muted">BIIB</small></td>
+<td>$253.40</td><td>$1,000</td><td><span class="pill pos">&#9650; 0.0%</span></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>Marriott International</b> <small class="muted">MAR</small></td>
+<td>$423.16</td><td>$986</td><td><span class="pill neg">&#9660; 1.4%</span></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>CDW</b> <small class="muted">CDW</small></td>
+<td>$171.65</td><td>$992</td><td><span class="pill neg">&#9660; 0.8%</span></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>Gilead Sciences</b> <small class="muted">GILD</small></td>
+<td>$168.08</td><td>$990</td><td><span class="pill neg">&#9660; 1.0%</span></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>Keurig Dr Pepper</b> <small class="muted">KDP</small></td>
+<td>$36.34</td><td>$950</td><td><span class="pill neg">&#9660; 5.0%</span></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>IDEXX Laboratories (vet tests)</b> <small class="muted">IDXX</small></td>
+<td>$704.23</td><td>$1,002</td><td><span class="pill pos">&#9650; 0.2%</span></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>Strategy (MicroStrategy, holds Bitcoin)</b> <small class="muted">MSTR</small></td>
+<td>$111.62</td><td>$912</td><td><span class="pill neg">&#9660; 8.8%</span></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag sell">SELL</span></td>
+<td><b>AppLovin</b> <small class="muted">APP</small></td>
+<td>$409.10</td><td>$1,011</td><td><span class="pill pos">&#9650; 1.1%</span></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>Regeneron Pharmaceuticals</b> <small class="muted">REGN</small></td>
+<td>$959.41</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>Roper Technologies</b> <small class="muted">ROP</small></td>
+<td>$477.70</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>Biogen</b> <small class="muted">BIIB</small></td>
+<td>$253.40</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>Marriott International</b> <small class="muted">MAR</small></td>
+<td>$429.18</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>CDW</b> <small class="muted">CDW</small></td>
+<td>$173.08</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>Gilead Sciences</b> <small class="muted">GILD</small></td>
+<td>$169.73</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>Keurig Dr Pepper</b> <small class="muted">KDP</small></td>
+<td>$38.25</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>IDEXX Laboratories (vet tests)</b> <small class="muted">IDXX</small></td>
+<td>$702.59</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>Strategy (MicroStrategy, holds Bitcoin)</b> <small class="muted">MSTR</small></td>
+<td>$122.35</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
+<td><span class="tag buy">BUY</span></td>
+<td><b>AppLovin</b> <small class="muted">APP</small></td>
+<td>$404.77</td><td>$1,000</td><td></td></tr></table></div>
+
+<p class="note">Pretend trades only, made at each week's last closing price with no fees (as in a USD account). Prices in US dollars.
+Updates itself automatically every evening. Last updated Nov 14, 2026 02:05 PM New York time. Past and paper results don't guarantee future returns.</p>
+</div></body></html>

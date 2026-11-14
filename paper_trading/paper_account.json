@@ -1,0 +1,18 @@
+{
+  "capital": 10000.0,
+  "top_n": 10,
+  "exit_rank": 20,
+  "lookback": 63,
+  "sma_days": 200,
+  "cost_pct": 0.0,
+  "start_date": "2026-11-11",
+  "ledger": {
+    "start": "2026-11-11",
+    "qqq_start": 690.3800048828125,
+    "cash": 9844.0538470796,
+    "positions": {},
+    "last_processed": "2026-11-13",
+    "last_rebalance": "2026-11-13",
+    "data_through": "2026-11-13"
+  }
+}

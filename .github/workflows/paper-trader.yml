@@ -1,0 +1,50 @@
+# Runs the paper trader every evening after the US market closes, saves the
+# updated account back to the repo, and refreshes the web page (docs/).
+# To update right now: Actions tab -> "Paper trader" -> "Run workflow"
+# (works from the GitHub phone app too).
+name: Paper trader
+
+on:
+  schedule:
+    - cron: "30 22 * * *"      # 22:30 UTC = 5:30pm New York in winter, 6:30pm in summer
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paper-trader          # never two runs at once
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Safety tests (no trading if these fail)
+        run: python -m pytest -q -W ignore tests
+
+      - name: Update paper account
+        run: python -W ignore paper_trader.py --auto
+
+      - name: Save results
+        run: |
+          git config user.name "paper-trader-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add paper_trading docs
+          if git diff --cached --quiet; then
+            echo "Nothing new to save."
+          else
+            git commit -m "Paper account update $(date -u +%Y-%m-%d)"
+            git push
+          fi

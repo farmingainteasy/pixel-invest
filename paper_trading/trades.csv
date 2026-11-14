@@ -1,0 +1,21 @@
+date,action,ticker,shares,price,value,gain_pct,reason
+2026-11-11,BUY,APP,2.4705,404.77,1000.0,,Rank 1 by 3-month gain
+2026-11-11,BUY,MSTR,8.1733,122.35,1000.0,,Rank 2 by 3-month gain
+2026-11-11,BUY,IDXX,1.4233,702.59,1000.0,,Rank 3 by 3-month gain
+2026-11-11,BUY,KDP,26.1438,38.25,1000.0,,Rank 4 by 3-month gain
+2026-11-11,BUY,GILD,5.8917,169.73,1000.0,,Rank 5 by 3-month gain
+2026-11-11,BUY,CDW,5.7777,173.08,1000.0,,Rank 6 by 3-month gain
+2026-11-11,BUY,MAR,2.33,429.18,1000.0,,Rank 7 by 3-month gain
+2026-11-11,BUY,BIIB,3.9463,253.4,1000.0,,Rank 8 by 3-month gain
+2026-11-11,BUY,ROP,2.0934,477.7,1000.0,,Rank 9 by 3-month gain
+2026-11-11,BUY,REGN,1.0423,959.41,1000.0,,Rank 10 by 3-month gain
+2026-11-13,SELL,APP,2.4705,409.1,1010.7,1.1,Safety switch: QQQ below 200-day avg
+2026-11-13,SELL,MSTR,8.1733,111.62,912.3,-8.8,Safety switch: QQQ below 200-day avg
+2026-11-13,SELL,IDXX,1.4233,704.23,1002.33,0.2,Safety switch: QQQ below 200-day avg
+2026-11-13,SELL,KDP,26.1438,36.34,950.07,-5.0,Safety switch: QQQ below 200-day avg
+2026-11-13,SELL,GILD,5.8917,168.08,990.28,-1.0,Safety switch: QQQ below 200-day avg
+2026-11-13,SELL,CDW,5.7777,171.65,991.74,-0.8,Safety switch: QQQ below 200-day avg
+2026-11-13,SELL,MAR,2.33,423.16,985.97,-1.4,Safety switch: QQQ below 200-day avg
+2026-11-13,SELL,BIIB,3.9463,253.4,1000.0,0.0,Safety switch: QQQ below 200-day avg
+2026-11-13,SELL,ROP,2.0934,479.98,1004.77,0.5,Safety switch: QQQ below 200-day avg
+2026-11-13,SELL,REGN,1.0423,955.47,995.89,-0.4,Safety switch: QQQ below 200-day avg
