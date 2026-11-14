@@ -1,8 +1,9 @@
-"""Builds the Pixel Invest dashboard ("Control Room"): one self-contained,
-phone-first HTML page with hand-drawn SVG charts. Dark in every theme, in
+"""Builds the Pixel Invest pages: Home (one card per market) and a "Control Room"
+page per market. Self-contained, phone-first HTML with hand-drawn SVG charts. Dark in every theme, in
 Pixel Ag's colours (farm-app src/theme.css, dark set)."""
 
 import html
+import json
 import math
 import os
 from datetime import datetime
@@ -13,7 +14,6 @@ import pandas as pd
 
 import logo
 from company_info import name, sector
-from momentum_backtest import BENCHMARK
 
 # Pixel Ag dark palette
 PAGE, PANEL, PANEL2, PANEL3 = "#0B0A07", "#1B1812", "#14120D", "#262219"
@@ -25,8 +25,11 @@ SECTOR_COLORS = ["#6BD35A", "#E2C067", "#6FA0D8", "#E0875A", "#A8B86A", "#5FB3AC
                  "#B98BC0", "#E2B04A", "#8E9BAA", "#B89470", "#9FD08A", "#D8C08A"]
 
 
+SYM, LABEL = "$", "QQQ"      # set per market by set_market()
+
+
 def money(x, cents=True):
-    return f"${x:,.2f}" if cents else f"${x:,.0f}"
+    return f"{SYM}{x:,.2f}" if cents else f"{SYM}{x:,.0f}"
 
 
 def esc(s):
@@ -98,8 +101,8 @@ def account_chart(acct, w=380, h=200):
                  f'class="ax">{a.index[i]:%b %d}</text>' for i in idx)
     area = f"{pts(a)} {xs[-1]:.1f},{h - pb} {xs[0]:.1f},{h - pb}"
     dots = "".join(f'<circle cx="{xs[i]:.1f}" cy="{y(a.iloc[i]):.1f}" r="8" class="hot"><title>{a.index[i]:%a %b %d}'
-                   f'\nYour account: {money(a.iloc[i])}\nQQQ: {money(q.iloc[i])}</title></circle>' for i in range(n))
-    return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="Your account against the same money in QQQ, '
+                   f'\nYour account: {money(a.iloc[i])}\n{LABEL}: {money(q.iloc[i])}</title></circle>' for i in range(n))
+    return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="Your account against the same money in {LABEL}, '
             f'{money(a.iloc[-1])} vs {money(q.iloc[-1])}">'
             f'<defs><linearGradient id="af" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="{GOLD_TEXT}" stop-opacity=".22"/>'
             f'<stop offset="1" stop-color="{GOLD_TEXT}" stop-opacity="0"/></linearGradient></defs>{grid}{xl}'
@@ -139,7 +142,7 @@ def switch_chart(sw, w=380, h=200):
             months.append(f'<text x="{xs[i]:.1f}" y="{h - 8}" class="ax">{d:%b}</text>')
         prev = d.month
     last_q, last_s = sw["qqq"].iloc[-1], sw["sma"].iloc[-1]
-    return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="QQQ {last_q:.2f} against its '
+    return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="{LABEL} {last_q:.2f} against its '
             f'200-day average {last_s:.2f}; shaded where the rules sit in cash">{grid}{"".join(shade)}{"".join(months)}'
             f'<polyline points="{pts(sw["sma"])}" fill="none" stroke="{GOLD}" stroke-width="2" stroke-dasharray="6 4"/>'
             f'<polyline points="{pts(sw["qqq"])}" fill="none" stroke="{T1}" stroke-width="2" stroke-linejoin="round"/>'
@@ -159,7 +162,7 @@ def backtest_chart(bt, w=380, h=210):
     grid = "".join(f'<line x1="{pl}" x2="{w - pr}" y1="{y(v):.1f}" y2="{y(v):.1f}" stroke="{LINE2}"/>'
                    f'<text x="{pl - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="ax">${v // 1000:,}k</text>' for v in ticks)
     return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="Backtest: $10,000 grew to '
-            f'{money(c[-1][1], False)} with the rules and {money(c[-1][2], False)} in QQQ">{grid}'
+            f'{money(c[-1][1], False)} with the rules and {money(c[-1][2], False)} in {LABEL}">{grid}'
             f'<text x="{pl}" y="{h - 8}" class="ax">{c[0][0][:4]}</text>'
             f'<text x="{w - pr}" y="{h - 8}" text-anchor="end" class="ax">{c[-1][0][:4]}</text>'
             f'<polyline points="{pts(2)}" fill="none" stroke="{T4}" stroke-width="2" stroke-dasharray="5 4"/>'
@@ -183,103 +186,21 @@ def sector_bar(holdings, cash):
 
 
 # --------------------------------------------------------------------------
-def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, prices, folder, bt=None):
-    start_val = cfg["capital"]
-    now_val = acct["paper_account"].iloc[-1]
-    qqq_val = acct["qqq_same_money"].iloc[-1]
-    acct_ret = (now_val / start_val - 1) * 100
-    qqq_ret = (qqq_val / start_val - 1) * 100
-    diff = now_val - qqq_val
-    top_n, exit_rank = cfg["top_n"], cfg["exit_rank"]
-    start = pd.Timestamp(cfg["start_date"])
-    held = {h["ticker"] for h in holdings}
-    on = status["risk_on"]
-    gap = (status["qqq"] / status["sma"] - 1) * 100
-
-    closed = trades[trades["action"] == "SELL"]
-    wins = int((closed["gain_pct"] > 0).sum())
-    record = f"{wins} of {len(closed)} sells gained" if len(closed) else "No sells yet"
-
-    def updown(r):
-        return f"{'Up' if r >= 0 else 'Down'} {abs(r):.1f}%"
-
-    # This week's trades, each with its 52-week range at the trade
-    week = trades[trades["date"] == last_rebal.date()]
-    rows = []
-    for t in week.to_dict("records"):
-        day = pd.Timestamp(t["date"])
-        lo, hi = week52(prices, t["ticker"], day)
-        buy = t["action"] == "BUY"
-        verb = "bought" if buy else "sold"
-        right = (f'<span class="tag buy">Buy</span>' if buy else chip(t["gain_pct"]))
-        rows.append(f'''<div class="rl"><div class="rltop"><div class="nm">
-<b>{"" if buy else '<span class="tag sell">Sell</span> '}{esc(t["ticker"])}</b>
-<small>{esc(name(t["ticker"]))} &middot; {verb} at {money(t["price"])}</small></div>{right}</div>
-{range_bar(t["price"], lo, hi, verb)}</div>''')
-    if week.empty:
-        week_html = '<p class="empty">No trades this week. Every holding still ranks high enough to keep.</p>'
-    else:
-        week_html = f'<div class="rowlist">{"".join(rows)}</div>'
-    started = last_rebal.normalize() == start.normalize()
-    week_title = "Started the account" if started else f"This week's trades"
-    week_lead = ("The bar is each stock's last 52 weeks, low to high. The dot is where it traded.")
-
-    # What you own, or what it would buy
-    if holdings:
-        hrows = []
-        for h in holdings:
-            lo, hi = week52(prices, h["ticker"], status["last_day"])
-            hrows.append(f'''<div class="rl"><div class="rltop"><div class="nm"><b>{esc(h["ticker"])}</b>
-<small>{esc(name(h["ticker"]))} &middot; {money(h["value"])}</small></div>{chip(h["gain_pct"])}</div>
-{rank_bar(h["rank"], top_n, exit_rank)}{range_bar(h["price"], lo, hi)}</div>''')
-        own_html = f'''<section class="card sec full o4"><div><h2>What you own</h2>
-<p class="lead">Top bar: rank (green top {top_n}, yellow keep, red sell). Bottom bar: 52-week range.</p></div>
-<div class="rowlist">{"".join(hrows)}</div></section>
-<section class="card sec full o4"><h2>Where your money is</h2>{sector_bar(holdings, status["cash"])}</section>'''
-    else:
-        nxt = [t for t in watch.index if t not in held][:top_n]
-        nrows = "".join(f'''<div class="rl"><div class="rltop"><div class="nm"><b>{esc(t)}</b>
-<small>{esc(name(t))}</small></div><span class="chip pos">+{watch[t] * 100:.0f}%</span></div>
-{rank_bar(i, top_n, exit_rank)}</div>''' for i, t in enumerate(nxt, 1))
-        own_html = f'''<section class="card sec full o4"><div><h2>Next buys if the switch flips</h2>
-<p class="lead">Today's top {top_n} by 3-month gain. If QQQ closes above {money(status["sma"])} on a Friday, these are bought at that close.</p></div>
-<div class="rowlist">{nrows}</div></section>'''
-
-    # Charts
-    sw = pd.DataFrame({"qqq": prices[BENCHMARK],
-                       "sma": prices[BENCHMARK].rolling(cfg["sma_days"]).mean()}).dropna().loc[:status["last_day"]].iloc[-130:]
-    switch_lead = ("QQQ is above the dashed line, so the rules stay invested." if on else
-                   "QQQ is below the dashed line, so the rules sit in cash. Shaded days are cash days.")
-    acct_html = (account_chart(acct) if len(acct) > 1 else
-                 '<p class="empty">The chart starts after the first full day.</p>')
-
-    # Tucked-away backtest
-    if bt:
-        r, q = bt["rules"], bt["qqq"]
-        bt_html = f'''<details class="card tuck"><summary>How these rules did in testing</summary>
-<div class="sec" style="margin-top:12px">
-<p class="lead">$10,000 run through the same rules every week since {bt["start"][:4]}, with {bt["cost_pct"] * 100:.1f}% trading costs.
-The rules end at {money(bt["curve"][-1][1], False)}; QQQ at {money(bt["curve"][-1][2], False)}.</p>
-<div class="key"><span><i style="background:{GOLD_TEXT}"></i>The rules</span><span><i style="background:{T4}"></i>Just holding QQQ</span></div>
-{backtest_chart(bt)}
-<div class="stats">
-<div class="stat"><span class="k">Yearly return</span><span class="v">{r["cagr"] * 100:.1f}% <small>vs {q["cagr"] * 100:.1f}%</small></span></div>
-<div class="stat"><span class="k">Worst drop</span><span class="v">&minus;{abs(r["drop"]) * 100:.1f}% <small>vs &minus;{abs(q["drop"]) * 100:.1f}%</small></span></div>
-<div class="stat"><span class="k">Winning trades</span><span class="v">{(bt["win_rate"] or 0) * 100:.0f}%</span></div>
-<div class="stat"><span class="k">Trades a year</span><span class="v">{bt["trades_per_year"]:.0f}</span></div></div>
-<p class="warn">This test uses today's Nasdaq-100 list, so it includes later winners and leaves out companies that dropped out of the index.
-Real results would very likely have been lower. Refreshed {pd.Timestamp(bt["computed_on"]):%b %d, %Y}.</p></div></details>'''
-    else:
-        bt_html = ""
-
-    # Full history, tucked away too
-    hist = "".join(f'''<tr><td>{pd.Timestamp(t["date"]):%b %d, %Y}</td>
-<td><span class="tag {'buy' if t["action"] == "BUY" else 'sell'}">{t["action"].title()}</span></td>
-<td><b>{esc(t["ticker"])}</b></td><td>{money(t["price"])}</td><td>{money(t["value"], False)}</td><td>{chip(t["gain_pct"])}</td></tr>'''
-                   for t in trades.iloc[::-1].to_dict("records"))
-
+# --------------------------------------------------------------------------
+# Page shell: shared head, styles and navigation for every page
+# --------------------------------------------------------------------------
+def page_shell(title, rel, markets, current, header, main):
+    """rel = path back to the site root ('' for Home, '../' for a market page)."""
+    def link(m):
+        s = summary_state(m)
+        here = ' class="on" aria-current="page"' if m["slug"] == current else ""
+        return (f'<a href="{rel}{m["slug"]}/"{here}>{esc(m["name"])} '
+                f'<small class="{s[1]}">{s[0]}</small></a>')
+    side = "".join(link(m) for m in markets)
+    chips = "" if current is None else "".join(f'<a href="{rel}{m["slug"]}/" class="{"on" if m["slug"] == current else ""}">{esc(m["name"])}</a>'
+                    for m in markets)
     updated = datetime.now(ZoneInfo("America/New_York"))
-    page = f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+    return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="color-scheme" content="dark">
@@ -287,21 +208,26 @@ Real results would very likely have been lower. Refreshed {pd.Timestamp(bt["comp
 <meta name="apple-mobile-web-app-title" content="Pixel Invest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<title>Pixel Invest &mdash; {money(now_val, False)}</title>
+<title>{title}</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,{quote(logo.svg())}">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="site.webmanifest">
+<link rel="apple-touch-icon" href="{rel}apple-touch-icon.png">
+<link rel="manifest" href="{rel}site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* Control Room: Pixel Ag's dark palette in every theme; one column on a phone, two on a wide screen. */
+/* Control Room: Pixel Ag's dark palette in every theme. Phone: one column, back link + market buttons.
+   Computer: market sidebar on the left, page in two columns on the right. */
 :root{{color-scheme:dark;--sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}}
 *{{box-sizing:border-box}}
 html{{background:{PAGE}}}
 body{{margin:0;background:{PAGE};color:{T1};font-family:var(--sans);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}}
-.hdr{{background:#1C1A14;border-bottom:4px solid {GOLD};padding-top:max(18px,env(safe-area-inset-top))}}
+a{{color:{GOLD_TEXT}}}
+a:focus-visible,summary:focus-visible{{outline:2px solid {GOLD};outline-offset:3px;border-radius:6px}}
+.side{{display:none}}
+.hdr{{background:#1C1A14;border-bottom:4px solid {GOLD};padding-top:max(14px,env(safe-area-inset-top))}}
 .wrap{{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}}
-.hin{{display:flex;flex-direction:column;gap:14px;padding-bottom:16px}}
+.hin{{display:flex;flex-direction:column;gap:12px;padding-bottom:16px}}
+.back{{font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;min-height:32px;align-self:flex-start}}
 .brandrow{{display:flex;align-items:center;gap:12px}}
 .brandrow svg{{width:44px;height:44px;flex:none}}
 .brand{{font-size:13px;font-weight:800;color:#fff}}
@@ -310,7 +236,22 @@ body{{margin:0;background:{PAGE};color:{T1};font-family:var(--sans);font-size:15
 .big{{font-size:34px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}}
 .sub{{font-size:13px;color:rgba(244,240,230,.72)}}
 .state{{font-size:13px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap}}
-.state.on{{background:rgba(107,211,90,.16);color:#8BE07C}} .state.off{{background:rgba(255,90,78,.18);color:#FF9A90}}
+.state.on,small.on{{color:#8BE07C}} .state.on{{background:rgba(107,211,90,.16)}}
+.state.off,small.off{{color:#FF9A90}} .state.off{{background:rgba(255,90,78,.18)}}
+.state.wait,small.wait{{color:{GOLD_TEXT}}} .state.wait{{background:rgba(226,192,103,.14)}}
+.switch{{display:flex;gap:6px;overflow-x:auto;background:{PANEL2};border-bottom:1px solid {LINE};padding-block:10px}}
+.switch a{{flex:none;font-size:13px;font-weight:700;text-decoration:none;color:{T3};border:1px solid {LINE};border-radius:999px;padding:8px 14px;min-height:36px;display:inline-flex;align-items:center}}
+.switch a.on{{background:{GOLD};color:#1C1A14;border-color:{GOLD}}}
+@media(min-width:900px){{
+ .app{{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100vh}}
+ .side{{display:flex;flex-direction:column;gap:4px;background:#1C1A14;border-right:1px solid {LINE};padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}}
+ .side .brandrow{{padding:0 6px 14px;border-bottom:4px solid {GOLD};margin-bottom:10px}}
+ .side a{{display:flex;justify-content:space-between;align-items:center;gap:8px;text-decoration:none;color:{T3};font-size:14px;font-weight:600;padding:10px;border-radius:10px;min-height:44px}}
+ .side a small{{font-size:12px;font-weight:600}}
+ .side a.on{{background:{PANEL};color:{T1};box-shadow:inset 3px 0 0 {GOLD}}}
+ .side a:hover{{background:{PANEL}}}
+ .switch,.hdr .back,.hdr .brandrow svg,.hdr .brand{{display:none}}
+}}
 main.wrap{{padding-top:18px;padding-bottom:40px;display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}}
 @media(min-width:900px){{main.wrap{{grid-template-columns:repeat(2,minmax(0,1fr))}} .full{{grid-column:1/-1}}}}
 .col{{display:contents}}
@@ -327,7 +268,7 @@ h2{{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;text-wrap:bala
 .kpi{{background:{PANEL};border:1px solid {LINE};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px;min-width:0}}
 .kpi .k{{font-size:12px;color:{T4}}} .kpi .v{{font-size:20px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}}
 .kpi .s{{font-size:12px;color:{T3}}}
-.pos{{color:{GREEN}}} .neg{{color:{RED}}}
+.pos{{color:{GREEN}}} .neg{{color:{RED}}} .dim{{color:{T5}}}
 .chip{{font-weight:700;font-size:13px;padding:3px 9px;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums}}
 .chip.pos{{background:rgba(107,211,90,.14);color:{GREEN}}} .chip.neg{{background:rgba(255,90,78,.14);color:{RED}}} .chip.flat{{background:{PANEL3};color:{T3}}}
 .tag{{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;vertical-align:1px}}
@@ -361,43 +302,204 @@ details.tuck summary{{cursor:pointer;font-weight:700;font-size:15px;list-style:n
 details.tuck summary::-webkit-details-marker{{display:none}}
 details.tuck summary::after{{content:"+";font-size:20px;color:{GOLD_TEXT};font-weight:500}}
 details.tuck[open] summary::after{{content:"\\2212"}}
-summary:focus-visible{{outline:2px solid {GOLD};outline-offset:4px;border-radius:6px}}
 .scroll{{overflow-x:auto}}
 table{{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}}
 th{{text-align:left;color:{T4};font-weight:600;font-size:12px;padding:8px;border-bottom:1px solid {LINE}}}
 td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-variant-numeric:tabular-nums}}
 .note{{font-size:12px;color:{T5};line-height:1.6;margin:4px 0 0}}
-</style></head><body>
+/* Home */
+.mcards{{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}}
+@media(min-width:900px){{.mcards{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}
+.mcard{{display:flex;flex-direction:column;gap:10px;text-decoration:none;color:inherit;background:{PANEL};border:1px solid {LINE};border-radius:16px;padding:16px}}
+.mcard:hover{{border-color:rgba(226,192,103,.4)}}
+.mtop,.mrow{{display:flex;justify-content:space-between;gap:10px}} .mtop{{align-items:flex-start}} .mrow{{align-items:flex-end}}
+.mname{{font-size:18px;font-weight:700;letter-spacing:-.02em}}
+.msub{{font-size:12px;color:{T4}}}
+.mval{{font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}}
+.mval small{{font-size:13px;font-weight:600;color:{T4};margin-left:4px}}
+.mcard svg{{width:120px;height:40px;flex:none}}
+.wk{{font-size:13px;color:{T3};border-top:1px solid {LINE2};padding-top:10px;display:flex;justify-content:space-between;gap:10px}}
+.wk b{{color:{GOLD_TEXT};white-space:nowrap}}
+</style></head><body><div class="app">
+<nav class="side" aria-label="Markets"><div class="brandrow">{logo.svg()}<div class="brand" style="display:block">Pixel Invest</div></div>
+<a href="{rel or './'}" class="{"on" if current is None else ""}">All markets</a>{side}</nav>
+<div class="content">
+{header}
+{f'<nav class="switch wrap" aria-label="Markets">{chips}</nav>' if chips else ""}
+{main}
+</div></div></body></html>"""
 
-<header class="hdr"><div class="wrap hin">
-<div class="brandrow">{logo.svg()}<div><div class="brand">Pixel Invest</div><h1 class="htitle">Nasdaq-100 Momentum</h1></div></div>
+
+_SUMMARIES = {}
+
+
+def summary_state(m):
+    """(label, css class) for a market's status, from its summary."""
+    if not m.get("active", True):
+        return ("Not started", "wait")
+    s = _SUMMARIES.get(m["slug"])
+    if not s:
+        return (f"Starts {pd.Timestamp(m['start_date']):%b %d}" if m.get("start_date") else "Waiting", "wait")
+    return ("Invested", "on") if s["risk_on"] else ("Cash", "off")
+
+
+def load_summaries(markets, summary_path):
+    for m in markets:
+        p = summary_path(m["slug"])
+        try:
+            _SUMMARIES[m["slug"]] = json.load(open(p)) if os.path.exists(p) else None
+        except ValueError:
+            _SUMMARIES[m["slug"]] = None
+
+
+def updated_note(cfg):
+    updated = datetime.now(ZoneInfo("America/New_York"))
+    divs = ("Dividends are paid into the account's cash, and the index fund comparison includes its dividends."
+            if cfg.get("dividends") else "Prices only: dividends aren't counted, for the account or the index fund.")
+    return (f'<p class="note">Pretend money only: trades at each Friday\'s closing price, no fees. {divs} '
+            f'Prices in {cfg["currency"]}. Updates itself every weekend. Last updated {updated:%b %d, %Y %I:%M %p} '
+            f'New York time. Past and paper results don\'t guarantee future returns.</p>')
+
+
+def backtest_block(cfg, bt, open_=False):
+    if not bt:
+        return ""
+    r, q = bt["rules"], bt["qqq"]
+    return f'''<details class="card tuck"{" open" if open_ else ""}><summary>How these rules did in testing</summary>
+<div class="sec" style="margin-top:12px">
+<p class="lead">{money(10_000, False)} run through the same rules every week since {bt["start"][:4]}, with {bt["cost_pct"] * 100:.1f}% trading costs
+and dividends included. The rules end at {money(bt["curve"][-1][1], False)}; {LABEL} at {money(bt["curve"][-1][2], False)}.</p>
+<div class="key"><span><i style="background:{GOLD_TEXT}"></i>The rules</span><span><i style="background:{T4}"></i>Just holding {LABEL}</span></div>
+{backtest_chart(bt)}
+<div class="stats">
+<div class="stat"><span class="k">Yearly return</span><span class="v">{r["cagr"] * 100:.1f}% <small>vs {q["cagr"] * 100:.1f}%</small></span></div>
+<div class="stat"><span class="k">Worst drop</span><span class="v">&minus;{abs(r["drop"]) * 100:.1f}% <small>vs &minus;{abs(q["drop"]) * 100:.1f}%</small></span></div>
+<div class="stat"><span class="k">Winning trades</span><span class="v">{(bt["win_rate"] or 0) * 100:.0f}%</span></div>
+<div class="stat"><span class="k">Trades a year</span><span class="v">{bt["trades_per_year"]:.0f}</span></div></div>
+<p class="warn">This test uses today's {esc(cfg["name"])} list, so it includes later winners and leaves out companies that dropped out of the index.
+Real results would very likely have been lower. Refreshed {pd.Timestamp(bt["computed_on"]):%b %d, %Y}.</p></div></details>'''
+
+
+def rules_block(cfg, cls="o5"):
+    return f'''<section class="card sec {cls}"><h2>The rules</h2><ul class="rules">
+<li><b>Every Friday</b>Rank the {esc(cfg["name"])} by 3-month gain.</li>
+<li><b>Buy</b>Own the top {cfg["top_n"]}, with equal money in each new stock.</li>
+<li><b>Sell</b>When a stock falls below rank {cfg["exit_rank"]}.</li>
+<li><b>Safety switch</b>When {LABEL} closes below its {cfg["sma_days"]}-day average, sell everything and wait in cash.</li></ul></section>'''
+
+
+def set_market(cfg):
+    global SYM, LABEL
+    SYM, LABEL = cfg.get("symbol", "$"), cfg.get("bench_label", "QQQ")
+
+
+# --------------------------------------------------------------------------
+# A market's page
+# --------------------------------------------------------------------------
+def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, prices, bt, markets, ledger=None):
+    set_market(cfg)
+    start_val = cfg["capital"]
+    now_val = acct["paper_account"].iloc[-1]
+    qqq_val = acct["qqq_same_money"].iloc[-1]
+    acct_ret = (now_val / start_val - 1) * 100
+    qqq_ret = (qqq_val / start_val - 1) * 100
+    diff = now_val - qqq_val
+    top_n, exit_rank = cfg["top_n"], cfg["exit_rank"]
+    start = pd.Timestamp(cfg["start_date"])
+    held = {h["ticker"] for h in holdings}
+    on = status["risk_on"]
+    gap = (status["qqq"] / status["sma"] - 1) * 100
+
+    closed = trades[trades["action"] == "SELL"]
+    wins = int((closed["gain_pct"] > 0).sum())
+    record = f"{wins} of {len(closed)} sells gained" if len(closed) else "No sells yet"
+    if ledger and ledger.get("dividends_received"):
+        record += f" &middot; {money(ledger['dividends_received'], False)} dividends"
+
+    def updown(r):
+        return f"{'Up' if r >= 0 else 'Down'} {abs(r):.1f}%"
+
+    # This week's trades, each with its 52-week range at the trade
+    week = trades[trades["date"] == last_rebal.date()]
+    rows = []
+    for t in week.to_dict("records"):
+        day = pd.Timestamp(t["date"])
+        lo, hi = week52(prices, t["ticker"], day)
+        buy = t["action"] == "BUY"
+        verb = "bought" if buy else "sold"
+        right = (f'<span class="tag buy">Buy</span>' if buy else chip(t["gain_pct"]))
+        rows.append(f'''<div class="rl"><div class="rltop"><div class="nm">
+<b>{"" if buy else '<span class="tag sell">Sell</span> '}{esc(t["ticker"])}</b>
+<small>{esc(name(t["ticker"]))} &middot; {verb} at {money(t["price"])}</small></div>{right}</div>
+{range_bar(t["price"], lo, hi, verb)}</div>''')
+    if week.empty:
+        week_html = '<p class="empty">No trades this week. Every holding still ranks high enough to keep.</p>'
+    else:
+        week_html = f'<div class="rowlist">{"".join(rows)}</div>'
+    started = last_rebal.normalize() == start.normalize()
+    week_title = "Started the account" if started else "This week's trades"
+    week_lead = "The bar is each stock's last 52 weeks, low to high. The dot is where it traded."
+
+    # What you own, or what it would buy
+    if holdings:
+        hrows = []
+        for h in holdings:
+            lo, hi = week52(prices, h["ticker"], status["last_day"])
+            hrows.append(f'''<div class="rl"><div class="rltop"><div class="nm"><b>{esc(h["ticker"])}</b>
+<small>{esc(name(h["ticker"]))} &middot; {money(h["value"])}</small></div>{chip(h["gain_pct"])}</div>
+{rank_bar(h["rank"], top_n, exit_rank)}{range_bar(h["price"], lo, hi)}</div>''')
+        own_html = f'''<section class="card sec full o4"><div><h2>What you own</h2>
+<p class="lead">Top bar: rank (green top {top_n}, yellow keep, red sell). Bottom bar: 52-week range.</p></div>
+<div class="rowlist">{"".join(hrows)}</div></section>
+<section class="card sec full o4"><h2>Where your money is</h2>{sector_bar(holdings, status["cash"])}</section>'''
+    else:
+        nxt = [t for t in watch.index if t not in held][:top_n]
+        nrows = "".join(f'''<div class="rl"><div class="rltop"><div class="nm"><b>{esc(t)}</b>
+<small>{esc(name(t))}</small></div><span class="chip pos">+{watch[t] * 100:.0f}%</span></div>
+{rank_bar(i, top_n, exit_rank)}</div>''' for i, t in enumerate(nxt, 1))
+        own_html = f'''<section class="card sec full o4"><div><h2>Next buys if the switch flips</h2>
+<p class="lead">Today's top {top_n} by 3-month gain. If {LABEL} closes above {money(status["sma"])} on a Friday, these are bought at that close.</p></div>
+<div class="rowlist">{nrows}</div></section>'''
+
+    # Charts
+    b = cfg["benchmark"]
+    sw = pd.DataFrame({"qqq": prices[b], "sma": prices[b].rolling(cfg["sma_days"]).mean()}
+                      ).dropna().loc[:status["last_day"]].iloc[-130:]
+    switch_lead = (f"{LABEL} is above the dashed line, so the rules stay invested." if on else
+                   f"{LABEL} is below the dashed line, so the rules sit in cash. Shaded days are cash days.")
+    acct_html = (account_chart(acct) if len(acct) > 1 else
+                 '<p class="empty">The chart starts after the first full day.</p>')
+
+    hist = "".join(f'''<tr><td>{pd.Timestamp(t["date"]):%b %d, %Y}</td>
+<td><span class="tag {'buy' if t["action"] == "BUY" else 'sell'}">{t["action"].title()}</span></td>
+<td><b>{esc(t["ticker"])}</b></td><td>{money(t["price"])}</td><td>{money(t["value"], False)}</td><td>{chip(t["gain_pct"])}</td></tr>'''
+                   for t in trades.iloc[::-1].to_dict("records"))
+
+    header = f'''<header class="hdr"><div class="wrap hin">
+<a class="back" href="../">&#8249; All markets</a>
+<div class="brandrow">{logo.svg()}<div><div class="brand">Pixel Invest</div><h1 class="htitle">{esc(cfg["name"])} Momentum</h1></div></div>
 <div class="hval"><div><div class="big">{money(now_val)}</div>
-<div class="sub">{updown(acct_ret)} since {start:%b %d} &middot; QQQ {updown(qqq_ret).lower()} &middot; prices as of {status["last_day"]:%a %b %d}</div></div>
+<div class="sub">{updown(acct_ret)} since {start:%b %d} &middot; {LABEL} {updown(qqq_ret).lower()} &middot; prices as of {status["last_day"]:%a %b %d}</div></div>
 <span class="state {'on' if on else 'off'}">{'Invested' if on else 'In cash'}</span></div>
-</div></header>
-
-<main class="wrap">
+</div></header>'''
+    main = f'''<main class="wrap">
 <div class="kpis full">
  <div class="kpi"><span class="k">Account</span><span class="v">{money(now_val, False)}</span><span class="s {'pos' if acct_ret >= 0 else 'neg'}">{'+' if acct_ret >= 0 else '&minus;'}{abs(acct_ret):.1f}% since {start:%b %d}</span></div>
- <div class="kpi"><span class="k">Same money in QQQ</span><span class="v">{money(qqq_val, False)}</span><span class="s">You're {money(abs(diff), False)} {'ahead' if diff >= 0 else 'behind'}</span></div>
- <div class="kpi"><span class="k">Safety switch</span><span class="v {'pos' if on else 'neg'}">{'Invested' if on else 'Cash'}</span><span class="s">QQQ {abs(gap):.1f}% {'above' if gap >= 0 else 'under'} the line</span></div>
+ <div class="kpi"><span class="k">Same money in {LABEL}</span><span class="v">{money(qqq_val, False)}</span><span class="s">You're {money(abs(diff), False)} {'ahead' if diff >= 0 else 'behind'}</span></div>
+ <div class="kpi"><span class="k">Safety switch</span><span class="v {'pos' if on else 'neg'}">{'Invested' if on else 'Cash'}</span><span class="s">{LABEL} {abs(gap):.1f}% {'above' if gap >= 0 else 'under'} the line</span></div>
  <div class="kpi"><span class="k">Stocks held</span><span class="v">{len(holdings)} of {top_n}</span><span class="s">{record}</span></div>
 </div>
 
 <div class="col">
-<section class="card sec o1"><div><h2>Your account vs. just holding QQQ</h2><p class="lead">Started {start:%b %d} with {money(start_val, False)}. Tap a point for that day.</p></div>
-<div class="key"><span><i style="background:{GOLD_TEXT}"></i>Your account</span><span><i style="background:{T4}"></i>Same money in QQQ</span></div>
+<section class="card sec o1"><div><h2>Your account vs. just holding {LABEL}</h2><p class="lead">Started {start:%b %d} with {money(start_val, False)}. Tap a point for that day.</p></div>
+<div class="key"><span><i style="background:{GOLD_TEXT}"></i>Your account</span><span><i style="background:{T4}"></i>Same money in {LABEL}</span></div>
 {acct_html}</section>
 
-<section class="card sec o2"><div><h2>Safety switch: QQQ vs. its 200-day average</h2><p class="lead">{switch_lead}
-Today QQQ is {status["qqq"]:.2f} and the line is {status["sma"]:.2f}.</p></div>
-<div class="key"><span><i style="background:{T1}"></i>QQQ</span><span><i style="background:{GOLD}"></i>200-day average</span></div>
+<section class="card sec o2"><div><h2>Safety switch: {LABEL} vs. its 200-day average</h2><p class="lead">{switch_lead}
+Today {LABEL} is {status["qqq"]:.2f} and the line is {status["sma"]:.2f}.</p></div>
+<div class="key"><span><i style="background:{T1}"></i>{LABEL}</span><span><i style="background:{GOLD}"></i>200-day average</span></div>
 {switch_chart(sw)}</section>
-<section class="card sec o5"><h2>The rules</h2><ul class="rules">
-<li><b>Every Friday</b>Rank the Nasdaq-100 by 3-month gain.</li>
-<li><b>Buy</b>Own the top {top_n}, with equal money in each new stock.</li>
-<li><b>Sell</b>When a stock falls below rank {exit_rank}.</li>
-<li><b>Safety switch</b>When QQQ closes below its {cfg["sma_days"]}-day average, sell everything and wait in cash.</li></ul></section>
+{rules_block(cfg)}
 </div>
 
 <div class="col">
@@ -406,13 +508,88 @@ Today QQQ is {status["qqq"]:.2f} and the line is {status["sma"]:.2f}.</p></div>
 </div>
 {own_html}
 
-<div class="col full o6">{bt_html}
+<div class="col full o6">{backtest_block(cfg, bt)}
 <details class="card tuck"><summary>Every trade ({len(trades)})</summary><div class="scroll" style="margin-top:10px"><table>
 <tr><th>Date</th><th>Action</th><th>Stock</th><th>Price</th><th>Amount</th><th>Result</th></tr>{hist}</table></div></details>
-<p class="note">Pretend money only: trades at each Friday's closing price, no fees. Updates itself every weekend.
-Last updated {updated:%b %d, %Y %I:%M %p} New York time. Past and paper results don't guarantee future returns.</p></div>
-</main></body></html>"""
-    path = os.path.join(folder, "dashboard.html")
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(page)
-    return path, now_val, qqq_val, week
+{updated_note(cfg)}</div>
+</main>'''
+    _SUMMARIES[cfg["slug"]] = {**(_SUMMARIES.get(cfg["slug"]) or {}), "risk_on": on}
+    page = page_shell(f"{esc(cfg['name'])} &middot; Pixel Invest", "../", markets, cfg["slug"], header, main)
+    return page, now_val, qqq_val, week
+
+
+def build_waiting(cfg, bt, markets):
+    """Page for a market that hasn't started trading: its rules and backtest."""
+    set_market(cfg)
+    if cfg.get("active", True) and cfg.get("start_date"):
+        d = pd.Timestamp(cfg["start_date"])
+        starts = f"Starts {d:%b %d}"
+        when = (f"The account makes its first trades at the close on {d:%A, %B %d}: the top {cfg['top_n']} by "
+                f"3-month gain, unless {LABEL} is below its 200-day average. This page fills in after that run.")
+    else:
+        starts = "Not started"
+        when = "This market starts once its portfolio size is picked from the backtest below."
+    header = f'''<header class="hdr"><div class="wrap hin">
+<a class="back" href="../">&#8249; All markets</a>
+<div class="brandrow">{logo.svg()}<div><div class="brand">Pixel Invest</div><h1 class="htitle">{esc(cfg["name"])} Momentum</h1></div></div>
+<div class="hval"><div><div class="big">{money(cfg["capital"])}</div>
+<div class="sub">A {cfg["currency"]} paper account, compared with {LABEL}</div></div><span class="state wait">{starts}</span></div>
+</div></header>'''
+    main = f'''<main class="wrap">
+<section class="card sec full"><h2>Not trading yet</h2><p class="lead">{when}</p></section>
+<div class="col full">{backtest_block(cfg, bt, open_=True)}</div>
+{rules_block(cfg, "full")}
+<div class="col full">{updated_note(cfg)}</div>
+</main>'''
+    return page_shell(f"{esc(cfg['name'])} &middot; Pixel Invest", "../", markets, cfg["slug"], header, main)
+
+
+# --------------------------------------------------------------------------
+# Home: one card per market
+# --------------------------------------------------------------------------
+def mini_spark(points, w=120, h=40):
+    if len(points) < 2:
+        return f'<svg viewBox="0 0 {w} {h}" aria-hidden="true"><line x1="0" x2="{w}" y1="{h / 2}" y2="{h / 2}" stroke="{T5}" stroke-dasharray="3 3"/></svg>'
+    vals = [v for p in points for v in p]
+    lo, hi = min(vals), max(vals)
+    span = (hi - lo) or 1
+    xs = [2 + i / (len(points) - 1) * (w - 4) for i in range(len(points))]
+    y = lambda v: 3 + (1 - (v - lo) / span) * (h - 6)
+    a = " ".join(f"{xs[i]:.1f},{y(p[0]):.1f}" for i, p in enumerate(points))
+    q = " ".join(f"{xs[i]:.1f},{y(p[1]):.1f}" for i, p in enumerate(points))
+    return (f'<svg viewBox="0 0 {w} {h}" aria-hidden="true"><polyline points="{q}" fill="none" stroke="{T5}" stroke-width="1.5" '
+            f'stroke-dasharray="4 3"/><polyline points="{a}" fill="none" stroke="{GOLD_TEXT}" stroke-width="2.5" stroke-linejoin="round"/>'
+            f'<circle cx="{xs[-1]:.1f}" cy="{y(points[-1][0]):.1f}" r="3" fill="{GOLD_TEXT}"/></svg>')
+
+
+def build_home(markets, summary_path):
+    load_summaries(markets, summary_path)
+    cards = []
+    for m in markets:
+        set_market(m)
+        s = _SUMMARIES.get(m["slug"])
+        label, cls = summary_state(m)
+        sub = f'{esc(m["about"])} &middot; compared with {LABEL} &middot; {m["currency"]}'
+        if m.get("active", True) and s:
+            ret = (s["value"] / s["capital"] - 1) * 100
+            diff = s["value"] - s["bench_value"]
+            body = (f'<div class="mrow"><div><div class="mval">{money(s["value"], False)}<small>{m["currency"]}</small></div>'
+                    f'<div class="msub"><span class="{"pos" if ret >= 0 else "neg"}">{"+" if ret >= 0 else "&minus;"}{abs(ret):.1f}%</span>'
+                    f' since {pd.Timestamp(s["start"]):%b %d} &middot; {money(abs(diff), False)} {"ahead of" if diff >= 0 else "behind"} {LABEL}</div></div>'
+                    f'{mini_spark(s["spark"])}</div>'
+                    f'<div class="wk"><span>This week: {esc(s["week"])}</span><b>Open &#8250;</b></div>')
+        else:
+            msg = (f"First trades at the close on {pd.Timestamp(m['start_date']):%a %b %d}"
+                   if m.get("active", True) and m.get("start_date") else "Starts once its size is picked from the backtest")
+            body = (f'<div class="mrow"><div><div class="mval dim">{money(m["capital"], False)}<small>{m["currency"]}</small></div>'
+                    f'<div class="msub">{msg}</div></div></div>'
+                    f'<div class="wk"><span>See how the rules tested.</span><b>Open &#8250;</b></div>')
+        cards.append(f'''<a class="mcard" href="{m["slug"]}/"><div class="mtop"><div><div class="mname">{esc(m["name"])}</div>
+<div class="msub">{sub}</div></div><span class="state {cls}">{"In cash" if label == "Cash" else label}</span></div>{body}</a>''')
+    header = f'''<header class="hdr"><div class="wrap hin">
+<div class="brandrow">{logo.svg()}<div><div class="brand">Pixel Invest</div><h1 class="htitle">All markets</h1></div></div>
+<div class="sub">Pretend money. Each market has its own account, in its own currency. Updated every weekend.</div>
+</div></header>'''
+    main = f'''<main class="wrap"><div class="mcards full">{"".join(cards)}</div>
+<p class="note full">Past and paper results don't guarantee future returns. Tap a market for its trades, charts and rules.</p></main>'''
+    return page_shell("Pixel Invest", "", markets, None, header, main)

@@ -1,32 +1,36 @@
 """
-Paper Trader - Nasdaq-100 weekly momentum (3-month version)
-==========================================================
+Pixel Invest - weekly momentum paper trading, one account per market
+====================================================================
 
-Run once a week, ideally on the weekend after Friday's close:
+GitHub runs this every weekend (see .github/workflows). To run it by hand:
     ./run_paper_trader.command        (Mac: double-click it in Finder)
     .venv/bin/python paper_trader.py  (or from a terminal)
 
-What it does
+For each market in markets.py it:
   1. Downloads recent prices from Yahoo Finance.
-  2. Moves the paper account forward from where it stopped last time:
-       - rank Nasdaq-100 stocks by their 3-month (63 trading day) return
-       - hold the top 10, equal money in each new position
-       - sell a holding when it falls below rank 20
-       - safety switch: all cash when QQQ closes below its 200-day average
+  2. Moves that market's paper account forward from where it stopped:
+       - rank the market's stocks by their 3-month (63 trading day) return
+       - hold the top N, equal money in each new position
+       - sell a holding when it falls below the exit rank
+       - safety switch: all cash when the market's index fund closes below
+         its 200-day average
      Trades happen at the closing price on the last trading day of each
      finished week. Nothing is connected to any real brokerage account.
-  3. Writes a dashboard (paper_trading/dashboard.html) and opens it.
+  3. Writes that market's page (docs/<slug>/), then the Home page (docs/).
 
-Files it keeps in the "paper_trading" folder
-  paper_account.json   settings + the current portfolio (cash, shares)
+Files per market, in data/<slug>/
+  paper_account.json   start date + the current portfolio (cash, shares)
   trades.csv           every paper trade - only ever added to, never redone
-  account_value.csv    daily account value vs QQQ - also only added to
-  dashboard.html       the page you look at
+  account_value.csv    daily account value vs the index fund - also only added to
+  backtest.json        monthly backtest cache
+  summary.json         the numbers the Home page shows
 
 Past trades are a permanent record: later price revisions or edits to the
-stock list never change them. Stock splits are applied to shares you hold.
+stock list never change them. Stock splits are applied to shares you hold;
+in markets with "dividends": True, dividends are paid into cash (and the
+index fund comparison reinvests its own).
 
-To start over: delete paper_trading/paper_account.json.
+To start a market over: delete data/<slug>/paper_account.json.
 """
 
 import json
@@ -40,27 +44,34 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from momentum_backtest import NASDAQ_100, BENCHMARK  # same stock list
 import dashboard
 import insights
+from markets import MARKETS
 
-FOLDER = os.path.join(HERE, "paper_trading")
-STATE = os.path.join(FOLDER, "paper_account.json")
-TRADES = os.path.join(FOLDER, "trades.csv")
-VALUES = os.path.join(FOLDER, "account_value.csv")
-BACKTEST = os.path.join(FOLDER, "backtest.json")      # monthly backtest cache
-PAGE = os.path.join(HERE, "docs", "index.html")      # the public web page (GitHub Pages)
+DATA = os.path.join(HERE, "data")
+DOCS = os.path.join(HERE, "docs")
+BENCHMARK = "QQQ"         # default index fund (tests and older callers)
 
-DEFAULTS = {"capital": 10_000.0, "top_n": 10, "exit_rank": 20,
-            "lookback": 63, "sma_days": 200, "cost_pct": 0.0}
+DEFAULTS = {"capital": 10_000.0, "top_n": 10, "exit_rank": 20, "lookback": 63,
+            "sma_days": 200, "cost_pct": 0.0, "benchmark": BENCHMARK, "bench_label": "QQQ",
+            "dividends": False, "symbol": "$", "currency": "US$"}
 TRADE_COLS = ["date", "action", "ticker", "shares", "price", "value", "gain_pct", "reason"]
-VALUE_COLS = ["date", "paper_account", "cash", "positions", "qqq_same_money"]
+VALUE_COLS = ["date", "paper_account", "cash", "positions", "qqq_same_money"]   # last = index fund
 HISTORY_DAYS = 450        # calendar days of prices needed before the first day we process
 MARKET_CLOSE_ET = time(16, 30)
+STALE_DAYS = 8            # only fail loudly if an account hasn't updated for this long
 
 
 class DataError(RuntimeError):
     pass
+
+
+def paths(slug):
+    folder = os.path.join(DATA, slug)
+    return dict(folder=folder, state=os.path.join(folder, "paper_account.json"),
+                trades=os.path.join(folder, "trades.csv"), values=os.path.join(folder, "account_value.csv"),
+                backtest=os.path.join(folder, "backtest.json"), summary=os.path.join(folder, "summary.json"),
+                page=os.path.join(DOCS, slug, "index.html"))
 
 
 # --------------------------------------------------------------------------
@@ -76,7 +87,9 @@ def download(tickers, start):
                       progress=False, threads=True)
     closes = raw["Close"].dropna(how="all", axis=1).sort_index()
     splits = raw["Stock Splits"].reindex(columns=closes.columns).fillna(0.0).sort_index()
-    return closes, splits
+    divs = (raw["Dividends"].reindex(columns=closes.columns).fillna(0.0).sort_index()
+            if "Dividends" in raw.columns.get_level_values(0) else splits * 0)
+    return closes, splits, divs
 
 
 def load_csv_prices(path):
@@ -85,12 +98,13 @@ def load_csv_prices(path):
     sp = path.replace(".csv", "_splits.csv")
     splits = (pd.read_csv(sp, index_col=0, parse_dates=True).sort_index()
               if os.path.exists(sp) else pd.DataFrame(0.0, index=closes.index, columns=closes.columns))
-    return closes, splits.reindex(index=closes.index, columns=closes.columns).fillna(0.0)
+    splits = splits.reindex(index=closes.index, columns=closes.columns).fillna(0.0)
+    return closes, splits, splits * 0
 
 
-def clean(prices):
-    """Drop unfinished/partial days (no QQQ price or most stocks missing)."""
-    prices = prices[prices[BENCHMARK].notna()]
+def clean(prices, benchmark=BENCHMARK):
+    """Drop unfinished/partial days (no index fund price or most stocks missing)."""
+    prices = prices[prices[benchmark].notna()]
     prices = prices[prices.notna().mean(axis=1) > 0.8]
     return prices.ffill(limit=5)        # ride over short data gaps
 
@@ -109,10 +123,14 @@ def now_eastern():
 # --------------------------------------------------------------------------
 # Ledger engine
 # --------------------------------------------------------------------------
-def new_ledger(start_day, qqq_price, capital):
-    return {"start": str(start_day), "qqq_start": float(qqq_price), "cash": float(capital),
-            "positions": {}, "last_processed": None, "last_rebalance": None,
-            "data_through": None}
+def new_ledger(start_day, bench_price, capital, dividends=False):
+    led = {"start": str(start_day), "qqq_start": float(bench_price), "cash": float(capital),
+           "positions": {}, "last_processed": None, "last_rebalance": None,
+           "data_through": None}
+    if dividends:
+        led["bench_units"] = float(capital) / float(bench_price)   # index fund, dividends reinvested
+        led["dividends_received"] = 0.0
+    return led
 
 
 def rebalance_days(days, cutoff, first_day=None):
@@ -138,16 +156,19 @@ def rebalance_days(days, cutoff, first_day=None):
     return rebal, known
 
 
-def advance(prices, splits, cfg, ledger, cutoff):
+def advance(prices, splits, cfg, ledger, cutoff, dividends=None):
     """Move the ledger forward through every settled day after last_processed.
 
-    Returns (new_trades, new_values, split_notes). Mutates `ledger`.
+    Returns (new_trades, new_values, notes). Mutates `ledger`.
     """
-    stocks = [c for c in prices.columns if c != BENCHMARK]
-    bench = prices[BENCHMARK]
+    b = cfg.get("benchmark", BENCHMARK)
+    label = cfg.get("bench_label", b)
+    stocks = [c for c in prices.columns if c != b]
+    bench = prices[b]
     sma = bench.rolling(cfg["sma_days"]).mean()
     mom = prices[stocks] / prices[stocks].shift(cfg["lookback"]) - 1
     last_px = prices.ffill()            # value held stocks at their last known price
+    pay_divs = bool(cfg.get("dividends")) and dividends is not None and "bench_units" in ledger
 
     # Splits Yahoo has adjusted for since our last download apply to shares we
     # carried in (everything in this download is already in post-split units).
@@ -176,9 +197,18 @@ def advance(prices, splits, cfg, ledger, cutoff):
     pos, trades, values = ledger["positions"], [], []
     for day in days:
         px = prices.loc[day]
+        if pay_divs and day in dividends.index:
+            # Paid on the ex-date to whoever held at the previous close.
+            dv = dividends.loc[day]
+            for t, p in pos.items():
+                if t in dv and dv[t] > 0:
+                    ledger["cash"] += p["shares"] * dv[t]
+                    ledger["dividends_received"] += p["shares"] * dv[t]
+            if b in dv and dv[b] > 0 and day != start:
+                ledger["bench_units"] *= 1 + dv[b] / bench[day]
         if day in rebal:
             if pd.isna(sma[day]):
-                raise DataError(f"Not enough QQQ history for the {cfg['sma_days']}-day average on {day.date()}")
+                raise DataError(f"Not enough {label} history for the {cfg['sma_days']}-day average on {day.date()}")
             risk_on = bool(bench[day] > sma[day])
             m = mom.loc[day].dropna()
             ranks = m.rank(ascending=False)
@@ -189,7 +219,7 @@ def advance(prices, splits, cfg, ledger, cutoff):
                 val = pos[t]["shares"] * p
                 ledger["cash"] += val * (1 - cfg["cost_pct"])
                 if not risk_on:
-                    why = "Safety switch: QQQ below 200-day avg"
+                    why = f"Safety switch: {label} below 200-day avg"
                 elif t not in ranks:
                     why = "No price data (left the list?)"
                 else:
@@ -214,9 +244,11 @@ def advance(prices, splits, cfg, ledger, cutoff):
                                            reason=f"Rank {int(ranks[t])} by 3-month gain"))
             ledger["last_rebalance"] = str(day.date())
         val = ledger["cash"] + sum(p["shares"] * last_px.at[day, t] for t, p in pos.items())
+        bench_val = (ledger["bench_units"] * bench[day] if "bench_units" in ledger
+                     else cfg["capital"] * bench[day] / ledger["qqq_start"])
         values.append(dict(date=str(day.date()), paper_account=round(val, 2),
                            cash=round(ledger["cash"], 2), positions=len(pos),
-                           qqq_same_money=round(cfg["capital"] * bench[day] / ledger["qqq_start"], 2)))
+                           qqq_same_money=round(bench_val, 2)))
         ledger["last_processed"] = str(day.date())
     return trades, values, notes
 
@@ -225,6 +257,7 @@ def advance(prices, splits, cfg, ledger, cutoff):
 # Files
 # --------------------------------------------------------------------------
 def atomic_write(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
@@ -239,17 +272,18 @@ def read_ledger_csv(path, cols, through):
     return df[df["date"] <= through][cols]
 
 
-def save(cfg, ledger, trades, values):
-    atomic_write(TRADES, trades.to_csv(index=False))
-    atomic_write(VALUES, values.to_csv(index=False))
-    atomic_write(STATE, json.dumps({**cfg, "ledger": ledger}, indent=2))   # last: commits the run
+def save(p, state, ledger, trades, values):
+    atomic_write(p["trades"], trades.to_csv(index=False))
+    atomic_write(p["values"], values.to_csv(index=False))
+    atomic_write(p["state"], json.dumps({**state, "ledger": ledger}, indent=2))   # last: commits the run
 
 
 # --------------------------------------------------------------------------
 def status_for_display(prices, cfg, ledger):
     """What the dashboard needs, from the latest settled prices."""
-    stocks = [c for c in prices.columns if c != BENCHMARK]
-    bench = prices[BENCHMARK]
+    b = cfg.get("benchmark", BENCHMARK)
+    stocks = [c for c in prices.columns if c != b]
+    bench = prices[b]
     sma = bench.rolling(cfg["sma_days"]).mean()
     mom = prices[stocks] / prices[stocks].shift(cfg["lookback"]) - 1
     last = prices.index[-1]
@@ -282,20 +316,20 @@ def notify(title, message):
         pass
 
 
-def get_prices(tickers, start, attempts=3, wait=60):
+def get_prices(tickers, start, benchmark=BENCHMARK, attempts=3, wait=60):
     """Download with retries; refuse data that's clearly incomplete."""
     import time as _time
     problem = None
     for i in range(attempts):
         try:
-            closes, splits = download(tickers, start)
+            closes, splits, divs = download(tickers, start)
             missing = [t for t in tickers if t not in closes]
-            if BENCHMARK in missing:
-                problem = "Yahoo Finance returned no QQQ prices"
+            if benchmark in missing:
+                problem = f"Yahoo Finance returned no {benchmark} prices"
             elif len(missing) > len(tickers) * 0.1:
                 problem = f"Yahoo Finance returned no prices for {len(missing)} of {len(tickers)} stocks"
             else:
-                return closes, splits
+                return closes, splits, divs
         except Exception as e:                       # network errors, Yahoo hiccups
             problem = f"price download failed ({type(e).__name__}: {e})"
         if i < attempts - 1:
@@ -304,119 +338,164 @@ def get_prices(tickers, start, attempts=3, wait=60):
     raise DataError(problem)
 
 
-def run(a):
-    os.makedirs(FOLDER, exist_ok=True)
-    cutoff = date.fromisoformat(a.today) if a.today else final_cutoff(now_eastern())
+def week_line(trades_this_week, risk_on, top_n, started):
+    sells = [t for t in trades_this_week if t["action"] == "SELL"]
+    buys = [t for t in trades_this_week if t["action"] == "BUY"]
+    if started and buys:
+        return f"Started: bought {len(buys)}."
+    if sells and not buys and not risk_on:
+        return f"Sold all {len(sells)} (safety switch)." if len(sells) > 1 else "Sold 1 (safety switch)."
+    parts = []
+    if buys:
+        parts.append(f"bought {len(buys)}")
+    if sells:
+        parts.append(f"sold {len(sells)}")
+    if parts:
+        s = " and ".join(parts)
+        return s[0].upper() + s[1:] + "."
+    return "No trades." if risk_on else "Still in cash."
 
-    saved = json.load(open(STATE)) if os.path.exists(STATE) else None
-    cfg = {**DEFAULTS, **{k: v for k, v in (saved or {}).items() if k != "ledger"}}
+
+def run_market(m, a, cutoff):
+    p = paths(m["slug"])
+    os.makedirs(p["folder"], exist_ok=True)
+    saved = json.load(open(p["state"])) if os.path.exists(p["state"]) else None
+    state = {k: v for k, v in (saved or {}).items() if k != "ledger"}
+    cfg = {**DEFAULTS, **m, **({"start_date": state["start_date"]} if "start_date" in state else {})}
     ledger = (saved or {}).get("ledger")
+    b = cfg["benchmark"]
     anchor = date.fromisoformat((ledger or {}).get("last_processed") or cfg.get("start_date") or str(cutoff))
 
     held = set((ledger or {}).get("positions", {}))
-    tickers = sorted((set(NASDAQ_100) | held) - {BENCHMARK}) + [BENCHMARK]
+    tickers = sorted((set(cfg["tickers"]) | held) - {b}) + [b]
     if a.prices_csv:
-        closes, splits = load_csv_prices(a.prices_csv)
+        closes, splits, divs = load_csv_prices(a.prices_csv)
     else:
-        closes, splits = get_prices(tickers, anchor - timedelta(days=HISTORY_DAYS))
-    if BENCHMARK not in closes:
-        raise DataError("no QQQ prices")
+        closes, splits, divs = get_prices(tickers, anchor - timedelta(days=HISTORY_DAYS), b)
+    if b not in closes:
+        raise DataError(f"no {b} prices")
     gone = sorted(held - set(closes.columns))
     if gone:
         raise DataError(f"no prices at all for stocks you hold: {', '.join(gone)}")
     data_through = str(closes.index[-1].date())
-    prices = clean(closes)
+    prices = clean(closes, b)
     prices = prices[prices.index.date < cutoff]
     if prices.empty:
         raise DataError("no finished trading days in the price data")
 
+    if ledger is None and cfg.get("start_date") and prices.index[-1] < pd.Timestamp(cfg["start_date"]):
+        # Not started yet: show the waiting page until its first trading day closes.
+        bt = None if a.prices_csv else insights.backtest(cfg, p["backtest"])
+        atomic_write(p["page"], dashboard.build_waiting(cfg, bt, MARKETS))
+        print(f"[{m['name']}] starts at the close on {cfg['start_date']}; page shows its backtest")
+        return None
     if ledger is None:
         if "start_date" not in cfg:
             cfg["start_date"] = str(prices.index[-1].date())
-            print(f"New paper account: ${cfg['capital']:,.2f} starting {cfg['start_date']}")
+            print(f"New paper account: {cfg['symbol']}{cfg['capital']:,.2f} starting {cfg['start_date']}")
         else:
-            print(f"Building the ledger from {cfg['start_date']} (first run of this version)")
+            print(f"Building the ledger from {cfg['start_date']}")
         first = prices.index[prices.index >= pd.Timestamp(cfg["start_date"])][0]
-        ledger = new_ledger(first.date(), prices.at[first, BENCHMARK], cfg["capital"])
+        ledger = new_ledger(first.date(), prices.at[first, b], cfg["capital"], cfg["dividends"])
+    state["start_date"] = cfg["start_date"]
 
-    old_trades = read_ledger_csv(TRADES, TRADE_COLS, ledger["last_processed"])
-    old_values = read_ledger_csv(VALUES, VALUE_COLS, ledger["last_processed"])
-    new_trades, new_values, notes = advance(prices, splits, cfg, ledger, cutoff)
+    old_trades = read_ledger_csv(p["trades"], TRADE_COLS, ledger["last_processed"])
+    old_values = read_ledger_csv(p["values"], VALUE_COLS, ledger["last_processed"])
+    new_trades, new_values, notes = advance(prices, splits, cfg, ledger, cutoff, divs)
     ledger["data_through"] = data_through
     trades = pd.concat([old_trades, pd.DataFrame(new_trades, columns=TRADE_COLS)], ignore_index=True)
     values = pd.concat([old_values, pd.DataFrame(new_values, columns=VALUE_COLS)], ignore_index=True)
-    save(cfg, ledger, trades, values)
+    save(p, state, ledger, trades, values)
 
-    # ---- dashboard
+    # ---- page and Home summary
     acct = values.assign(date=pd.to_datetime(values["date"])).set_index("date")
     shown = trades.assign(date=pd.to_datetime(trades["date"]).dt.date)
     settled = prices.loc[:ledger["last_processed"]]
     holdings, status, watch = status_for_display(settled, cfg, ledger)
     last_rebal = pd.Timestamp(ledger["last_rebalance"])
-    bt = None if a.prices_csv else insights.backtest(cfg, BACKTEST)
-    path, now_val, qqq_val, _ = dashboard.build_dashboard(
-        cfg, acct, shown, holdings, status, watch, last_rebal, settled, FOLDER, bt)
-    os.makedirs(os.path.dirname(PAGE), exist_ok=True)
-    shutil.copyfile(path, PAGE)
+    bt = None if a.prices_csv else insights.backtest(cfg, p["backtest"])
+    html, now_val, bench_val, week = dashboard.build_dashboard(
+        cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger)
+    atomic_write(p["page"], html)
+    started = last_rebal.normalize() == pd.Timestamp(cfg["start_date"]).normalize()
+    summary = dict(value=now_val, bench_value=bench_val, start=cfg["start_date"], capital=cfg["capital"],
+                   risk_on=status["risk_on"], held=len(holdings), last_day=str(status["last_day"].date()),
+                   week=week_line(week.to_dict("records"), status["risk_on"], cfg["top_n"], started),
+                   spark=[[r.paper_account, r.qqq_same_money] for r in values.tail(60).itertuples()],
+                   updated=str(date.today()))
+    atomic_write(p["summary"], json.dumps(summary, default=float))
 
-    print(f"Prices settled through {ledger['last_processed']}")
+    sym = cfg["symbol"]
+    print(f"[{m['name']}] prices settled through {ledger['last_processed']}")
     for n in notes:
         print(f"  Applied stock split: {n}")
-    print(f"Paper account: ${now_val:,.2f}   Same money in QQQ: ${qqq_val:,.2f}")
-    print(f"Safety switch: {'INVESTED' if status['risk_on'] else 'CASH'}")
-    print(f"New trades this run: {len(new_trades)}")
+    print(f"  Paper account: {sym}{now_val:,.2f}   Same money in {cfg['bench_label']}: {sym}{bench_val:,.2f}")
+    print(f"  Safety switch: {'INVESTED' if status['risk_on'] else 'CASH'}")
+    print(f"  New trades this run: {len(new_trades)}")
     for t in new_trades:
-        print(f"  {t['date']}  {t['action']:<4} {t['ticker']:<6} at ${t['price']:,.2f}")
-    print(f"Dashboard: {path}")
-    return dict(path=path, trades=new_trades, now=now_val, qqq=qqq_val,
-                risk_on=status["risk_on"], start=cfg["capital"])
+        print(f"    {t['date']}  {t['action']:<4} {t['ticker']:<8} at {sym}{t['price']:,.2f}")
+    return p["page"]
 
 
-def trade_message(r):
-    buys = [t["ticker"] for t in r["trades"] if t["action"] == "BUY"]
-    sells = [t["ticker"] for t in r["trades"] if t["action"] == "SELL"]
-    parts = []
-    if sells:
-        parts.append(f"Sold {len(sells)}: {', '.join(sells[:5])}{'...' if len(sells) > 5 else ''}")
-    if buys:
-        parts.append(f"Bought {len(buys)}: {', '.join(buys[:5])}{'...' if len(buys) > 5 else ''}")
-    if not r["risk_on"]:
-        parts.append("Now in cash (safety switch)")
-    ret = (r["now"] / r["start"] - 1) * 100
-    parts.append(f"Account ${r['now']:,.0f} ({ret:+.1f}%)")
-    return ". ".join(parts)
+def run_waiting_market(m):
+    """A market that isn't trading yet: its page shows the backtest so you can decide."""
+    p = paths(m["slug"])
+    cfg = {**DEFAULTS, **m}
+    bt = insights.backtest(cfg, p["backtest"])
+    atomic_write(p["page"], dashboard.build_waiting(cfg, bt, MARKETS))
+    print(f"[{m['name']}] not started yet; page shows its backtest")
 
 
-STALE_DAYS = 8      # only bother you if the account hasn't updated for this long
+def last_processed(slug):
+    p = paths(slug)["state"]
+    if not os.path.exists(p):
+        return None
+    return (json.load(open(p)).get("ledger") or {}).get("last_processed")
 
 
 def main():
     import argparse
-    ap = argparse.ArgumentParser(description="Paper trader - safe to run as often as you like")
+    ap = argparse.ArgumentParser(description="Pixel Invest - safe to run as often as you like")
+    ap.add_argument("--market", help="only this market (its slug, e.g. tsx-60)")
     ap.add_argument("--prices-csv", help="use saved prices instead of downloading (testing)")
     ap.add_argument("--today", help="pretend today's date is YYYY-MM-DD, before the close (testing)")
-    ap.add_argument("--no-open", action="store_true", help="don't open the dashboard")
+    ap.add_argument("--no-open", action="store_true", help="don't open the page")
     ap.add_argument("--auto", action="store_true",
-                    help="background mode: no browser, only speaks up after a week-long outage")
+                    help="background mode: no browser; fails only after a week-long outage")
     a = ap.parse_args()
     print(f"--- {datetime.now():%Y-%m-%d %H:%M} ---")
-    try:
-        r = run(a)
-    except Exception as e:                            # nothing is saved on any failure
-        msg = f"{e}" if isinstance(e, DataError) else f"{type(e).__name__}: {e}"
-        print(f"Stopped, nothing was changed: {msg}")
-        if a.auto:
-            last = None
-            if os.path.exists(STATE):
-                last = (json.load(open(STATE)).get("ledger") or {}).get("last_processed")
-            if last is None or (date.today() - date.fromisoformat(last)).days > STALE_DAYS:
-                notify("Paper Trader needs a look",
-                       f"Hasn't updated since {last or 'it started'}. Last error: {msg[:120]}")
-                sys.exit(1)       # a real outage: fail loudly (GitHub emails you)
-            sys.exit(0)           # a blip: tomorrow's run catches up on its own
-        raise
+    cutoff = date.fromisoformat(a.today) if a.today else final_cutoff(now_eastern())
+
+    failed, opened = [], None
+    for m in MARKETS:
+        if a.market and m["slug"] != a.market:
+            continue
+        try:
+            if m.get("active", True):
+                page = run_market(m, a, cutoff)
+                opened = opened or page
+            else:
+                run_waiting_market(m)
+        except Exception as e:            # nothing is saved for that market; others carry on
+            msg = f"{e}" if isinstance(e, DataError) else f"{type(e).__name__}: {e}"
+            print(f"[{m['name']}] stopped, nothing was changed: {msg}")
+            if not a.auto:
+                raise
+            if m.get("active", True):
+                last = last_processed(m["slug"])
+                if last is None or (date.today() - date.fromisoformat(last)).days > STALE_DAYS:
+                    failed.append(f"{m['name']} hasn't updated since {last or 'it started'}: {msg[:100]}")
+
+    home = dashboard.build_home(MARKETS, lambda slug: paths(slug)["summary"])
+    atomic_write(os.path.join(DOCS, "index.html"), home)
+    print(f"Home page: {os.path.join(DOCS, 'index.html')}")
+
+    if failed:
+        notify("Pixel Invest needs a look", " / ".join(failed))
+        print("\n".join(failed))
+        sys.exit(1)           # a real outage: fail loudly (GitHub emails you)
     if not a.auto and not a.no_open:
-        webbrowser.open("file://" + r["path"])
+        webbrowser.open("file://" + os.path.join(DOCS, "index.html"))
 
 
 if __name__ == "__main__":

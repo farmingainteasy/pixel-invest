@@ -8,7 +8,7 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from momentum_backtest import BENCHMARK, NASDAQ_100, load_prices, run_backtest, stats
+from momentum_backtest import load_prices, run_backtest, stats
 
 BACKTEST_START = "2016-01-01"
 BACKTEST_COST = 0.001          # 0.1% per trade: a little friction, to stay honest
@@ -22,7 +22,7 @@ def week_ends(index, through):
 
 def rank_history(prices, cfg, weeks=26):
     """Momentum rank of every stock at the end of each of the last `weeks` weeks."""
-    stocks = [c for c in prices.columns if c != BENCHMARK]
+    stocks = [c for c in prices.columns if c != cfg["benchmark"]]
     mom = prices[stocks] / prices[stocks].shift(cfg["lookback"]) - 1
     ends = week_ends(prices.index, prices.index[-1])[-weeks:]
     ranks = pd.DataFrame({d: mom.loc[d].dropna().rank(ascending=False) for d in ends}).T
@@ -44,7 +44,7 @@ def held_by_week(trades, ends):
 
 
 def switch_series(prices, cfg, days=260):
-    bench = prices[BENCHMARK]
+    bench = prices[cfg["benchmark"]]
     sma = bench.rolling(cfg["sma_days"]).mean()
     df = pd.DataFrame({"qqq": bench, "sma": sma}).dropna().iloc[-days:]
     return df
@@ -61,13 +61,21 @@ def _round_trips(trades):
     return gains
 
 
+def load_backtest_prices(cfg):
+    """Dividend-adjusted closes since BACKTEST_START (plus a year of warm-up)."""
+    b = cfg["benchmark"]
+    tickers = sorted(set(cfg["tickers"]) - {b}) + [b]
+    prices = load_prices(tickers, BACKTEST_START, None)
+    return prices[prices[b].notna()].ffill(limit=5)
+
+
 def compute_backtest(cfg, prices=None):
+    b = cfg["benchmark"]
     if prices is None:
-        tickers = sorted(set(NASDAQ_100) - {BENCHMARK}) + [BENCHMARK]
-        prices = load_prices(tickers, BACKTEST_START, None)
-        prices = prices[prices[BENCHMARK].notna()].ffill(limit=5)
+        prices = load_backtest_prices(cfg)
     eq, trades, _, _ = run_backtest(prices, BACKTEST_START, cfg["top_n"], cfg["exit_rank"],
-                                    cfg["lookback"], cfg["sma_days"], BACKTEST_COST, 10_000.0)
+                                    cfg["lookback"], cfg["sma_days"], BACKTEST_COST, 10_000.0,
+                                    benchmark=b)
     weekly = eq[["strategy", "qqq_buy_hold"]].resample("W-FRI").last().dropna()
     s, q = stats(eq["strategy"]), stats(eq["qqq_buy_hold"])
     gains = _round_trips(trades)
@@ -100,11 +108,14 @@ def backtest(cfg, path, today=None, refresh_days=REFRESH_DAYS):
             old = json.load(open(path))
         except ValueError:
             old = None
-    if old and (today - date.fromisoformat(old["computed_on"])).days < refresh_days:
+    params = [cfg["top_n"], cfg["exit_rank"], cfg["lookback"], cfg["sma_days"], cfg["benchmark"]]
+    if (old and old.get("params") == params
+            and (today - date.fromisoformat(old["computed_on"])).days < refresh_days):
         return old
     try:
         print("Refreshing the backtest (about once a month)...")
-        new = compute_backtest(cfg)
+        new = {**compute_backtest(cfg), "params": params}
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         tmp = path + ".tmp"
         with open(tmp, "w") as f:
             json.dump(new, f)

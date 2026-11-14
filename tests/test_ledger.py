@@ -142,3 +142,31 @@ def test_final_cutoff_respects_market_close():
     from datetime import datetime
     assert pt.final_cutoff(datetime(2026, 11, 13, 15, 0)) == date(2026, 11, 13)
     assert pt.final_cutoff(datetime(2026, 11, 13, 17, 0)) == date(2026, 11, 14)
+
+
+def test_dividends_are_paid_into_cash_and_the_index_reinvests():
+    px = make_prices()
+    cfg = {**CFG, "dividends": True}
+    first = px.index[px.index >= pd.Timestamp("2024-11-06")][0]
+    led = pt.new_ledger(first.date(), px.at[first, pt.BENCHMARK], cfg["capital"], dividends=True)
+    t, v, _ = pt.advance(px, no_splits(px), cfg, led, date(2025, 1, 4), no_splits(px))
+    held = next(iter(led["positions"]))
+    shares, cash0 = led["positions"][held]["shares"], led["cash"]
+    divs = no_splits(px)
+    divs.at[pd.Timestamp("2025-01-07"), held] = 2.0                  # $2 a share
+    divs.at[pd.Timestamp("2025-01-07"), pt.BENCHMARK] = 3.0          # index fund pays too
+    units0 = led["bench_units"]
+    _, v2, _ = pt.advance(px, no_splits(px), cfg, led, date(2025, 1, 9), divs)
+    assert led["dividends_received"] == pytest.approx(shares * 2.0)
+    assert led["cash"] == pytest.approx(cash0 + shares * 2.0)
+    assert led["bench_units"] == pytest.approx(units0 * (1 + 3.0 / px.at[pd.Timestamp("2025-01-07"), pt.BENCHMARK]))
+
+
+def test_price_only_markets_ignore_dividends():
+    px = make_prices()
+    led, _, values = run_once(px, "2024-11-06", date(2025, 1, 4))
+    divs = no_splits(px)
+    divs.loc["2025-01-07"] = 5.0
+    cash0 = led["cash"]
+    pt.advance(px, no_splits(px), CFG, led, date(2025, 1, 9), divs)
+    assert "bench_units" not in led and led["cash"] == cash0

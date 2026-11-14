@@ -84,9 +84,9 @@ def load_prices(tickers, start, end, csv_path=None):
 # --------------------------------------------------------------------------
 def run_backtest(prices, start, top_n=10, exit_rank=20, lookback=63,
                  sma_days=200, cost_pct=0.001, capital=10_000.0,
-                 use_safety_switch=True):
-    stocks = [c for c in prices.columns if c != BENCHMARK]
-    bench = prices[BENCHMARK]
+                 use_safety_switch=True, benchmark=BENCHMARK):
+    stocks = [c for c in prices.columns if c != benchmark]
+    bench = prices[benchmark]
     sma = bench.rolling(sma_days).mean()
     momentum = prices[stocks] / prices[stocks].shift(lookback) - 1
 
