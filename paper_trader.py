@@ -42,11 +42,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from momentum_backtest import NASDAQ_100, BENCHMARK  # same stock list
 import dashboard
+import insights
 
 FOLDER = os.path.join(HERE, "paper_trading")
 STATE = os.path.join(FOLDER, "paper_account.json")
 TRADES = os.path.join(FOLDER, "trades.csv")
 VALUES = os.path.join(FOLDER, "account_value.csv")
+BACKTEST = os.path.join(FOLDER, "backtest.json")      # monthly backtest cache
 PAGE = os.path.join(HERE, "docs", "index.html")      # the public web page (GitHub Pages)
 
 DEFAULTS = {"capital": 10_000.0, "top_n": 10, "exit_rank": 20,
@@ -351,8 +353,9 @@ def run(a):
     settled = prices.loc[:ledger["last_processed"]]
     holdings, status, watch = status_for_display(settled, cfg, ledger)
     last_rebal = pd.Timestamp(ledger["last_rebalance"])
+    bt = None if a.prices_csv else insights.backtest(cfg, BACKTEST)
     path, now_val, qqq_val, _ = dashboard.build_dashboard(
-        cfg, acct, shown, holdings, status, watch, last_rebal, prices, FOLDER)
+        cfg, acct, shown, holdings, status, watch, last_rebal, settled, FOLDER, bt)
     os.makedirs(os.path.dirname(PAGE), exist_ok=True)
     shutil.copyfile(path, PAGE)
 

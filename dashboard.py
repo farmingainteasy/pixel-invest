@@ -1,23 +1,28 @@
-"""Builds the Pixel Invest dashboard: one self-contained HTML page with
-hand-drawn SVG charts (works offline, no extra packages)."""
+"""Builds the Pixel Invest dashboard ("Control Room"): one self-contained,
+phone-first HTML page with hand-drawn SVG charts. Dark in every theme, in
+Pixel Ag's colours (farm-app src/theme.css, dark set)."""
 
 import html
+import math
 import os
 from datetime import datetime
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from urllib.parse import quote
-
 import logo
 from company_info import name, sector
+from momentum_backtest import BENCHMARK
 
-GOLD_BAR = "var(--gold)"
-# Colours come from the page's CSS variables, so the charts follow light and dark mode.
-BLUE, GREY, GREEN, RED, AMBER = "var(--acct)", "var(--bench)", "var(--green)", "var(--red)", "var(--amber)"
-SECTOR_COLORS = ["#2F8A2A", "#C8A951", "#4C7FB8", "#B0562F", "#6B7F3A", "#3E7F7A",
-                 "#7A4F7F", "#B7791F", "#5C6B7A", "#8A6A48", "#9FB98A", "#D8C08A"]
+# Pixel Ag dark palette
+PAGE, PANEL, PANEL2, PANEL3 = "#0B0A07", "#1B1812", "#14120D", "#262219"
+LINE, LINE2 = "rgba(255,255,255,.10)", "rgba(255,255,255,.06)"
+T1, T3, T4, T5 = "#F4F0E6", "#C4BDAA", "#A39D8E", "#7E7866"
+GOLD, GOLD_TEXT = "#C8A951", "#E2C067"
+GREEN, RED, AMBER = "#6BD35A", "#FF6B5F", "#E2B04A"
+SECTOR_COLORS = ["#6BD35A", "#E2C067", "#6FA0D8", "#E0875A", "#A8B86A", "#5FB3AC",
+                 "#B98BC0", "#E2B04A", "#8E9BAA", "#B89470", "#9FD08A", "#D8C08A"]
 
 
 def money(x, cents=True):
@@ -28,114 +33,140 @@ def esc(s):
     return html.escape(str(s))
 
 
-def pill(x, big=False):
+def chip(x):
     if x is None or pd.isna(x):
         return ""
-    cls = "pos" if x >= 0 else "neg"
-    arrow = "&#9650;" if x >= 0 else "&#9660;"
-    return f'<span class="pill {cls}{" big" if big else ""}">{arrow} {abs(x):.1f}%</span>'
+    cls = "pos" if x > 0.05 else "neg" if x < -0.05 else "flat"
+    sign = "+" if x > 0.05 else "&minus;" if x < -0.05 else ""
+    return f'<span class="chip {cls}">{sign}{abs(x):.1f}%</span>'
 
 
 # --------------------------------------------------------------------------
-# SVG helpers
+# Small graphics
 # --------------------------------------------------------------------------
-def line_chart(acct, w=960, h=300):
-    pad_l, pad_r, pad_t, pad_b = 70, 20, 20, 36
-    a, q = acct["paper_account"], acct["qqq_same_money"]
-    lo, hi = min(a.min(), q.min()), max(a.max(), q.max())
-    span = (hi - lo) or hi * 0.02 or 1
-    lo, hi = lo - span * 0.15, hi + span * 0.15
-    n = len(a)
-    xs = [pad_l + (i / max(n - 1, 1)) * (w - pad_l - pad_r) for i in range(n)]
-
-    def y(v):
-        return pad_t + (1 - (v - lo) / (hi - lo)) * (h - pad_t - pad_b)
-
-    def path(series):
-        return " ".join(f"{'M' if i == 0 else 'L'}{xs[i]:.1f},{y(v):.1f}" for i, v in enumerate(series))
-
-    grid = []
-    for k in range(5):
-        v = lo + (hi - lo) * k / 4
-        grid.append(f'<line x1="{pad_l}" x2="{w - pad_r}" y1="{y(v):.1f}" y2="{y(v):.1f}" class="grid"/>'
-                    f'<text x="{pad_l - 8}" y="{y(v) + 4:.1f}" class="axis" text-anchor="end">{money(v, False)}</text>')
-    # x labels: up to 6 dates
-    step = max(1, n // 6)
-    for i in list(range(0, n, step))[:6] + [n - 1]:
-        grid.append(f'<text x="{xs[i]:.1f}" y="{h - 10}" class="axis" text-anchor="middle">'
-                    f'{a.index[i]:%b %d}</text>')
-    area = path(a) + f" L{xs[-1]:.1f},{h - pad_b} L{xs[0]:.1f},{h - pad_b} Z"
-    start = a.iloc[0]
-    base = f'<line x1="{pad_l}" x2="{w - pad_r}" y1="{y(start):.1f}" y2="{y(start):.1f}" class="base"/>'
-    dots = "".join(
-        f'<circle cx="{xs[i]:.1f}" cy="{y(a.iloc[i]):.1f}" r="7" class="hot">'
-        f'<title>{a.index[i]:%a %b %d}\nYour account: {money(a.iloc[i])}\nQQQ: {money(q.iloc[i])}</title></circle>'
-        for i in range(n))
-    end = (f'<circle cx="{xs[-1]:.1f}" cy="{y(a.iloc[-1]):.1f}" r="4.5" style="fill:{BLUE}"/>'
-           f'<circle cx="{xs[-1]:.1f}" cy="{y(q.iloc[-1]):.1f}" r="3.5" style="fill:{GREY}"/>')
-    return f'''<svg viewBox="0 0 {w} {h}" class="chart">
-<defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1">
-<stop offset="0" style="stop-color:{BLUE}" stop-opacity=".18"/><stop offset="1" style="stop-color:{BLUE}" stop-opacity="0"/></linearGradient></defs>
-{''.join(grid)}{base}
-<path d="{area}" fill="url(#fill)"/>
-<path d="{path(q)}" fill="none" style="stroke:{GREY}" stroke-width="2" stroke-dasharray="5 4"/>
-<path d="{path(a)}" fill="none" style="stroke:{BLUE}" stroke-width="3" stroke-linejoin="round"/>
-{end}{dots}</svg>'''
+def range_bar(price, lo, hi, verb="now"):
+    """52-week range: red low -> green high, dot at `price`."""
+    if lo is None or hi is None or hi <= lo:
+        return ""
+    p = max(0.0, min(1.0, (price - lo) / (hi - lo))) * 100
+    return (f'<div class="range" role="img" aria-label="52-week range {money(lo)} to {money(hi)}; '
+            f'{verb} {p:.0f}% of the way up"><span>{money(lo, False)}</span>'
+            f'<div class="rtrack"><i style="left:{p:.1f}%"></i></div><span>{money(hi, False)}</span></div>')
 
 
-def sparkline(series, w=150, h=40):
-    s = series.dropna()
-    if len(s) < 2:
-        return f'<svg viewBox="0 0 {w} {h}" class="spark"><line x1="0" x2="{w}" y1="{h/2}" y2="{h/2}" style="stroke:{GREY}" stroke-dasharray="3 3"/></svg>'
-    lo, hi = s.min(), s.max()
-    span = (hi - lo) or 1
-    pts = [(i / (len(s) - 1) * w, 3 + (1 - (v - lo) / span) * (h - 6)) for i, v in enumerate(s)]
-    color = GREEN if s.iloc[-1] >= s.iloc[0] else RED
-    base_y = 3 + (1 - (s.iloc[0] - lo) / span) * (h - 6)
-    d = " ".join(f"{'M' if i == 0 else 'L'}{x:.1f},{y:.1f}" for i, (x, y) in enumerate(pts))
-    return (f'<svg viewBox="0 0 {w} {h}" class="spark"><line x1="0" x2="{w}" y1="{base_y:.1f}" '
-            f'y2="{base_y:.1f}" style="stroke:var(--line)" stroke-dasharray="3 3"/>'
-            f'<path d="{d}" fill="none" style="stroke:{color}" stroke-width="2"/>'
-            f'<circle cx="{pts[-1][0]:.1f}" cy="{pts[-1][1]:.1f}" r="3" style="fill:{color}"/></svg>')
-
-
-def rank_meter(rank, top_n, exit_rank):
-    """Bar showing where the stock ranks: green buy zone, amber hold zone, red = will be sold."""
+def rank_bar(rank, top_n, exit_rank):
+    """Green = buy zone, amber = keep, red = sell; marker at the rank."""
     if rank is None:
         return ""
     scale = exit_rank + 10
     pos = min(rank, scale) / scale * 100
-    zone_buy = top_n / scale * 100
-    zone_hold = (exit_rank - top_n) / scale * 100
     if rank <= top_n:
         label, cls = f"Rank {rank} &middot; in the top {top_n}", "ok"
     elif rank <= exit_rank:
-        label, cls = f"Rank {rank} &middot; still safe (sold below {exit_rank})", "warn"
+        label, cls = f"Rank {rank} &middot; kept until it falls below {exit_rank}", "warn"
     else:
-        label, cls = f"Rank {rank} &middot; will be sold next week", "bad"
-    return f'''<div class="meter"><div class="track">
-<span style="width:{zone_buy:.1f}%" class="z1"></span><span style="width:{zone_hold:.1f}%" class="z2"></span><span class="z3"></span>
-<i style="left:{pos:.1f}%"></i></div><div class="mlabel {cls}">{label}</div></div>'''
+        label, cls = f"Rank {rank} &middot; sells at the next Friday close", "bad"
+    return (f'<div class="rank"><div class="rk" aria-hidden="true"><span style="width:{top_n / scale * 100:.1f}%"></span>'
+            f'<span style="width:{(exit_rank - top_n) / scale * 100:.1f}%"></span><span></span>'
+            f'<i style="left:{pos:.1f}%"></i></div><div class="rklabel {cls}">{label}</div></div>')
 
 
-def watch_bars(watch, held, top_n):
-    rows = []
-    mx = max(watch.max(), 0.01)
-    for i, (t, m) in enumerate(watch.items(), 1):
-        width = max(m, 0) / mx * 100
-        color = GOLD_BAR if t in held else "var(--t6)"
-        tag = '<b class="held">HELD</b>' if t in held else ""
-        sep = '<div class="cut">&#8593; buy zone (top %d) &middot; hold zone &#8595;</div>' % top_n if i == top_n + 1 else ""
-        rows.append(f'''{sep}<div class="wrow"><span class="wn">{i}</span>
-<span class="wname"><b>{esc(name(t))}</b> <small>{t}</small> {tag}</span>
-<span class="wbar"><span style="width:{width:.1f}%;background:{color}"></span></span>
-<span class="wpct {'pos' if m >= 0 else 'neg'}">{m * 100:+.0f}%</span></div>''')
-    return "\n".join(rows)
+def week52(prices, ticker, day):
+    s = prices[ticker].loc[:day].dropna().iloc[-252:] if ticker in prices else pd.Series(dtype=float)
+    return (s.min(), s.max()) if len(s) > 20 else (None, None)
+
+
+def _scale(lo, hi, top, bottom):
+    return lambda v: bottom - (v - lo) / (hi - lo) * (bottom - top)
+
+
+def account_chart(acct, w=380, h=200):
+    a, q = acct["paper_account"], acct["qqq_same_money"]
+    n = len(a)
+    pl, pr, pt_, pb = 52, 8, 10, 24
+    lo, hi = min(a.min(), q.min()), max(a.max(), q.max())
+    span = (hi - lo) or hi * 0.02
+    lo, hi = lo - span * .2, hi + span * .2
+    y = _scale(lo, hi, pt_, h - pb)
+    xs = [pl + (i / max(n - 1, 1)) * (w - pl - pr) for i in range(n)]
+    pts = lambda s: " ".join(f"{xs[i]:.1f},{y(v):.1f}" for i, v in enumerate(s))
+    grid = "".join(f'<line x1="{pl}" x2="{w - pr}" y1="{y(v):.1f}" y2="{y(v):.1f}" stroke="{LINE2}"/>'
+                   f'<text x="{pl - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="ax">{money(v, False)}</text>'
+                   for v in [lo + (hi - lo) * k / 3 for k in range(4)])
+    idx = sorted(set([0, n - 1] + list(range(0, n, max(1, n // 5)))))
+    xl = "".join(f'<text x="{xs[i]:.1f}" y="{h - 8}" text-anchor="{"start" if i == 0 else "end" if i == n - 1 else "middle"}" '
+                 f'class="ax">{a.index[i]:%b %d}</text>' for i in idx)
+    area = f"{pts(a)} {xs[-1]:.1f},{h - pb} {xs[0]:.1f},{h - pb}"
+    dots = "".join(f'<circle cx="{xs[i]:.1f}" cy="{y(a.iloc[i]):.1f}" r="8" class="hot"><title>{a.index[i]:%a %b %d}'
+                   f'\nYour account: {money(a.iloc[i])}\nQQQ: {money(q.iloc[i])}</title></circle>' for i in range(n))
+    return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="Your account against the same money in QQQ, '
+            f'{money(a.iloc[-1])} vs {money(q.iloc[-1])}">'
+            f'<defs><linearGradient id="af" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="{GOLD_TEXT}" stop-opacity=".22"/>'
+            f'<stop offset="1" stop-color="{GOLD_TEXT}" stop-opacity="0"/></linearGradient></defs>{grid}{xl}'
+            f'<polygon points="{area}" fill="url(#af)"/>'
+            f'<polyline points="{pts(q)}" fill="none" stroke="{T4}" stroke-width="2" stroke-dasharray="5 4"/>'
+            f'<polyline points="{pts(a)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="3" stroke-linejoin="round"/>'
+            f'<circle cx="{xs[-1]:.1f}" cy="{y(a.iloc[-1]):.1f}" r="4.5" fill="{GOLD_TEXT}"/>{dots}</svg>')
+
+
+def switch_chart(sw, w=380, h=200):
+    """QQQ vs its 200-day average, with the cash periods shaded."""
+    n = len(sw)
+    pl, pr, pt_, pb = 40, 8, 10, 24
+    lo, hi = sw.min().min(), sw.max().max()
+    span = hi - lo
+    lo, hi = lo - span * .08, hi + span * .08
+    y = _scale(lo, hi, pt_, h - pb)
+    xs = [pl + (i / max(n - 1, 1)) * (w - pl - pr) for i in range(n)]
+    pts = lambda s: " ".join(f"{xs[i]:.1f},{y(v):.1f}" for i, v in enumerate(s))
+    shade, run = [], None
+    below = (sw["qqq"] < sw["sma"]).tolist()
+    for i, b in enumerate(below + [False]):
+        if b and run is None:
+            run = i
+        if not b and run is not None:
+            x0 = xs[run] - (xs[1] - xs[0]) / 2 if n > 1 else xs[run]
+            x1 = xs[i - 1] + (xs[1] - xs[0]) / 2 if n > 1 else xs[run] + 4
+            shade.append(f'<rect x="{max(pl, x0):.1f}" y="{pt_}" width="{max(3, min(w - pr, x1) - max(pl, x0)):.1f}" '
+                         f'height="{h - pb - pt_}" fill="rgba(255,90,78,.16)"/>')
+            run = None
+    grid = "".join(f'<line x1="{pl}" x2="{w - pr}" y1="{y(v):.1f}" y2="{y(v):.1f}" stroke="{LINE2}"/>'
+                   f'<text x="{pl - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="ax">{v:,.0f}</text>'
+                   for v in [lo + (hi - lo) * k / 3 for k in range(4)])
+    months, prev = [], None
+    for i, d in enumerate(sw.index):
+        if d.month != prev and i < n - 12:
+            months.append(f'<text x="{xs[i]:.1f}" y="{h - 8}" class="ax">{d:%b}</text>')
+        prev = d.month
+    last_q, last_s = sw["qqq"].iloc[-1], sw["sma"].iloc[-1]
+    return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="QQQ {last_q:.2f} against its '
+            f'200-day average {last_s:.2f}; shaded where the rules sit in cash">{grid}{"".join(shade)}{"".join(months)}'
+            f'<polyline points="{pts(sw["sma"])}" fill="none" stroke="{GOLD}" stroke-width="2" stroke-dasharray="6 4"/>'
+            f'<polyline points="{pts(sw["qqq"])}" fill="none" stroke="{T1}" stroke-width="2" stroke-linejoin="round"/>'
+            f'<circle cx="{xs[-1]:.1f}" cy="{y(last_q):.1f}" r="4" fill="{T1}"/></svg>')
+
+
+def backtest_chart(bt, w=380, h=210):
+    c = bt["curve"]
+    n = len(c)
+    pl, pr, pt_, pb = 42, 8, 10, 24
+    vals = [v for r in c for v in r[1:]]
+    l0, l1 = math.log(min(vals)), math.log(max(vals))
+    y = lambda v: (h - pb) - (math.log(v) - l0) / (l1 - l0) * (h - pb - pt_)
+    xs = [pl + (i / max(n - 1, 1)) * (w - pl - pr) for i in range(n)]
+    pts = lambda k: " ".join(f"{xs[i]:.1f},{y(r[k]):.1f}" for i, r in enumerate(c))
+    ticks = [v for v in (10_000, 30_000, 100_000, 300_000, 1_000_000) if min(vals) <= v <= max(vals)]
+    grid = "".join(f'<line x1="{pl}" x2="{w - pr}" y1="{y(v):.1f}" y2="{y(v):.1f}" stroke="{LINE2}"/>'
+                   f'<text x="{pl - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="ax">${v // 1000:,}k</text>' for v in ticks)
+    return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="Backtest: $10,000 grew to '
+            f'{money(c[-1][1], False)} with the rules and {money(c[-1][2], False)} in QQQ">{grid}'
+            f'<text x="{pl}" y="{h - 8}" class="ax">{c[0][0][:4]}</text>'
+            f'<text x="{w - pr}" y="{h - 8}" text-anchor="end" class="ax">{c[-1][0][:4]}</text>'
+            f'<polyline points="{pts(2)}" fill="none" stroke="{T4}" stroke-width="2" stroke-dasharray="5 4"/>'
+            f'<polyline points="{pts(1)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="2.5" stroke-linejoin="round"/></svg>')
 
 
 def sector_bar(holdings, cash):
-    if not holdings:
-        return '<div class="muted">All cash right now.</div>'
     by = {}
     for h in holdings:
         by[sector(h["ticker"])] = by.get(sector(h["ticker"]), 0) + h["value"]
@@ -145,81 +176,113 @@ def sector_bar(holdings, cash):
     items = sorted(by.items(), key=lambda kv: -kv[1])
     segs, legend = [], []
     for i, (sec, v) in enumerate(items):
-        c = "var(--panel3)" if sec == "Cash" else SECTOR_COLORS[i % len(SECTOR_COLORS)]
-        segs.append(f'<span style="width:{v / total * 100:.2f}%;background:{c}" title="{esc(sec)}: {v / total:.0%}"></span>')
-        legend.append(f'<span class="lg"><i style="background:{c}"></i>{esc(sec)} <b>{v / total:.0%}</b></span>')
+        c = PANEL3 if sec == "Cash" else SECTOR_COLORS[i % len(SECTOR_COLORS)]
+        segs.append(f'<span style="width:{v / total * 100:.2f}%;background:{c}"></span>')
+        legend.append(f'<span><i style="background:{c}"></i>{esc(sec)} <b>{v / total:.0%}</b></span>')
     return f'<div class="stack">{"".join(segs)}</div><div class="legend">{"".join(legend)}</div>'
 
 
 # --------------------------------------------------------------------------
-def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, prices, folder):
+def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, prices, folder, bt=None):
     start_val = cfg["capital"]
     now_val = acct["paper_account"].iloc[-1]
     qqq_val = acct["qqq_same_money"].iloc[-1]
     acct_ret = (now_val / start_val - 1) * 100
     qqq_ret = (qqq_val / start_val - 1) * 100
     diff = now_val - qqq_val
-    days = (status["last_day"] - pd.Timestamp(cfg["start_date"])).days
-    held = {h["ticker"] for h in holdings}
     top_n, exit_rank = cfg["top_n"], cfg["exit_rank"]
-
-    vs = (f'<span class="pos">{money(abs(diff))} ahead</span> of QQQ' if diff >= 0
-          else f'<span class="neg">{money(abs(diff))} behind</span> QQQ')
-    status_pill = ('<span class="status on">&#9679; Invested</span>' if status["risk_on"]
-                   else '<span class="status off">&#9679; In cash (safety switch)</span>')
-    switch_text = (f"The Nasdaq-100 (QQQ {status['qqq']:.2f}) is above its 200-day average "
-                   f"({status['sma']:.2f}), so the rules say stay invested."
-                   if status["risk_on"] else
-                   f"The Nasdaq-100 (QQQ {status['qqq']:.2f}) is below its 200-day average "
-                   f"({status['sma']:.2f}), so the rules say sit in cash until it climbs back above.")
-
-    # This week's action cards
-    week = trades[trades["date"] == last_rebal.date()]
-    cards = []
-    for t in week.to_dict("records"):
-        buy = t["action"] == "BUY"
-        gain = "" if buy else f'<div class="ac-gain">Result: {pill(t["gain_pct"])}</div>'
-        why = t["reason"].replace("Rank", "Ranked #").replace("by 3-month gain", "for 3-month gain")
-        cards.append(f'''<div class="ac {'buy' if buy else 'sell'}">
-<div class="ac-top"><span class="ac-act">{t["action"]}</span><span class="ac-amt">{money(t["value"], False)}</span></div>
-<div class="ac-name">{esc(name(t["ticker"]))}</div><div class="ac-sub">{t["ticker"]} &middot; {esc(sector(t["ticker"]))} &middot; at {money(t["price"])}</div>
-<div class="ac-why">{esc(why)}</div>{gain}</div>''')
-    week_html = ("".join(cards) if cards else
-                 '<div class="empty">No trades this week &mdash; every holding is still ranked high enough to keep.</div>')
-    week_title = "Started the account" if last_rebal.date().isoformat() == cfg["start_date"] else "This week's trades"
-
-    # Holding cards
-    hcards = []
-    for h in holdings:
-        series = prices[h["ticker"]].loc[h["buy_date"]:]
-        mom = f"{h['mom'] * 100:+.0f}% over 3 months" if h.get("mom") is not None and pd.notna(h["mom"]) else ""
-        hcards.append(f'''<div class="hc">
-<div class="hc-head"><div><div class="hc-name">{esc(name(h["ticker"]))}</div>
-<div class="hc-sub">{h["ticker"]} &middot; {esc(sector(h["ticker"]))}</div></div>{pill(h["gain_pct"])}</div>
-<div class="hc-mid"><div><div class="hc-val">{money(h["value"])}</div>
-<div class="hc-small">{h["shares"]:.3f} sh &middot; bought {money(h["buy_price"])} &rarr; now {money(h["price"])}</div></div>
-{sparkline(series)}</div>
-{rank_meter(h["rank"], top_n, exit_rank)}
-<div class="hc-small">{mom}</div></div>''')
-    hold_html = ("".join(hcards) if hcards else
-                 '<div class="empty">No holdings &mdash; the account is all cash.</div>')
-
-    # History
-    hist = []
-    for t in trades.iloc[::-1].to_dict("records"):
-        buy = t["action"] == "BUY"
-        hist.append(f'''<tr><td>{pd.Timestamp(t["date"]):%b %d, %Y}</td>
-<td><span class="tag {'buy' if buy else 'sell'}">{t["action"]}</span></td>
-<td><b>{esc(name(t["ticker"]))}</b> <small class="muted">{t["ticker"]}</small></td>
-<td>{money(t["price"])}</td><td>{money(t["value"], False)}</td><td>{pill(t["gain_pct"])}</td></tr>''')
+    start = pd.Timestamp(cfg["start_date"])
+    held = {h["ticker"] for h in holdings}
+    on = status["risk_on"]
+    gap = (status["qqq"] / status["sma"] - 1) * 100
 
     closed = trades[trades["action"] == "SELL"]
     wins = int((closed["gain_pct"] > 0).sum())
-    record = (f"{wins} of {len(closed)} sells were winners" if len(closed) else "No completed trades yet")
+    record = f"{wins} of {len(closed)} sells gained" if len(closed) else "No sells yet"
 
+    def updown(r):
+        return f"{'Up' if r >= 0 else 'Down'} {abs(r):.1f}%"
+
+    # This week's trades, each with its 52-week range at the trade
+    week = trades[trades["date"] == last_rebal.date()]
+    rows = []
+    for t in week.to_dict("records"):
+        day = pd.Timestamp(t["date"])
+        lo, hi = week52(prices, t["ticker"], day)
+        buy = t["action"] == "BUY"
+        verb = "bought" if buy else "sold"
+        right = (f'<span class="tag buy">Buy</span>' if buy else chip(t["gain_pct"]))
+        rows.append(f'''<div class="rl"><div class="rltop"><div class="nm">
+<b>{"" if buy else '<span class="tag sell">Sell</span> '}{esc(t["ticker"])}</b>
+<small>{esc(name(t["ticker"]))} &middot; {verb} at {money(t["price"])}</small></div>{right}</div>
+{range_bar(t["price"], lo, hi, verb)}</div>''')
+    if week.empty:
+        week_html = '<p class="empty">No trades this week. Every holding still ranks high enough to keep.</p>'
+    else:
+        week_html = f'<div class="rowlist">{"".join(rows)}</div>'
+    started = last_rebal.normalize() == start.normalize()
+    week_title = "Started the account" if started else f"This week's trades"
+    week_lead = ("The bar is each stock's last 52 weeks, low to high. The dot is where it traded.")
+
+    # What you own, or what it would buy
+    if holdings:
+        hrows = []
+        for h in holdings:
+            lo, hi = week52(prices, h["ticker"], status["last_day"])
+            hrows.append(f'''<div class="rl"><div class="rltop"><div class="nm"><b>{esc(h["ticker"])}</b>
+<small>{esc(name(h["ticker"]))} &middot; {money(h["value"])}</small></div>{chip(h["gain_pct"])}</div>
+{rank_bar(h["rank"], top_n, exit_rank)}{range_bar(h["price"], lo, hi)}</div>''')
+        own_html = f'''<section class="card sec full o4"><div><h2>What you own</h2>
+<p class="lead">Top bar: rank (green top {top_n}, yellow keep, red sell). Bottom bar: 52-week range.</p></div>
+<div class="rowlist">{"".join(hrows)}</div></section>
+<section class="card sec full o4"><h2>Where your money is</h2>{sector_bar(holdings, status["cash"])}</section>'''
+    else:
+        nxt = [t for t in watch.index if t not in held][:top_n]
+        nrows = "".join(f'''<div class="rl"><div class="rltop"><div class="nm"><b>{esc(t)}</b>
+<small>{esc(name(t))}</small></div><span class="chip pos">+{watch[t] * 100:.0f}%</span></div>
+{rank_bar(i, top_n, exit_rank)}</div>''' for i, t in enumerate(nxt, 1))
+        own_html = f'''<section class="card sec full o4"><div><h2>Next buys if the switch flips</h2>
+<p class="lead">Today's top {top_n} by 3-month gain. If QQQ closes above {money(status["sma"])} on a Friday, these are bought at that close.</p></div>
+<div class="rowlist">{nrows}</div></section>'''
+
+    # Charts
+    sw = pd.DataFrame({"qqq": prices[BENCHMARK],
+                       "sma": prices[BENCHMARK].rolling(cfg["sma_days"]).mean()}).dropna().loc[:status["last_day"]].iloc[-130:]
+    switch_lead = ("QQQ is above the dashed line, so the rules stay invested." if on else
+                   "QQQ is below the dashed line, so the rules sit in cash. Shaded days are cash days.")
+    acct_html = (account_chart(acct) if len(acct) > 1 else
+                 '<p class="empty">The chart starts after the first full day.</p>')
+
+    # Tucked-away backtest
+    if bt:
+        r, q = bt["rules"], bt["qqq"]
+        bt_html = f'''<details class="card tuck"><summary>How these rules did in testing</summary>
+<div class="sec" style="margin-top:12px">
+<p class="lead">$10,000 run through the same rules every week since {bt["start"][:4]}, with {bt["cost_pct"] * 100:.1f}% trading costs.
+The rules end at {money(bt["curve"][-1][1], False)}; QQQ at {money(bt["curve"][-1][2], False)}.</p>
+<div class="key"><span><i style="background:{GOLD_TEXT}"></i>The rules</span><span><i style="background:{T4}"></i>Just holding QQQ</span></div>
+{backtest_chart(bt)}
+<div class="stats">
+<div class="stat"><span class="k">Yearly return</span><span class="v">{r["cagr"] * 100:.1f}% <small>vs {q["cagr"] * 100:.1f}%</small></span></div>
+<div class="stat"><span class="k">Worst drop</span><span class="v">&minus;{abs(r["drop"]) * 100:.1f}% <small>vs &minus;{abs(q["drop"]) * 100:.1f}%</small></span></div>
+<div class="stat"><span class="k">Winning trades</span><span class="v">{(bt["win_rate"] or 0) * 100:.0f}%</span></div>
+<div class="stat"><span class="k">Trades a year</span><span class="v">{bt["trades_per_year"]:.0f}</span></div></div>
+<p class="warn">This test uses today's Nasdaq-100 list, so it includes later winners and leaves out companies that dropped out of the index.
+Real results would very likely have been lower. Refreshed {pd.Timestamp(bt["computed_on"]):%b %d, %Y}.</p></div></details>'''
+    else:
+        bt_html = ""
+
+    # Full history, tucked away too
+    hist = "".join(f'''<tr><td>{pd.Timestamp(t["date"]):%b %d, %Y}</td>
+<td><span class="tag {'buy' if t["action"] == "BUY" else 'sell'}">{t["action"].title()}</span></td>
+<td><b>{esc(t["ticker"])}</b></td><td>{money(t["price"])}</td><td>{money(t["value"], False)}</td><td>{chip(t["gain_pct"])}</td></tr>'''
+                   for t in trades.iloc[::-1].to_dict("records"))
+
+    updated = datetime.now(ZoneInfo("America/New_York"))
     page = f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#1C1A14">
 <meta name="apple-mobile-web-app-title" content="Pixel Invest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -229,148 +292,126 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* Pixel Ag's colours (farm-app src/theme.css): cream page, white cards, ink header
-   with the gold rule. Green means growth, red means danger, gold means brand. */
-:root{{color-scheme:light;
- --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
- --page:#F4F1E9;--panel:#FFFFFF;--panel2:#FBF9F4;--panel3:#F0EDE6;--line:#E3DDD0;--line2:#F0EDE6;
- --shadow:0 2px 10px rgba(28,26,20,.05);--ink:#1C1A14;--on-ink:#F7F4EE;--on-ink-dim:rgba(247,244,238,.6);
- --t1:#1C1A14;--t3:#5C5748;--t4:#7A7466;--t5:#7F786A;--t6:#C2BCAC;
- --gold:#C8A951;--gold-text:#9A7A1E;--gold-soft:rgba(200,169,81,.12);
- --green:#2F8A2A;--green-bg:#E6F1E2;--red:#C0392B;--red-bg:#FBEAEA;--amber:#B7791F;--amber-bg:#FBF3D8;
- --acct:#9A7A1E;--bench:#A39D8E;
- --r:16px;--r2:12px;--r3:8px}}
-@media (prefers-color-scheme:dark){{:root:not([data-theme="light"]){{color-scheme:dark;
- --page:#0B0A07;--panel:#1B1812;--panel2:#14120D;--panel3:#262219;--line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.06);
- --shadow:none;--on-ink:#F4F0E6;--t1:#F4F0E6;--t3:#C4BDAA;--t4:#A39D8E;--t5:#7E7866;--t6:#4A463C;
- --gold-text:#E2C067;--gold-soft:rgba(226,192,103,.14);--green:#6BD35A;--green-bg:rgba(107,211,90,.14);
- --red:#FF5A4E;--red-bg:rgba(255,90,78,.14);--amber:#E2B04A;--amber-bg:rgba(226,176,74,.16);
- --acct:#E2C067;--bench:#7E7866}}}}
-:root[data-theme="dark"]{{color-scheme:dark;
- --page:#0B0A07;--panel:#1B1812;--panel2:#14120D;--panel3:#262219;--line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.06);
- --shadow:none;--on-ink:#F4F0E6;--t1:#F4F0E6;--t3:#C4BDAA;--t4:#A39D8E;--t5:#7E7866;--t6:#4A463C;
- --gold-text:#E2C067;--gold-soft:rgba(226,192,103,.14);--green:#6BD35A;--green-bg:rgba(107,211,90,.14);
- --red:#FF5A4E;--red-bg:rgba(255,90,78,.14);--amber:#E2B04A;--amber-bg:rgba(226,176,74,.16);
- --acct:#E2C067;--bench:#7E7866}}
+/* Control Room: Pixel Ag's dark palette in every theme; one column on a phone, two on a wide screen. */
+:root{{color-scheme:dark;--sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}}
 *{{box-sizing:border-box}}
-body{{font-family:var(--sans);background:var(--page);color:var(--t1);margin:0;-webkit-font-smoothing:antialiased}}
-header{{background:var(--ink);color:var(--on-ink);border-bottom:4px solid var(--gold);padding:18px 0;padding-top:max(18px,env(safe-area-inset-top))}}
-.hin{{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}}
-.hin svg{{width:46px;height:46px;flex:none}}
-.htext{{flex:1 1 220px;min-width:0}}
-.brand{{font-size:13px;font-weight:800;letter-spacing:-.01em;color:#fff;margin-bottom:3px}}
-.htitle{{margin:0;font-size:21px;font-weight:700;letter-spacing:-.03em;line-height:1.2;color:var(--gold)}}
-.hsub{{font-size:13px;color:var(--on-ink-dim);margin-top:3px}}
-.hin .status{{margin-left:auto}}
-.wrap{{max-width:1120px;margin:0 auto;padding:22px 22px 40px}}
-h2{{font-size:18px;font-weight:700;letter-spacing:-.02em;margin:34px 0 12px}} h2 small{{font-weight:400;color:var(--t4);font-size:14px;letter-spacing:0}}
-.muted{{color:var(--t4)}} .pos{{color:var(--green)}} .neg{{color:var(--red)}}
-.box{{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}}
-.hero{{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px}}
-.hero .box{{padding:20px 22px}}
-.k{{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-text);font-weight:700}}
-.big{{font-size:38px;font-weight:800;letter-spacing:-.03em;margin:6px 0}}
-.mid{{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:6px 0}}
-.status{{font-weight:700;padding:7px 14px;border-radius:999px;font-size:13px;white-space:nowrap}}
-.status.on{{background:rgba(107,211,90,.16);color:#8BE07C}} .status.off{{background:rgba(255,90,78,.16);color:#FF8A80}}
-.pill{{display:inline-block;font-weight:700;font-size:13px;padding:3px 9px;border-radius:var(--r3);white-space:nowrap}}
-.pill.pos{{background:var(--green-bg);color:var(--green)}} .pill.neg{{background:var(--red-bg);color:var(--red)}}
-.pill.big{{font-size:15px}}
-.switch{{padding:14px 18px;margin-top:14px;display:flex;gap:12px;align-items:center;color:var(--t3)}}
-.dot{{width:12px;height:12px;border-radius:50%;flex:none}} .dot.on{{background:var(--green)}} .dot.off{{background:var(--red)}}
-.switch b{{color:var(--t1)}}
-.acts{{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}}
-.ac{{border-radius:var(--r);padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-left:6px solid}}
-.ac.buy{{border-left-color:var(--green)}} .ac.sell{{border-left-color:var(--red)}}
-.ac-top{{display:flex;justify-content:space-between;font-weight:800;font-size:13px}}
-.ac.buy .ac-act{{color:var(--green)}} .ac.sell .ac-act{{color:var(--red)}}
-.ac-name{{font-size:17px;font-weight:700;margin-top:6px}} .ac-sub{{color:var(--t4);font-size:13px}}
-.ac-why{{font-size:13px;margin-top:8px;color:var(--t3)}} .ac-gain{{margin-top:6px;font-size:13px}}
-.empty{{padding:18px;color:var(--t4);background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}}
-.chartbox{{padding:16px 16px 6px}}
-.chart{{width:100%;height:auto;display:block}}
-.chart .grid{{stroke:var(--line2)}} .chart .axis{{fill:var(--t5);font-size:12px;font-family:var(--sans)}}
-.chart .base{{stroke:var(--line);stroke-dasharray:2 4}}
-.chart .hot{{fill:transparent;cursor:crosshair}} .chart .hot:hover{{fill:var(--acct);fill-opacity:.3}}
-.key{{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--t3);padding:4px 6px 8px}}
-.key i{{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}}
-.hgrid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}}
-.hc{{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}}
-.hc-head{{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}}
-.hc-name{{font-weight:700;font-size:16px}} .hc-sub{{color:var(--t4);font-size:13px}}
-.hc-mid{{display:flex;justify-content:space-between;align-items:center;margin:12px 0 10px}}
-.hc-val{{font-size:20px;font-weight:700}} .hc-small{{color:var(--t4);font-size:12px;margin-top:2px}}
-.spark{{width:130px;height:40px}}
-.meter .track{{position:relative;display:flex;height:8px;border-radius:5px;overflow:visible}}
-.meter .track span{{height:8px}} .z1{{background:var(--green-bg);border-radius:5px 0 0 5px}} .z2{{background:var(--amber-bg)}}
-.z3{{flex:1;background:var(--red-bg);border-radius:0 5px 5px 0}}
-.meter i{{position:absolute;top:-4px;width:4px;height:16px;background:var(--t1);border-radius:2px;transform:translateX(-2px)}}
-.mlabel{{font-size:12px;margin-top:6px;font-weight:600}} .mlabel.ok{{color:var(--green)}} .mlabel.warn{{color:var(--amber)}} .mlabel.bad{{color:var(--red)}}
-.two{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
-.pad{{padding:16px 18px}}
-.stack{{display:flex;height:22px;border-radius:var(--r3);overflow:hidden;margin:6px 0 12px}}
-.legend{{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--t3)}} .lg i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}}
-.wrow{{display:grid;grid-template-columns:24px 1.6fr 1fr 48px;gap:8px;align-items:center;padding:5px 0;font-size:13px}}
-.wn{{color:var(--t5);text-align:right}} .wname small{{color:var(--t5)}}
-.held{{font-size:10px;font-weight:700;background:var(--gold-soft);color:var(--gold-text);padding:1px 6px;border-radius:var(--r3);margin-left:4px}}
-.wbar{{background:var(--panel3);height:10px;border-radius:5px;overflow:hidden}} .wbar span{{display:block;height:10px;border-radius:5px}}
-.wpct{{text-align:right;font-weight:700}}
-.cut{{font-size:11px;color:var(--gold-text);border-top:2px dashed var(--gold);margin:6px 0;padding-top:4px;text-align:center}}
-table{{width:100%;border-collapse:collapse;font-size:14px}}
-th{{text-align:left;color:var(--gold-text);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.08em;padding:10px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}}
-td{{padding:9px 8px;border-bottom:1px solid var(--line2);white-space:nowrap}}
-.tag{{font-size:11px;font-weight:800;padding:3px 9px;border-radius:var(--r3)}}
-.tag.buy{{background:var(--green-bg);color:var(--green)}} .tag.sell{{background:var(--red-bg);color:var(--red)}}
-.scroll{{max-height:420px;overflow:auto}}
-.note{{font-size:12px;color:var(--t5);margin-top:26px;line-height:1.6}}
-@media(max-width:800px){{.hero,.two{{grid-template-columns:1fr}} .big{{font-size:34px}}}}
-@media(max-width:520px){{.hin .status{{margin-left:60px}} .wrap{{padding:16px 16px 32px}} .hin{{padding:0 16px}}
- .hide-sm{{display:none}} .hgrid{{grid-template-columns:1fr}}}}
+html{{background:{PAGE}}}
+body{{margin:0;background:{PAGE};color:{T1};font-family:var(--sans);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}}
+.hdr{{background:#1C1A14;border-bottom:4px solid {GOLD};padding-top:max(18px,env(safe-area-inset-top))}}
+.wrap{{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}}
+.hin{{display:flex;flex-direction:column;gap:14px;padding-bottom:16px}}
+.brandrow{{display:flex;align-items:center;gap:12px}}
+.brandrow svg{{width:44px;height:44px;flex:none}}
+.brand{{font-size:13px;font-weight:800;color:#fff}}
+.htitle{{margin:0;font-size:21px;font-weight:700;letter-spacing:-.03em;color:{GOLD};line-height:1.2}}
+.hval{{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}}
+.big{{font-size:34px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}}
+.sub{{font-size:13px;color:rgba(244,240,230,.72)}}
+.state{{font-size:13px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap}}
+.state.on{{background:rgba(107,211,90,.16);color:#8BE07C}} .state.off{{background:rgba(255,90,78,.18);color:#FF9A90}}
+main.wrap{{padding-top:18px;padding-bottom:40px;display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}}
+@media(min-width:900px){{main.wrap{{grid-template-columns:repeat(2,minmax(0,1fr))}} .full{{grid-column:1/-1}}}}
+.col{{display:contents}}
+.o1{{order:1}} .o2{{order:2}} .o3{{order:3}} .o4{{order:4}} .o5{{order:5}} .o6{{order:6}} .o6 > *{{order:6}}
+@media(min-width:900px){{.col{{display:flex;flex-direction:column;gap:16px;min-width:0}} .col > *{{order:0}}
+ .full .rowlist{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}}
+ .full .rl:nth-last-child(2):nth-child(odd){{border-bottom:0}}}}
+h2{{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;text-wrap:balance}}
+.lead{{margin:4px 0 0;font-size:13px;color:{T3}}}
+.card{{background:{PANEL};border:1px solid {LINE};border-radius:16px;padding:14px}}
+.sec{{display:flex;flex-direction:column;gap:12px}}
+.kpis{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
+@media(min-width:900px){{.kpis{{grid-template-columns:repeat(4,minmax(0,1fr))}}}}
+.kpi{{background:{PANEL};border:1px solid {LINE};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px;min-width:0}}
+.kpi .k{{font-size:12px;color:{T4}}} .kpi .v{{font-size:20px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}}
+.kpi .s{{font-size:12px;color:{T3}}}
+.pos{{color:{GREEN}}} .neg{{color:{RED}}}
+.chip{{font-weight:700;font-size:13px;padding:3px 9px;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums}}
+.chip.pos{{background:rgba(107,211,90,.14);color:{GREEN}}} .chip.neg{{background:rgba(255,90,78,.14);color:{RED}}} .chip.flat{{background:{PANEL3};color:{T3}}}
+.tag{{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;vertical-align:1px}}
+.tag.buy{{background:rgba(107,211,90,.14);color:{GREEN}}} .tag.sell{{background:rgba(255,90,78,.14);color:{RED}}}
+.chart{{width:100%;height:auto;display:block}} .chart .ax{{fill:{T4};font-size:11px;font-family:var(--sans)}}
+.chart .hot{{fill:transparent;cursor:crosshair}} .chart .hot:hover{{fill:{GOLD_TEXT};fill-opacity:.3}}
+.key{{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:{T3}}}
+.key i{{display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}}
+.rowlist{{display:flex;flex-direction:column}}
+.rl{{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid {LINE2}}} .rl:last-child{{border-bottom:0;padding-bottom:2px}}
+.rltop{{display:flex;justify-content:space-between;align-items:center;gap:10px}}
+.nm{{display:flex;flex-direction:column;min-width:0}} .nm small{{font-size:12px;color:{T4};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.range{{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:{T4};font-variant-numeric:tabular-nums}}
+.rtrack{{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,{RED} 0%,{AMBER} 50%,{GREEN} 100%)}}
+.rtrack i{{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:{PANEL};border:3px solid {T1};transform:translateX(-8px)}}
+.rank{{display:flex;flex-direction:column;gap:5px}}
+.rk{{position:relative;display:flex;height:8px;border-radius:4px}}
+.rk span:nth-child(1){{background:rgba(107,211,90,.42);border-radius:4px 0 0 4px}} .rk span:nth-child(2){{background:rgba(226,176,74,.26)}}
+.rk span:nth-child(3){{flex:1;background:rgba(255,90,78,.22);border-radius:0 4px 4px 0}}
+.rk i{{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:{T1};transform:translateX(-2px)}}
+.rklabel{{font-size:12px;font-weight:600}} .rklabel.ok{{color:{GREEN}}} .rklabel.warn{{color:{AMBER}}} .rklabel.bad{{color:{RED}}}
+.stack{{display:flex;height:20px;border-radius:8px;overflow:hidden}}
+.legend{{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:{T3}}} .legend i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}}
+.stats{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
+.stat{{background:{PANEL3};border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:2px}}
+.stat .k{{font-size:12px;color:{T4}}} .stat .v{{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}} .stat small{{color:{T4};font-weight:500}}
+.warn{{margin:0;font-size:12px;line-height:1.5;color:{GOLD_TEXT};background:rgba(226,192,103,.10);border-radius:10px;padding:10px}}
+.rules{{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14px}} .rules b{{display:block;font-size:13px;color:{GOLD_TEXT}}}
+.empty{{margin:0;color:{T3};font-size:14px}}
+details.tuck summary{{cursor:pointer;font-weight:700;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:28px}}
+details.tuck summary::-webkit-details-marker{{display:none}}
+details.tuck summary::after{{content:"+";font-size:20px;color:{GOLD_TEXT};font-weight:500}}
+details.tuck[open] summary::after{{content:"\\2212"}}
+summary:focus-visible{{outline:2px solid {GOLD};outline-offset:4px;border-radius:6px}}
+.scroll{{overflow-x:auto}}
+table{{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}}
+th{{text-align:left;color:{T4};font-weight:600;font-size:12px;padding:8px;border-bottom:1px solid {LINE}}}
+td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-variant-numeric:tabular-nums}}
+.note{{font-size:12px;color:{T5};line-height:1.6;margin:4px 0 0}}
 </style></head><body>
 
-<header><div class="hin">{logo.svg()}
-<div class="htext"><div class="brand">Pixel Invest</div><h1 class="htitle">Nasdaq-100 Momentum</h1>
-<div class="hsub">Pretend money &middot; prices as of {status['last_day']:%a, %b %d, %Y}</div></div>
-{status_pill}</div></header>
+<header class="hdr"><div class="wrap hin">
+<div class="brandrow">{logo.svg()}<div><div class="brand">Pixel Invest</div><h1 class="htitle">Nasdaq-100 Momentum</h1></div></div>
+<div class="hval"><div><div class="big">{money(now_val)}</div>
+<div class="sub">{updown(acct_ret)} since {start:%b %d} &middot; QQQ {updown(qqq_ret).lower()} &middot; prices as of {status["last_day"]:%a %b %d}</div></div>
+<span class="state {'on' if on else 'off'}">{'Invested' if on else 'In cash'}</span></div>
+</div></header>
 
-<div class="wrap">
-<div class="hero">
- <div class="box"><div class="k">Your paper account</div><div class="big">{money(now_val)}</div>
-  {pill(acct_ret, True)} <span class="muted">since {pd.Timestamp(cfg['start_date']):%b %d} ({days} days) &middot; started with {money(start_val, False)}</span></div>
- <div class="box"><div class="k">Same money in QQQ</div><div class="mid">{money(qqq_val)}</div>{pill(qqq_ret)}
-  <div class="muted" style="margin-top:8px">You're {vs}</div></div>
- <div class="box"><div class="k">Cash &amp; positions</div><div class="mid">{len(holdings)} of {top_n} stocks</div>
-  <div class="muted">{money(status['cash'])} in cash</div><div class="muted" style="margin-top:8px">{record}</div></div>
+<main class="wrap">
+<div class="kpis full">
+ <div class="kpi"><span class="k">Account</span><span class="v">{money(now_val, False)}</span><span class="s {'pos' if acct_ret >= 0 else 'neg'}">{'+' if acct_ret >= 0 else '&minus;'}{abs(acct_ret):.1f}% since {start:%b %d}</span></div>
+ <div class="kpi"><span class="k">Same money in QQQ</span><span class="v">{money(qqq_val, False)}</span><span class="s">You're {money(abs(diff), False)} {'ahead' if diff >= 0 else 'behind'}</span></div>
+ <div class="kpi"><span class="k">Safety switch</span><span class="v {'pos' if on else 'neg'}">{'Invested' if on else 'Cash'}</span><span class="s">QQQ {abs(gap):.1f}% {'above' if gap >= 0 else 'under'} the line</span></div>
+ <div class="kpi"><span class="k">Stocks held</span><span class="v">{len(holdings)} of {top_n}</span><span class="s">{record}</span></div>
 </div>
 
-<div class="box switch"><span class="dot {'on' if status['risk_on'] else 'off'}"></span><div><b>Safety switch: {'Invested' if status['risk_on'] else 'Cash'}</b><br>{switch_text}</div></div>
+<div class="col">
+<section class="card sec o1"><div><h2>Your account vs. just holding QQQ</h2><p class="lead">Started {start:%b %d} with {money(start_val, False)}. Tap a point for that day.</p></div>
+<div class="key"><span><i style="background:{GOLD_TEXT}"></i>Your account</span><span><i style="background:{T4}"></i>Same money in QQQ</span></div>
+{acct_html}</section>
 
-<h2>{week_title} <small>&middot; at the close on {last_rebal:%A, %B %d}</small></h2>
-<div class="acts">{week_html}</div>
-
-<h2>Your account vs. just holding QQQ</h2>
-<div class="box chartbox"><div class="key"><span><i style="background:{BLUE}"></i>Your paper account</span>
-<span><i style="background:{GREY}"></i>Same money in QQQ</span><span class="muted hide-sm">Hover the line for daily values</span></div>
-{line_chart(acct)}</div>
-
-<h2>What you own <small>&middot; the bar shows each stock's rank: green = top {top_n}, yellow = keep, red = sell</small></h2>
-<div class="hgrid">{hold_html}</div>
-
-<div class="two">
- <div><h2>Where your money is</h2><div class="box pad">{sector_bar(holdings, status['cash'])}</div></div>
- <div><h2>Biggest 3-month gainers <small>&middot; top {exit_rank} of {status.get('universe', '')}</small></h2>
- <div class="box pad">{watch_bars(watch, held, top_n)}</div></div>
+<section class="card sec o2"><div><h2>Safety switch: QQQ vs. its 200-day average</h2><p class="lead">{switch_lead}
+Today QQQ is {status["qqq"]:.2f} and the line is {status["sma"]:.2f}.</p></div>
+<div class="key"><span><i style="background:{T1}"></i>QQQ</span><span><i style="background:{GOLD}"></i>200-day average</span></div>
+{switch_chart(sw)}</section>
+<section class="card sec o5"><h2>The rules</h2><ul class="rules">
+<li><b>Every Friday</b>Rank the Nasdaq-100 by 3-month gain.</li>
+<li><b>Buy</b>Own the top {top_n}, with equal money in each new stock.</li>
+<li><b>Sell</b>When a stock falls below rank {exit_rank}.</li>
+<li><b>Safety switch</b>When QQQ closes below its {cfg["sma_days"]}-day average, sell everything and wait in cash.</li></ul></section>
 </div>
 
-<h2>Trade history</h2>
-<div class="box scroll"><table><tr><th>Date</th><th>Action</th><th>Company</th><th>Price</th><th>Amount</th><th>Result</th></tr>
-{''.join(hist) or '<tr><td colspan="6" class="muted">No trades yet.</td></tr>'}</table></div>
+<div class="col">
+<section class="card sec o3"><div><h2>{week_title} <span class="lead" style="font-weight:400">&middot; {last_rebal:%a %b %d}</span></h2>
+<p class="lead">{week_lead}</p></div>{week_html}</section>
+</div>
+{own_html}
 
-<p class="note">Pixel Invest &middot; pretend trades only, made at each week's last closing price with no fees. Prices in US dollars.
-Updates itself automatically every weekend. Last updated {datetime.now(ZoneInfo('America/New_York')):%b %d, %Y %I:%M %p} New York time. Past and paper results don't guarantee future returns.</p>
-</div></body></html>"""
+<div class="col full o6">{bt_html}
+<details class="card tuck"><summary>Every trade ({len(trades)})</summary><div class="scroll" style="margin-top:10px"><table>
+<tr><th>Date</th><th>Action</th><th>Stock</th><th>Price</th><th>Amount</th><th>Result</th></tr>{hist}</table></div></details>
+<p class="note">Pretend money only: trades at each Friday's closing price, no fees. Updates itself every weekend.
+Last updated {updated:%b %d, %Y %I:%M %p} New York time. Past and paper results don't guarantee future returns.</p></div>
+</main></body></html>"""
     path = os.path.join(folder, "dashboard.html")
     with open(path, "w", encoding="utf-8") as f:
         f.write(page)
