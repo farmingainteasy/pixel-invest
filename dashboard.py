@@ -1,4 +1,4 @@
-"""Builds the Paper Trader dashboard: one self-contained HTML page with
+"""Builds the Pixel Invest dashboard: one self-contained HTML page with
 hand-drawn SVG charts (works offline, no extra packages)."""
 
 import html
@@ -8,11 +8,16 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from urllib.parse import quote
+
+import logo
 from company_info import name, sector
 
-BLUE, GREY, GREEN, RED, AMBER = "#2563eb", "#9ca3af", "#16a34a", "#dc2626", "#d97706"
-SECTOR_COLORS = ["#2563eb", "#16a34a", "#d97706", "#9333ea", "#0891b2", "#db2777",
-                 "#65a30d", "#ea580c", "#4f46e5", "#0d9488", "#b45309", "#64748b"]
+GOLD_BAR = "var(--gold)"
+# Colours come from the page's CSS variables, so the charts follow light and dark mode.
+BLUE, GREY, GREEN, RED, AMBER = "var(--acct)", "var(--bench)", "var(--green)", "var(--red)", "var(--amber)"
+SECTOR_COLORS = ["#2F8A2A", "#C8A951", "#4C7FB8", "#B0562F", "#6B7F3A", "#3E7F7A",
+                 "#7A4F7F", "#B7791F", "#5C6B7A", "#8A6A48", "#9FB98A", "#D8C08A"]
 
 
 def money(x, cents=True):
@@ -66,22 +71,22 @@ def line_chart(acct, w=960, h=300):
         f'<circle cx="{xs[i]:.1f}" cy="{y(a.iloc[i]):.1f}" r="7" class="hot">'
         f'<title>{a.index[i]:%a %b %d}\nYour account: {money(a.iloc[i])}\nQQQ: {money(q.iloc[i])}</title></circle>'
         for i in range(n))
-    end = (f'<circle cx="{xs[-1]:.1f}" cy="{y(a.iloc[-1]):.1f}" r="4.5" fill="{BLUE}"/>'
-           f'<circle cx="{xs[-1]:.1f}" cy="{y(q.iloc[-1]):.1f}" r="3.5" fill="{GREY}"/>')
+    end = (f'<circle cx="{xs[-1]:.1f}" cy="{y(a.iloc[-1]):.1f}" r="4.5" style="fill:{BLUE}"/>'
+           f'<circle cx="{xs[-1]:.1f}" cy="{y(q.iloc[-1]):.1f}" r="3.5" style="fill:{GREY}"/>')
     return f'''<svg viewBox="0 0 {w} {h}" class="chart">
 <defs><linearGradient id="fill" x1="0" x2="0" y1="0" y2="1">
-<stop offset="0" stop-color="{BLUE}" stop-opacity=".18"/><stop offset="1" stop-color="{BLUE}" stop-opacity="0"/></linearGradient></defs>
+<stop offset="0" style="stop-color:{BLUE}" stop-opacity=".18"/><stop offset="1" style="stop-color:{BLUE}" stop-opacity="0"/></linearGradient></defs>
 {''.join(grid)}{base}
 <path d="{area}" fill="url(#fill)"/>
-<path d="{path(q)}" fill="none" stroke="{GREY}" stroke-width="2" stroke-dasharray="5 4"/>
-<path d="{path(a)}" fill="none" stroke="{BLUE}" stroke-width="3" stroke-linejoin="round"/>
+<path d="{path(q)}" fill="none" style="stroke:{GREY}" stroke-width="2" stroke-dasharray="5 4"/>
+<path d="{path(a)}" fill="none" style="stroke:{BLUE}" stroke-width="3" stroke-linejoin="round"/>
 {end}{dots}</svg>'''
 
 
 def sparkline(series, w=150, h=40):
     s = series.dropna()
     if len(s) < 2:
-        return f'<svg viewBox="0 0 {w} {h}" class="spark"><line x1="0" x2="{w}" y1="{h/2}" y2="{h/2}" stroke="{GREY}" stroke-dasharray="3 3"/></svg>'
+        return f'<svg viewBox="0 0 {w} {h}" class="spark"><line x1="0" x2="{w}" y1="{h/2}" y2="{h/2}" style="stroke:{GREY}" stroke-dasharray="3 3"/></svg>'
     lo, hi = s.min(), s.max()
     span = (hi - lo) or 1
     pts = [(i / (len(s) - 1) * w, 3 + (1 - (v - lo) / span) * (h - 6)) for i, v in enumerate(s)]
@@ -89,9 +94,9 @@ def sparkline(series, w=150, h=40):
     base_y = 3 + (1 - (s.iloc[0] - lo) / span) * (h - 6)
     d = " ".join(f"{'M' if i == 0 else 'L'}{x:.1f},{y:.1f}" for i, (x, y) in enumerate(pts))
     return (f'<svg viewBox="0 0 {w} {h}" class="spark"><line x1="0" x2="{w}" y1="{base_y:.1f}" '
-            f'y2="{base_y:.1f}" stroke="#d1d5db" stroke-dasharray="3 3"/>'
-            f'<path d="{d}" fill="none" stroke="{color}" stroke-width="2"/>'
-            f'<circle cx="{pts[-1][0]:.1f}" cy="{pts[-1][1]:.1f}" r="3" fill="{color}"/></svg>')
+            f'y2="{base_y:.1f}" style="stroke:var(--line)" stroke-dasharray="3 3"/>'
+            f'<path d="{d}" fill="none" style="stroke:{color}" stroke-width="2"/>'
+            f'<circle cx="{pts[-1][0]:.1f}" cy="{pts[-1][1]:.1f}" r="3" style="fill:{color}"/></svg>')
 
 
 def rank_meter(rank, top_n, exit_rank):
@@ -118,7 +123,7 @@ def watch_bars(watch, held, top_n):
     mx = max(watch.max(), 0.01)
     for i, (t, m) in enumerate(watch.items(), 1):
         width = max(m, 0) / mx * 100
-        color = BLUE if t in held else "#cbd5e1"
+        color = GOLD_BAR if t in held else "var(--t6)"
         tag = '<b class="held">HELD</b>' if t in held else ""
         sep = '<div class="cut">&#8593; buy zone (top %d) &middot; hold zone &#8595;</div>' % top_n if i == top_n + 1 else ""
         rows.append(f'''{sep}<div class="wrow"><span class="wn">{i}</span>
@@ -140,7 +145,7 @@ def sector_bar(holdings, cash):
     items = sorted(by.items(), key=lambda kv: -kv[1])
     segs, legend = [], []
     for i, (sec, v) in enumerate(items):
-        c = "#e5e7eb" if sec == "Cash" else SECTOR_COLORS[i % len(SECTOR_COLORS)]
+        c = "var(--panel3)" if sec == "Cash" else SECTOR_COLORS[i % len(SECTOR_COLORS)]
         segs.append(f'<span style="width:{v / total * 100:.2f}%;background:{c}" title="{esc(sec)}: {v / total:.0%}"></span>')
         legend.append(f'<span class="lg"><i style="background:{c}"></i>{esc(sec)} <b>{v / total:.0%}</b></span>')
     return f'<div class="stack">{"".join(segs)}</div><div class="legend">{"".join(legend)}</div>'
@@ -212,82 +217,125 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
     wins = int((closed["gain_pct"] > 0).sum())
     record = (f"{wins} of {len(closed)} sells were winners" if len(closed) else "No completed trades yet")
 
-    page = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    page = f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Paper Trader &mdash; {money(now_val, False)}</title>
+<meta name="theme-color" content="#1C1A14">
+<meta name="apple-mobile-web-app-title" content="Pixel Invest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Pixel Invest &mdash; {money(now_val, False)}</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,{quote(logo.svg())}">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
+/* Pixel Ag's colours (farm-app src/theme.css): cream page, white cards, ink header
+   with the gold rule. Green means growth, red means danger, gold means brand. */
+:root{{color-scheme:light;
+ --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ --page:#F4F1E9;--panel:#FFFFFF;--panel2:#FBF9F4;--panel3:#F0EDE6;--line:#E3DDD0;--line2:#F0EDE6;
+ --shadow:0 2px 10px rgba(28,26,20,.05);--ink:#1C1A14;--on-ink:#F7F4EE;--on-ink-dim:rgba(247,244,238,.6);
+ --t1:#1C1A14;--t3:#5C5748;--t4:#7A7466;--t5:#7F786A;--t6:#C2BCAC;
+ --gold:#C8A951;--gold-text:#9A7A1E;--gold-soft:rgba(200,169,81,.12);
+ --green:#2F8A2A;--green-bg:#E6F1E2;--red:#C0392B;--red-bg:#FBEAEA;--amber:#B7791F;--amber-bg:#FBF3D8;
+ --acct:#9A7A1E;--bench:#A39D8E;
+ --r:16px;--r2:12px;--r3:8px}}
+@media (prefers-color-scheme:dark){{:root:not([data-theme="light"]){{color-scheme:dark;
+ --page:#0B0A07;--panel:#1B1812;--panel2:#14120D;--panel3:#262219;--line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.06);
+ --shadow:none;--on-ink:#F4F0E6;--t1:#F4F0E6;--t3:#C4BDAA;--t4:#A39D8E;--t5:#7E7866;--t6:#4A463C;
+ --gold-text:#E2C067;--gold-soft:rgba(226,192,103,.14);--green:#6BD35A;--green-bg:rgba(107,211,90,.14);
+ --red:#FF5A4E;--red-bg:rgba(255,90,78,.14);--amber:#E2B04A;--amber-bg:rgba(226,176,74,.16);
+ --acct:#E2C067;--bench:#7E7866}}}}
+:root[data-theme="dark"]{{color-scheme:dark;
+ --page:#0B0A07;--panel:#1B1812;--panel2:#14120D;--panel3:#262219;--line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.06);
+ --shadow:none;--on-ink:#F4F0E6;--t1:#F4F0E6;--t3:#C4BDAA;--t4:#A39D8E;--t5:#7E7866;--t6:#4A463C;
+ --gold-text:#E2C067;--gold-soft:rgba(226,192,103,.14);--green:#6BD35A;--green-bg:rgba(107,211,90,.14);
+ --red:#FF5A4E;--red-bg:rgba(255,90,78,.14);--amber:#E2B04A;--amber-bg:rgba(226,176,74,.16);
+ --acct:#E2C067;--bench:#7E7866}}
 *{{box-sizing:border-box}}
-body{{font-family:"Segoe UI",system-ui,Arial,sans-serif;background:#f1f4f9;color:#111827;margin:0}}
-.wrap{{max-width:1120px;margin:0 auto;padding:28px 22px 40px}}
-h2{{font-size:18px;margin:34px 0 12px}} h2 small{{font-weight:400;color:#6b7280;font-size:14px}}
-.muted{{color:#6b7280}} .pos{{color:{GREEN}}} .neg{{color:{RED}}}
-.box{{background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(15,23,42,.05)}}
-.hero{{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:16px}}
+body{{font-family:var(--sans);background:var(--page);color:var(--t1);margin:0;-webkit-font-smoothing:antialiased}}
+header{{background:var(--ink);color:var(--on-ink);border-bottom:4px solid var(--gold);padding:18px 0;padding-top:max(18px,env(safe-area-inset-top))}}
+.hin{{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}}
+.hin svg{{width:46px;height:46px;flex:none}}
+.htext{{flex:1 1 220px;min-width:0}}
+.brand{{font-size:13px;font-weight:800;letter-spacing:-.01em;color:#fff;margin-bottom:3px}}
+.htitle{{margin:0;font-size:21px;font-weight:700;letter-spacing:-.03em;line-height:1.2;color:var(--gold)}}
+.hsub{{font-size:13px;color:var(--on-ink-dim);margin-top:3px}}
+.hin .status{{margin-left:auto}}
+.wrap{{max-width:1120px;margin:0 auto;padding:22px 22px 40px}}
+h2{{font-size:18px;font-weight:700;letter-spacing:-.02em;margin:34px 0 12px}} h2 small{{font-weight:400;color:var(--t4);font-size:14px;letter-spacing:0}}
+.muted{{color:var(--t4)}} .pos{{color:var(--green)}} .neg{{color:var(--red)}}
+.box{{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}}
+.hero{{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px}}
 .hero .box{{padding:20px 22px}}
-.k{{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#6b7280;font-weight:600}}
-.big{{font-size:38px;font-weight:800;letter-spacing:-.02em;margin:6px 0}}
-.mid{{font-size:26px;font-weight:700;margin:6px 0}}
-.top{{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px}}
-.top h1{{margin:0;font-size:26px}} .top .sub{{color:#6b7280;margin-top:4px}}
-.status{{font-weight:700;padding:7px 14px;border-radius:20px;font-size:14px}}
-.status.on{{background:#dcfce7;color:#166534}} .status.off{{background:#fee2e2;color:#991b1b}}
-.pill{{display:inline-block;font-weight:700;font-size:13px;padding:3px 9px;border-radius:12px;white-space:nowrap}}
-.pill.pos{{background:#dcfce7;color:#166534}} .pill.neg{{background:#fee2e2;color:#991b1b}}
+.k{{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-text);font-weight:700}}
+.big{{font-size:38px;font-weight:800;letter-spacing:-.03em;margin:6px 0}}
+.mid{{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:6px 0}}
+.status{{font-weight:700;padding:7px 14px;border-radius:999px;font-size:13px;white-space:nowrap}}
+.status.on{{background:rgba(107,211,90,.16);color:#8BE07C}} .status.off{{background:rgba(255,90,78,.16);color:#FF8A80}}
+.pill{{display:inline-block;font-weight:700;font-size:13px;padding:3px 9px;border-radius:var(--r3);white-space:nowrap}}
+.pill.pos{{background:var(--green-bg);color:var(--green)}} .pill.neg{{background:var(--red-bg);color:var(--red)}}
 .pill.big{{font-size:15px}}
-.switch{{padding:14px 18px;margin-top:16px;display:flex;gap:12px;align-items:center;color:#374151}}
-.switch b{{font-size:20px}}
+.switch{{padding:14px 18px;margin-top:14px;display:flex;gap:12px;align-items:center;color:var(--t3)}}
+.dot{{width:12px;height:12px;border-radius:50%;flex:none}} .dot.on{{background:var(--green)}} .dot.off{{background:var(--red)}}
+.switch b{{color:var(--t1)}}
 .acts{{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}}
-.ac{{border-radius:14px;padding:14px 16px;background:#fff;border-left:6px solid}}
-.ac.buy{{border-color:{GREEN}}} .ac.sell{{border-color:{RED}}}
+.ac{{border-radius:var(--r);padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-left:6px solid}}
+.ac.buy{{border-left-color:var(--green)}} .ac.sell{{border-left-color:var(--red)}}
 .ac-top{{display:flex;justify-content:space-between;font-weight:800;font-size:13px}}
-.ac.buy .ac-act{{color:{GREEN}}} .ac.sell .ac-act{{color:{RED}}}
-.ac-name{{font-size:17px;font-weight:700;margin-top:6px}} .ac-sub{{color:#6b7280;font-size:13px}}
-.ac-why{{font-size:13px;margin-top:8px;color:#374151}} .ac-gain{{margin-top:6px;font-size:13px}}
-.empty{{padding:18px;color:#6b7280;background:#fff;border-radius:14px}}
+.ac.buy .ac-act{{color:var(--green)}} .ac.sell .ac-act{{color:var(--red)}}
+.ac-name{{font-size:17px;font-weight:700;margin-top:6px}} .ac-sub{{color:var(--t4);font-size:13px}}
+.ac-why{{font-size:13px;margin-top:8px;color:var(--t3)}} .ac-gain{{margin-top:6px;font-size:13px}}
+.empty{{padding:18px;color:var(--t4);background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}}
 .chartbox{{padding:16px 16px 6px}}
 .chart{{width:100%;height:auto;display:block}}
-.chart .grid{{stroke:#eef0f4}} .chart .axis{{fill:#9ca3af;font-size:12px}}
-.chart .base{{stroke:#cbd5e1;stroke-dasharray:2 4}}
-.chart .hot{{fill:transparent;cursor:crosshair}} .chart .hot:hover{{fill:{BLUE};fill-opacity:.25}}
-.key{{display:flex;gap:18px;font-size:13px;color:#4b5563;padding:4px 6px 8px}}
-.key i{{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px}}
-.hgrid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}}
-.hc{{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}}
+.chart .grid{{stroke:var(--line2)}} .chart .axis{{fill:var(--t5);font-size:12px;font-family:var(--sans)}}
+.chart .base{{stroke:var(--line);stroke-dasharray:2 4}}
+.chart .hot{{fill:transparent;cursor:crosshair}} .chart .hot:hover{{fill:var(--acct);fill-opacity:.3}}
+.key{{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--t3);padding:4px 6px 8px}}
+.key i{{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}}
+.hgrid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}}
+.hc{{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}}
 .hc-head{{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}}
-.hc-name{{font-weight:700;font-size:16px}} .hc-sub{{color:#6b7280;font-size:13px}}
+.hc-name{{font-weight:700;font-size:16px}} .hc-sub{{color:var(--t4);font-size:13px}}
 .hc-mid{{display:flex;justify-content:space-between;align-items:center;margin:12px 0 10px}}
-.hc-val{{font-size:20px;font-weight:700}} .hc-small{{color:#6b7280;font-size:12px;margin-top:2px}}
-.spark{{width:150px;height:40px}}
+.hc-val{{font-size:20px;font-weight:700}} .hc-small{{color:var(--t4);font-size:12px;margin-top:2px}}
+.spark{{width:130px;height:40px}}
 .meter .track{{position:relative;display:flex;height:8px;border-radius:5px;overflow:visible}}
-.meter .track span{{height:8px}} .z1{{background:#bbf7d0;border-radius:5px 0 0 5px}} .z2{{background:#fde68a}}
-.z3{{flex:1;background:#fecaca;border-radius:0 5px 5px 0}}
-.meter i{{position:absolute;top:-4px;width:4px;height:16px;background:#111827;border-radius:2px;transform:translateX(-2px)}}
-.mlabel{{font-size:12px;margin-top:6px;font-weight:600}} .mlabel.ok{{color:#166534}} .mlabel.warn{{color:#92400e}} .mlabel.bad{{color:#991b1b}}
+.meter .track span{{height:8px}} .z1{{background:var(--green-bg);border-radius:5px 0 0 5px}} .z2{{background:var(--amber-bg)}}
+.z3{{flex:1;background:var(--red-bg);border-radius:0 5px 5px 0}}
+.meter i{{position:absolute;top:-4px;width:4px;height:16px;background:var(--t1);border-radius:2px;transform:translateX(-2px)}}
+.mlabel{{font-size:12px;margin-top:6px;font-weight:600}} .mlabel.ok{{color:var(--green)}} .mlabel.warn{{color:var(--amber)}} .mlabel.bad{{color:var(--red)}}
 .two{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
 .pad{{padding:16px 18px}}
-.stack{{display:flex;height:22px;border-radius:8px;overflow:hidden;margin:6px 0 12px}}
-.legend{{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}} .lg i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}}
+.stack{{display:flex;height:22px;border-radius:var(--r3);overflow:hidden;margin:6px 0 12px}}
+.legend{{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--t3)}} .lg i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}}
 .wrow{{display:grid;grid-template-columns:24px 1.6fr 1fr 48px;gap:8px;align-items:center;padding:5px 0;font-size:13px}}
-.wn{{color:#9ca3af;text-align:right}} .wname small{{color:#9ca3af}}
-.held{{font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:8px;margin-left:4px}}
-.wbar{{background:#f1f5f9;height:10px;border-radius:5px;overflow:hidden}} .wbar span{{display:block;height:10px;border-radius:5px}}
+.wn{{color:var(--t5);text-align:right}} .wname small{{color:var(--t5)}}
+.held{{font-size:10px;font-weight:700;background:var(--gold-soft);color:var(--gold-text);padding:1px 6px;border-radius:var(--r3);margin-left:4px}}
+.wbar{{background:var(--panel3);height:10px;border-radius:5px;overflow:hidden}} .wbar span{{display:block;height:10px;border-radius:5px}}
 .wpct{{text-align:right;font-weight:700}}
-.cut{{font-size:11px;color:{AMBER};border-top:2px dashed #fcd34d;margin:6px 0;padding-top:4px;text-align:center}}
+.cut{{font-size:11px;color:var(--gold-text);border-top:2px dashed var(--gold);margin:6px 0;padding-top:4px;text-align:center}}
 table{{width:100%;border-collapse:collapse;font-size:14px}}
-th{{text-align:left;color:#6b7280;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:10px 8px;border-bottom:1px solid #e5e7eb}}
-td{{padding:9px 8px;border-bottom:1px solid #f3f4f6}}
-.tag{{font-size:11px;font-weight:800;padding:3px 9px;border-radius:10px}}
-.tag.buy{{background:#dcfce7;color:#166534}} .tag.sell{{background:#fee2e2;color:#991b1b}}
+th{{text-align:left;color:var(--gold-text);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.08em;padding:10px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}}
+td{{padding:9px 8px;border-bottom:1px solid var(--line2);white-space:nowrap}}
+.tag{{font-size:11px;font-weight:800;padding:3px 9px;border-radius:var(--r3)}}
+.tag.buy{{background:var(--green-bg);color:var(--green)}} .tag.sell{{background:var(--red-bg);color:var(--red)}}
 .scroll{{max-height:420px;overflow:auto}}
-.note{{font-size:12px;color:#9ca3af;margin-top:26px;line-height:1.6}}
-@media(max-width:800px){{.hero,.two{{grid-template-columns:1fr}}}}
-</style></head><body><div class="wrap">
+.note{{font-size:12px;color:var(--t5);margin-top:26px;line-height:1.6}}
+@media(max-width:800px){{.hero,.two{{grid-template-columns:1fr}} .big{{font-size:34px}}}}
+@media(max-width:520px){{.hin .status{{margin-left:60px}} .wrap{{padding:16px 16px 32px}} .hin{{padding:0 16px}}
+ .hide-sm{{display:none}} .hgrid{{grid-template-columns:1fr}}}}
+</style></head><body>
 
-<div class="top"><div><h1>Paper Trader</h1>
-<div class="sub">Nasdaq-100 momentum &middot; pretend money &middot; prices as of {status['last_day']:%A, %B %d, %Y}</div></div>
-{status_pill}</div>
+<header><div class="hin">{logo.svg()}
+<div class="htext"><div class="brand">Pixel Invest</div><h1 class="htitle">Nasdaq-100 Momentum</h1>
+<div class="hsub">Pretend money &middot; prices as of {status['last_day']:%a, %b %d, %Y}</div></div>
+{status_pill}</div></header>
 
+<div class="wrap">
 <div class="hero">
  <div class="box"><div class="k">Your paper account</div><div class="big">{money(now_val)}</div>
   {pill(acct_ret, True)} <span class="muted">since {pd.Timestamp(cfg['start_date']):%b %d} ({days} days) &middot; started with {money(start_val, False)}</span></div>
@@ -297,14 +345,14 @@ td{{padding:9px 8px;border-bottom:1px solid #f3f4f6}}
   <div class="muted">{money(status['cash'])} in cash</div><div class="muted" style="margin-top:8px">{record}</div></div>
 </div>
 
-<div class="box switch"><b>{'&#128994;' if status['risk_on'] else '&#128308;'}</b><div><b style="font-size:15px">Safety switch: {'Invested' if status['risk_on'] else 'Cash'}</b><br>{switch_text}</div></div>
+<div class="box switch"><span class="dot {'on' if status['risk_on'] else 'off'}"></span><div><b>Safety switch: {'Invested' if status['risk_on'] else 'Cash'}</b><br>{switch_text}</div></div>
 
 <h2>{week_title} <small>&middot; at the close on {last_rebal:%A, %B %d}</small></h2>
 <div class="acts">{week_html}</div>
 
 <h2>Your account vs. just holding QQQ</h2>
 <div class="box chartbox"><div class="key"><span><i style="background:{BLUE}"></i>Your paper account</span>
-<span><i style="background:{GREY}"></i>Same money in QQQ</span><span class="muted">Hover the line for daily values</span></div>
+<span><i style="background:{GREY}"></i>Same money in QQQ</span><span class="muted hide-sm">Hover the line for daily values</span></div>
 {line_chart(acct)}</div>
 
 <h2>What you own <small>&middot; the bar shows each stock's rank: green = top {top_n}, yellow = keep, red = sell</small></h2>
@@ -320,7 +368,7 @@ td{{padding:9px 8px;border-bottom:1px solid #f3f4f6}}
 <div class="box scroll"><table><tr><th>Date</th><th>Action</th><th>Company</th><th>Price</th><th>Amount</th><th>Result</th></tr>
 {''.join(hist) or '<tr><td colspan="6" class="muted">No trades yet.</td></tr>'}</table></div>
 
-<p class="note">Pretend trades only, made at each week's last closing price with no fees (as in a USD account). Prices in US dollars.
+<p class="note">Pixel Invest &middot; pretend trades only, made at each week's last closing price with no fees. Prices in US dollars.
 Updates itself automatically every weekend. Last updated {datetime.now(ZoneInfo('America/New_York')):%b %d, %Y %I:%M %p} New York time. Past and paper results don't guarantee future returns.</p>
 </div></body></html>"""
     path = os.path.join(folder, "dashboard.html")
