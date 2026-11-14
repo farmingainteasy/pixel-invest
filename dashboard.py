@@ -107,8 +107,8 @@ def account_chart(acct, w=380, h=200):
             f'<defs><linearGradient id="af" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="{GOLD_TEXT}" stop-opacity=".22"/>'
             f'<stop offset="1" stop-color="{GOLD_TEXT}" stop-opacity="0"/></linearGradient></defs>{grid}{xl}'
             f'<polygon points="{area}" fill="url(#af)"/>'
-            f'<polyline points="{pts(q)}" fill="none" stroke="{T4}" stroke-width="2" stroke-dasharray="5 4"/>'
-            f'<polyline points="{pts(a)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="3" stroke-linejoin="round"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(q)}" fill="none" stroke="{T4}" stroke-width="2" stroke-dasharray="5 4"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(a)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="3" stroke-linejoin="round"/>'
             f'<circle cx="{xs[-1]:.1f}" cy="{y(a.iloc[-1]):.1f}" r="4.5" fill="{GOLD_TEXT}"/>{dots}</svg>')
 
 
@@ -144,13 +144,14 @@ def switch_chart(sw, w=380, h=200):
     last_q, last_s = sw["qqq"].iloc[-1], sw["sma"].iloc[-1]
     return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="{LABEL} {last_q:.2f} against its '
             f'200-day average {last_s:.2f}; shaded where the rules sit in cash">{grid}{"".join(shade)}{"".join(months)}'
-            f'<polyline points="{pts(sw["sma"])}" fill="none" stroke="{GOLD}" stroke-width="2" stroke-dasharray="6 4"/>'
-            f'<polyline points="{pts(sw["qqq"])}" fill="none" stroke="{T1}" stroke-width="2" stroke-linejoin="round"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["sma"])}" fill="none" stroke="{GOLD}" stroke-width="2" stroke-dasharray="6 4"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["qqq"])}" fill="none" stroke="{T1}" stroke-width="2" stroke-linejoin="round"/>'
             f'<circle cx="{xs[-1]:.1f}" cy="{y(last_q):.1f}" r="4" fill="{T1}"/></svg>')
 
 
 def backtest_chart(bt, w=380, h=210):
     c = bt["curve"]
+    c = c[::4] + ([c[-1]] if (len(c) - 1) % 4 else [])     # about monthly: smooth, readable on a phone
     n = len(c)
     pl, pr, pt_, pb = 42, 8, 10, 24
     vals = [v for r in c for v in r[1:]]
@@ -165,8 +166,8 @@ def backtest_chart(bt, w=380, h=210):
             f'{money(c[-1][1], False)} with the rules and {money(c[-1][2], False)} in {LABEL}">{grid}'
             f'<text x="{pl}" y="{h - 8}" class="ax">{c[0][0][:4]}</text>'
             f'<text x="{w - pr}" y="{h - 8}" text-anchor="end" class="ax">{c[-1][0][:4]}</text>'
-            f'<polyline points="{pts(2)}" fill="none" stroke="{T4}" stroke-width="2" stroke-dasharray="5 4"/>'
-            f'<polyline points="{pts(1)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="2.5" stroke-linejoin="round"/></svg>')
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(2)}" fill="none" stroke="{T4}" stroke-width="1.75" stroke-linejoin="round"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(1)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="2.5" stroke-linejoin="round"/></svg>')
 
 
 def sector_bar(holdings, cash):
@@ -273,7 +274,7 @@ h2{{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;text-wrap:bala
 .chip.pos{{background:rgba(107,211,90,.14);color:{GREEN}}} .chip.neg{{background:rgba(255,90,78,.14);color:{RED}}} .chip.flat{{background:{PANEL3};color:{T3}}}
 .tag{{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;vertical-align:1px}}
 .tag.buy{{background:rgba(107,211,90,.14);color:{GREEN}}} .tag.sell{{background:rgba(255,90,78,.14);color:{RED}}}
-.chart{{width:100%;height:auto;display:block}} .chart .ax{{fill:{T4};font-size:11px;font-family:var(--sans)}}
+.chart{{width:100%;height:auto;display:block;shape-rendering:geometricPrecision}} .chart .ax{{fill:{T4};font-size:11px;font-family:var(--sans)}}
 .chart .hot{{fill:transparent;cursor:crosshair}} .chart .hot:hover{{fill:{GOLD_TEXT};fill-opacity:.3}}
 .key{{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:{T3}}}
 .key i{{display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}}
@@ -557,8 +558,8 @@ def mini_spark(points, w=120, h=40):
     y = lambda v: 3 + (1 - (v - lo) / span) * (h - 6)
     a = " ".join(f"{xs[i]:.1f},{y(p[0]):.1f}" for i, p in enumerate(points))
     q = " ".join(f"{xs[i]:.1f},{y(p[1]):.1f}" for i, p in enumerate(points))
-    return (f'<svg viewBox="0 0 {w} {h}" aria-hidden="true"><polyline points="{q}" fill="none" stroke="{T5}" stroke-width="1.5" '
-            f'stroke-dasharray="4 3"/><polyline points="{a}" fill="none" stroke="{GOLD_TEXT}" stroke-width="2.5" stroke-linejoin="round"/>'
+    return (f'<svg viewBox="0 0 {w} {h}" aria-hidden="true"><polyline vector-effect="non-scaling-stroke" points="{q}" fill="none" stroke="{T5}" stroke-width="1.5" '
+            f'stroke-dasharray="4 3"/><polyline vector-effect="non-scaling-stroke" points="{a}" fill="none" stroke="{GOLD_TEXT}" stroke-width="2.5" stroke-linejoin="round"/>'
             f'<circle cx="{xs[-1]:.1f}" cy="{y(points[-1][0]):.1f}" r="3" fill="{GOLD_TEXT}"/></svg>')
 
 
