@@ -176,6 +176,22 @@ COMPANIES = {
 }
 
 
+def _load_lists():
+    """Names and sectors from lists/*.csv fill in tickers not written out above."""
+    import csv
+    import glob
+    import os
+    for path in sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "lists", "*.csv"))):
+        with open(path) as f:
+            for r in csv.DictReader(f):
+                COMPANIES.setdefault(r["ticker"], (r["name"], r["sector"]))
+    for t, n in (("SPY", "SPDR S&P 500 fund"), ("DIA", "SPDR Dow Jones fund")):
+        COMPANIES.setdefault(t, (n, "Index fund"))
+
+
+_load_lists()
+
+
 def name(t):
     return COMPANIES.get(t, (t, ""))[0]
 
