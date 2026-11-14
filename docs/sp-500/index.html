@@ -120,18 +120,150 @@ td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:now
 .wk b{color:#E2C067;white-space:nowrap}
 </style></head><body><div class="app">
 <nav class="side" aria-label="Markets"><div class="brandrow"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Pixel Invest logo: a green arrow climbing from gold coins that dissolve into pixels"><rect width="64" height="64" rx="14" fill="#1C1A14"/><polyline points="9,41 21,30 29,35 44,20" fill="none" stroke="#57B24A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,11 48.6,25.2 38.8,15.4" fill="#6ECB5E" stroke="#6ECB5E" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="48" width="16" height="9" rx="1.5" fill="#C8A951"/><rect x="24" y="48" width="5" height="5" fill="#C8A951"/><rect x="30" y="53" width="4" height="4" fill="#C8A951"/><rect x="36" y="48" width="4" height="4" fill="#C8A951"/><rect x="42" y="53" width="3" height="3" fill="#C8A951"/><rect x="47" y="49" width="3" height="3" fill="#C8A951"/><rect x="42" y="48" width="3" height="3" fill="#8A7A46"/><rect x="52" y="52" width="2.5" height="2.5" fill="#8A7A46"/></svg><div class="brand" style="display:block">Pixel Invest</div></div>
-<a href="../" class="">All markets</a><a href="../nasdaq-100/">Nasdaq-100 <small class="off">Cash</small></a><a href="../tsx-60/">TSX 60 <small class="wait">Starts Nov 20</small></a><a href="../sp-500/" class="on" aria-current="page">S&amp;P 500 <small class="wait">Starts Nov 20</small></a><a href="../dow-30/">Dow Jones <small class="wait">Starts Nov 20</small></a></nav>
+<a href="../" class="">All markets</a><a href="../nasdaq-100/">Nasdaq-100 <small class="off">Cash</small></a><a href="../tsx-60/">TSX 60 <small class="on">Invested</small></a><a href="../sp-500/" class="on" aria-current="page">S&amp;P 500 <small class="on">Invested</small></a><a href="../dow-30/">Dow Jones <small class="wait">Starts Nov 13</small></a></nav>
 <div class="content">
 <header class="hdr"><div class="wrap hin">
 <a class="back" href="../">&#8249; All markets</a>
 <div class="brandrow"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Pixel Invest logo: a green arrow climbing from gold coins that dissolve into pixels"><rect width="64" height="64" rx="14" fill="#1C1A14"/><polyline points="9,41 21,30 29,35 44,20" fill="none" stroke="#57B24A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,11 48.6,25.2 38.8,15.4" fill="#6ECB5E" stroke="#6ECB5E" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="48" width="16" height="9" rx="1.5" fill="#C8A951"/><rect x="24" y="48" width="5" height="5" fill="#C8A951"/><rect x="30" y="53" width="4" height="4" fill="#C8A951"/><rect x="36" y="48" width="4" height="4" fill="#C8A951"/><rect x="42" y="53" width="3" height="3" fill="#C8A951"/><rect x="47" y="49" width="3" height="3" fill="#C8A951"/><rect x="42" y="48" width="3" height="3" fill="#8A7A46"/><rect x="52" y="52" width="2.5" height="2.5" fill="#8A7A46"/></svg><div><div class="brand">Pixel Invest</div><h1 class="htitle">S&amp;P 500 Momentum</h1></div></div>
 <div class="hval"><div><div class="big">$10,000.00</div>
-<div class="sub">A US$ paper account, compared with SPY</div></div><span class="state wait">Starts Nov 20</span></div>
+<div class="sub">Up 0.0% since Nov 13 &middot; SPY up 0.0% &middot; prices as of Fri Nov 13</div></div>
+<span class="state on">Invested</span></div>
 </div></header>
 <nav class="switch wrap" aria-label="Markets"><a href="../nasdaq-100/" class="">Nasdaq-100</a><a href="../tsx-60/" class="">TSX 60</a><a href="../sp-500/" class="on">S&amp;P 500</a><a href="../dow-30/" class="">Dow Jones</a></nav>
 <main class="wrap">
-<section class="card sec full"><h2>Not trading yet</h2><p class="lead">The account makes its first trades at the close on Friday, November 20: the top 20 by 3-month gain, unless SPY is below its 200-day average. This page fills in after that run.</p></section>
-<div class="col full"><details class="card tuck" open><summary>How these rules did in testing</summary>
+<div class="kpis full">
+ <div class="kpi"><span class="k">Account</span><span class="v">$10,000</span><span class="s pos">+0.0% since Nov 13</span></div>
+ <div class="kpi"><span class="k">Same money in SPY</span><span class="v">$10,000</span><span class="s">You're $0 ahead</span></div>
+ <div class="kpi"><span class="k">Safety switch</span><span class="v pos">Invested</span><span class="s">SPY 3.1% above the line</span></div>
+ <div class="kpi"><span class="k">Stocks held</span><span class="v">20 of 20</span><span class="s">No sells yet</span></div>
+</div>
+
+<div class="col">
+<section class="card sec o1"><div><h2>Your account vs. just holding SPY</h2><p class="lead">Started Nov 13 with $10,000. Tap a point for that day.</p></div>
+<div class="key"><span><i style="background:#E2C067"></i>Your account</span><span><i style="background:#A39D8E"></i>Same money in SPY</span></div>
+<p class="empty">The chart starts after the first full day.</p></section>
+
+<section class="card sec o2"><div><h2>Safety switch: SPY vs. its 200-day average</h2><p class="lead">SPY is above the dashed line, so the rules stay invested.
+Today SPY is 754.37 and the line is 731.92.</p></div>
+<div class="key"><span><i style="background:#F4F0E6"></i>SPY</span><span><i style="background:#C8A951"></i>200-day average</span></div>
+<svg viewBox="0 0 380 200" class="chart" role="img" aria-label="SPY 754.37 against its 200-day average 731.92; shaded where the rules sit in cash"><line x1="40" x2="372" y1="176.0" y2="176.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="180.0" text-anchor="end" class="ax">676</text><line x1="40" x2="372" y1="120.7" y2="120.7" stroke="rgba(255,255,255,.06)"/><text x="32" y="124.7" text-anchor="end" class="ax">713</text><line x1="40" x2="372" y1="65.3" y2="65.3" stroke="rgba(255,255,255,.06)"/><text x="32" y="69.3" text-anchor="end" class="ax">750</text><line x1="40" x2="372" y1="10.0" y2="10.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="14.0" text-anchor="end" class="ax">787</text><text x="40.0" y="192" class="ax">Jun</text><text x="90.4" y="192" class="ax">Jul</text><text x="155.6" y="192" class="ax">Aug</text><text x="217.9" y="192" class="ax">Sep</text><text x="280.1" y="192" class="ax">Oct</text><polyline points="40.0,164.6 43.0,163.8 45.9,163.0 48.9,162.4 51.9,161.7 54.8,161.0 57.8,160.2 60.8,159.4 63.7,158.7 66.7,157.9 69.6,157.1 72.6,156.5 75.6,155.8 78.5,155.2 81.5,154.6 84.5,153.9 87.4,153.3 90.4,152.6 93.4,152.0 96.3,151.3 99.3,150.6 102.2,150.0 105.2,149.3 108.2,148.7 111.1,148.0 114.1,147.4 117.1,146.6 120.0,146.0 123.0,145.4 126.0,144.8 128.9,144.2 131.9,143.6 134.9,143.1 137.8,142.6 140.8,142.0 143.8,141.5 146.7,141.1 149.7,140.4 152.6,139.8 155.6,139.1 158.6,138.3 161.5,137.5 164.5,136.7 167.5,135.9 170.4,135.1 173.4,134.4 176.4,133.6 179.3,132.9 182.3,132.2 185.2,131.5 188.2,130.9 191.2,130.3 194.1,129.7 197.1,129.0 200.1,128.4 203.0,127.7 206.0,127.0 209.0,126.2 211.9,125.6 214.9,124.9 217.9,124.4 220.8,123.7 223.8,122.9 226.8,122.1 229.7,121.3 232.7,120.6 235.6,119.8 238.6,119.0 241.6,118.3 244.5,117.7 247.5,117.1 250.5,116.5 253.4,115.9 256.4,115.2 259.4,114.5 262.3,113.9 265.3,113.3 268.2,112.6 271.2,112.0 274.2,111.4 277.1,110.9 280.1,110.3 283.1,109.6 286.0,108.9 289.0,108.1 292.0,107.3 294.9,106.6 297.9,105.9 300.9,105.2 303.8,104.6 306.8,104.0 309.8,103.3 312.7,102.8 315.7,102.1 318.6,101.5 321.6,100.8 324.6,100.3 327.5,99.8 330.5,99.2 333.5,98.6 336.4,98.1 339.4,97.5 342.4,97.0 345.3,96.5 348.3,96.1 351.2,95.4 354.2,95.0 357.2,94.7 360.1,94.2 363.1,93.8 366.1,93.3 369.0,92.8 372.0,92.4" fill="none" stroke="#C8A951" stroke-width="2" stroke-dasharray="6 4"/><polyline points="40.0,83.9 43.0,81.4 45.9,84.7 48.9,102.1 51.9,83.6 54.8,77.6 57.8,57.9 60.8,64.7 63.7,78.8 66.7,70.1 69.6,73.6 72.6,89.9 75.6,90.4 78.5,88.8 81.5,96.8 84.5,78.7 87.4,70.0 90.4,71.6 93.4,73.0 96.3,63.3 99.3,68.6 102.2,72.1 105.2,62.6 108.2,57.7 111.1,66.4 114.1,62.4 117.1,58.0 120.0,64.1 123.0,75.3 126.0,77.1 128.9,67.8 131.9,69.1 134.9,83.0 137.8,81.8 140.8,81.6 143.8,78.9 146.7,96.1 149.7,77.7 152.6,69.7 155.6,53.7 158.6,33.1 161.5,35.4 164.5,37.3 167.5,30.2 170.4,30.6 173.4,34.3 176.4,31.4 179.3,23.3 182.3,25.6 185.2,31.1 188.2,39.0 191.2,36.5 194.1,46.2 197.1,41.6 200.1,44.9 203.0,41.3 206.0,41.0 209.0,33.5 211.9,36.1 214.9,39.6 217.9,47.5 220.8,42.4 223.8,30.4 226.8,34.8 229.7,41.2 232.7,46.5 235.6,53.4 238.6,43.7 241.6,48.8 244.5,54.1 247.5,59.1 250.5,46.2 253.4,47.6 256.4,29.9 259.4,30.0 262.3,38.4 265.3,39.4 268.2,33.1 271.2,41.7 274.2,43.8 277.1,46.2 280.1,44.2 283.1,35.7 286.0,27.9 289.0,21.4 292.0,24.3 294.9,29.2 297.9,22.2 300.9,22.9 303.8,23.1 306.8,35.7 309.8,32.4 312.7,45.3 315.7,40.4 318.6,36.5 321.6,30.5 324.6,44.2 327.5,50.2 330.5,42.1 333.5,35.6 336.4,31.6 339.4,36.1 342.4,56.6 345.3,62.0 348.3,58.7 351.2,39.9 354.2,90.8 357.2,87.3 360.1,61.1 363.1,65.3 366.1,50.4 369.0,54.5 372.0,58.6" fill="none" stroke="#F4F0E6" stroke-width="2" stroke-linejoin="round"/><circle cx="372.0" cy="58.6" r="4" fill="#F4F0E6"/></svg></section>
+<section class="card sec o5"><h2>The rules</h2><ul class="rules">
+<li><b>Every Friday</b>Rank the S&amp;P 500 by 3-month gain.</li>
+<li><b>Buy</b>Own the top 20, with equal money in each new stock.</li>
+<li><b>Sell</b>When a stock falls below rank 40.</li>
+<li><b>Safety switch</b>When SPY closes below its 200-day average, sell everything and wait in cash.</li></ul></section>
+</div>
+
+<div class="col">
+<section class="card sec o3"><div><h2>Started the account <span class="lead" style="font-weight:400">&middot; Fri Nov 13</span></h2>
+<p class="lead">The bar is each stock's last 52 weeks, low to high. The dot is where it traded.</p></div><div class="rowlist"><div class="rl"><div class="rltop"><div class="nm">
+<b>MRNA</b>
+<small>Moderna &middot; bought at $223.37</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $22.36 to $269.00; bought 81% of the way up"><span>$22</span><div class="rtrack"><i style="left:81.5%"></i></div><span>$269</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>ACN</b>
+<small>Accenture &middot; bought at $250.49</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $124.44 to $288.54; bought 77% of the way up"><span>$124</span><div class="rtrack"><i style="left:76.8%"></i></div><span>$289</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>PTC</b>
+<small>PTC Inc. &middot; bought at $196.00</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $112.33 to $196.55; bought 99% of the way up"><span>$112</span><div class="rtrack"><i style="left:99.3%"></i></div><span>$197</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>ULTA</b>
+<small>Ulta Beauty &middot; bought at $660.66</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $450.75 to $706.82; bought 82% of the way up"><span>$451</span><div class="rtrack"><i style="left:82.0%"></i></div><span>$707</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>RVTY</b>
+<small>Revvity &middot; bought at $154.39</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $82.26 to $165.78; bought 86% of the way up"><span>$82</span><div class="rtrack"><i style="left:86.4%"></i></div><span>$166</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>SWKS</b>
+<small>Skyworks Solutions &middot; bought at $89.94</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $52.50 to $91.45; bought 96% of the way up"><span>$52</span><div class="rtrack"><i style="left:96.1%"></i></div><span>$91</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>EL</b>
+<small>Estée Lauder Companies (The) &middot; bought at $111.75</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $67.23 to $119.61; bought 85% of the way up"><span>$67</span><div class="rtrack"><i style="left:85.0%"></i></div><span>$120</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>TYL</b>
+<small>Tyler Technologies &middot; bought at $424.06</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $275.27 to $472.77; bought 75% of the way up"><span>$275</span><div class="rtrack"><i style="left:75.3%"></i></div><span>$473</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>APP</b>
+<small>AppLovin &middot; bought at $409.10</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $228.50 to $733.60; bought 36% of the way up"><span>$228</span><div class="rtrack"><i style="left:35.8%"></i></div><span>$734</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>IDXX</b>
+<small>IDEXX Laboratories (vet tests) &middot; bought at $704.23</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $504.70 to $766.68; bought 76% of the way up"><span>$505</span><div class="rtrack"><i style="left:76.2%"></i></div><span>$767</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>VTRS</b>
+<small>Viatris &middot; bought at $20.82</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $10.19 to $21.06; bought 98% of the way up"><span>$10</span><div class="rtrack"><i style="left:97.8%"></i></div><span>$21</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>MCK</b>
+<small>McKesson &middot; bought at $1,102.81</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $725.17 to $1,102.81; bought 100% of the way up"><span>$725</span><div class="rtrack"><i style="left:100.0%"></i></div><span>$1,103</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>OKTA</b>
+<small>Okta, Inc. &middot; bought at $182.87</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $62.93 to $232.13; bought 71% of the way up"><span>$63</span><div class="rtrack"><i style="left:70.9%"></i></div><span>$232</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>CBOE</b>
+<small>Cboe Global Markets &middot; bought at $375.42</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $231.51 to $375.42; bought 100% of the way up"><span>$232</span><div class="rtrack"><i style="left:100.0%"></i></div><span>$375</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>CDW</b>
+<small>CDW &middot; bought at $171.65</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $99.30 to $173.08; bought 98% of the way up"><span>$99</span><div class="rtrack"><i style="left:98.1%"></i></div><span>$173</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>HAS</b>
+<small>Hasbro &middot; bought at $120.55</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $75.86 to $124.02; bought 93% of the way up"><span>$76</span><div class="rtrack"><i style="left:92.8%"></i></div><span>$124</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>VEEV</b>
+<small>Veeva Systems &middot; bought at $301.53</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $151.43 to $323.04; bought 87% of the way up"><span>$151</span><div class="rtrack"><i style="left:87.5%"></i></div><span>$323</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>KR</b>
+<small>Kroger &middot; bought at $70.80</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $55.53 to $75.60; bought 76% of the way up"><span>$56</span><div class="rtrack"><i style="left:76.1%"></i></div><span>$76</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>GDDY</b>
+<small>GoDaddy &middot; bought at $114.12</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $74.99 to $131.07; bought 70% of the way up"><span>$75</span><div class="rtrack"><i style="left:69.8%"></i></div><span>$131</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>HCA</b>
+<small>HCA Healthcare &middot; bought at $499.05</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range $361.32 to $545.13; bought 75% of the way up"><span>$361</span><div class="rtrack"><i style="left:74.9%"></i></div><span>$545</span></div></div></div></section>
+</div>
+<section class="card sec full o4"><div><h2>What you own</h2>
+<p class="lead">Top bar: rank (green top 20, yellow keep, red sell). Bottom bar: 52-week range.</p></div>
+<div class="rowlist"><div class="rl"><div class="rltop"><div class="nm"><b>ULTA</b>
+<small>Ulta Beauty &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:8.0%"></i></div><div class="rklabel ok">Rank 4 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $450.75 to $706.82; now 82% of the way up"><span>$451</span><div class="rtrack"><i style="left:82.0%"></i></div><span>$707</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>HAS</b>
+<small>Hasbro &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:32.0%"></i></div><div class="rklabel ok">Rank 16 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $75.86 to $124.02; now 93% of the way up"><span>$76</span><div class="rtrack"><i style="left:92.8%"></i></div><span>$124</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>MRNA</b>
+<small>Moderna &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:2.0%"></i></div><div class="rklabel ok">Rank 1 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $22.36 to $269.00; now 81% of the way up"><span>$22</span><div class="rtrack"><i style="left:81.5%"></i></div><span>$269</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>ACN</b>
+<small>Accenture &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:4.0%"></i></div><div class="rklabel ok">Rank 2 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $124.44 to $288.54; now 77% of the way up"><span>$124</span><div class="rtrack"><i style="left:76.8%"></i></div><span>$289</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>PTC</b>
+<small>PTC Inc. &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:6.0%"></i></div><div class="rklabel ok">Rank 3 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $112.33 to $196.55; now 99% of the way up"><span>$112</span><div class="rtrack"><i style="left:99.3%"></i></div><span>$197</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>SWKS</b>
+<small>Skyworks Solutions &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:12.0%"></i></div><div class="rklabel ok">Rank 6 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $52.50 to $91.45; now 96% of the way up"><span>$52</span><div class="rtrack"><i style="left:96.1%"></i></div><span>$91</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>EL</b>
+<small>Estée Lauder Companies (The) &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:14.0%"></i></div><div class="rklabel ok">Rank 7 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $67.23 to $119.61; now 85% of the way up"><span>$67</span><div class="rtrack"><i style="left:85.0%"></i></div><span>$120</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>TYL</b>
+<small>Tyler Technologies &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:16.0%"></i></div><div class="rklabel ok">Rank 8 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $275.27 to $472.77; now 75% of the way up"><span>$275</span><div class="rtrack"><i style="left:75.3%"></i></div><span>$473</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>IDXX</b>
+<small>IDEXX Laboratories (vet tests) &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:20.0%"></i></div><div class="rklabel ok">Rank 10 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $504.70 to $766.68; now 76% of the way up"><span>$505</span><div class="rtrack"><i style="left:76.2%"></i></div><span>$767</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>VTRS</b>
+<small>Viatris &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:22.0%"></i></div><div class="rklabel ok">Rank 11 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $10.19 to $21.06; now 98% of the way up"><span>$10</span><div class="rtrack"><i style="left:97.8%"></i></div><span>$21</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>MCK</b>
+<small>McKesson &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:24.0%"></i></div><div class="rklabel ok">Rank 12 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $725.17 to $1,102.81; now 100% of the way up"><span>$725</span><div class="rtrack"><i style="left:100.0%"></i></div><span>$1,103</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>OKTA</b>
+<small>Okta, Inc. &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:26.0%"></i></div><div class="rklabel ok">Rank 13 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $62.93 to $232.13; now 71% of the way up"><span>$63</span><div class="rtrack"><i style="left:70.9%"></i></div><span>$232</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>CBOE</b>
+<small>Cboe Global Markets &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:28.0%"></i></div><div class="rklabel ok">Rank 14 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $231.51 to $375.42; now 100% of the way up"><span>$232</span><div class="rtrack"><i style="left:100.0%"></i></div><span>$375</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>CDW</b>
+<small>CDW &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:30.0%"></i></div><div class="rklabel ok">Rank 15 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $99.30 to $173.08; now 98% of the way up"><span>$99</span><div class="rtrack"><i style="left:98.1%"></i></div><span>$173</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>VEEV</b>
+<small>Veeva Systems &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:34.0%"></i></div><div class="rklabel ok">Rank 17 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $151.43 to $323.04; now 87% of the way up"><span>$151</span><div class="rtrack"><i style="left:87.5%"></i></div><span>$323</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>GDDY</b>
+<small>GoDaddy &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:38.0%"></i></div><div class="rklabel ok">Rank 19 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $74.99 to $131.07; now 70% of the way up"><span>$75</span><div class="rtrack"><i style="left:69.8%"></i></div><span>$131</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>RVTY</b>
+<small>Revvity &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:10.0%"></i></div><div class="rklabel ok">Rank 5 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $82.26 to $165.78; now 86% of the way up"><span>$82</span><div class="rtrack"><i style="left:86.4%"></i></div><span>$166</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>APP</b>
+<small>AppLovin &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:18.0%"></i></div><div class="rklabel ok">Rank 9 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $228.50 to $733.60; now 36% of the way up"><span>$228</span><div class="rtrack"><i style="left:35.8%"></i></div><span>$734</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>KR</b>
+<small>Kroger &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:36.0%"></i></div><div class="rklabel ok">Rank 18 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $55.53 to $75.60; now 76% of the way up"><span>$56</span><div class="rtrack"><i style="left:76.1%"></i></div><span>$76</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>HCA</b>
+<small>HCA Healthcare &middot; $500.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:40.0%"></span><span style="width:40.0%"></span><span></span><i style="left:40.0%"></i></div><div class="rklabel ok">Rank 20 &middot; in the top 20</div></div><div class="range" role="img" aria-label="52-week range $361.32 to $545.13; now 75% of the way up"><span>$361</span><div class="rtrack"><i style="left:74.9%"></i></div><span>$545</span></div></div></div></section>
+<section class="card sec full o4"><h2>Where your money is</h2><div class="stack"><span style="width:30.00%;background:#6BD35A"></span><span style="width:30.00%;background:#E2C067"></span><span style="width:10.00%;background:#6FA0D8"></span><span style="width:10.00%;background:#E0875A"></span><span style="width:5.00%;background:#A8B86A"></span><span style="width:5.00%;background:#5FB3AC"></span><span style="width:5.00%;background:#B98BC0"></span><span style="width:5.00%;background:#E2B04A"></span></div><div class="legend"><span><i style="background:#6BD35A"></i>Health Care <b>30%</b></span><span><i style="background:#E2C067"></i>Information Technology <b>30%</b></span><span><i style="background:#6FA0D8"></i>Consumer Discretionary <b>10%</b></span><span><i style="background:#E0875A"></i>Consumer Staples <b>10%</b></span><span><i style="background:#A8B86A"></i>Animal health <b>5%</b></span><span><i style="background:#5FB3AC"></i>Financials <b>5%</b></span><span><i style="background:#B98BC0"></i>IT services <b>5%</b></span><span><i style="background:#E2B04A"></i>Software <b>5%</b></span></div></section>
+
+<div class="col full o6"><details class="card tuck"><summary>How these rules did in testing</summary>
 <div class="sec" style="margin-top:12px">
 <p class="lead">$10,000 run through the same rules every week since 2016, with 0.1% trading costs
 and dividends included. The rules end at $138,430; SPY at $44,624.</p>
@@ -143,12 +275,49 @@ and dividends included. The rules end at $138,430; SPY at $44,624.</p>
 <div class="stat"><span class="k">Winning trades</span><span class="v">45%</span></div>
 <div class="stat"><span class="k">Trades a year</span><span class="v">297</span></div></div>
 <p class="warn">This test uses today's S&amp;P 500 list, so it includes later winners and leaves out companies that dropped out of the index.
-Real results would very likely have been lower. Refreshed Nov 14, 2026.</p></div></details></div>
-<section class="card sec full"><h2>The rules</h2><ul class="rules">
-<li><b>Every Friday</b>Rank the S&amp;P 500 by 3-month gain.</li>
-<li><b>Buy</b>Own the top 20, with equal money in each new stock.</li>
-<li><b>Sell</b>When a stock falls below rank 40.</li>
-<li><b>Safety switch</b>When SPY closes below its 200-day average, sell everything and wait in cash.</li></ul></section>
-<div class="col full"><p class="note">Pretend money only: trades at each Friday's closing price, no fees. Dividends are paid into the account's cash, and the index fund comparison includes its dividends. Prices in US$. Updates itself every weekend. Last updated Nov 14, 2026 03:14 PM New York time. Past and paper results don't guarantee future returns.</p></div>
+Real results would very likely have been lower. Refreshed Nov 14, 2026.</p></div></details>
+<details class="card tuck"><summary>Every trade (20)</summary><div class="scroll" style="margin-top:10px"><table>
+<tr><th>Date</th><th>Action</th><th>Stock</th><th>Price</th><th>Amount</th><th>Result</th></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>HCA</b></td><td>$499.05</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>GDDY</b></td><td>$114.12</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>KR</b></td><td>$70.80</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>VEEV</b></td><td>$301.53</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>HAS</b></td><td>$120.55</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>CDW</b></td><td>$171.65</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>CBOE</b></td><td>$375.42</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>OKTA</b></td><td>$182.87</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>MCK</b></td><td>$1,102.81</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>VTRS</b></td><td>$20.82</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>IDXX</b></td><td>$704.23</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>APP</b></td><td>$409.10</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>TYL</b></td><td>$424.06</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>EL</b></td><td>$111.75</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>SWKS</b></td><td>$89.94</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>RVTY</b></td><td>$154.39</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>ULTA</b></td><td>$660.66</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>PTC</b></td><td>$196.00</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>ACN</b></td><td>$250.49</td><td>$500</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>MRNA</b></td><td>$223.37</td><td>$500</td><td></td></tr></table></div></details>
+<p class="note">Pretend money only: trades at each Friday's closing price, no fees. Dividends are paid into the account's cash, and the index fund comparison includes its dividends. Prices in US$. Updates itself every weekend. Last updated Nov 14, 2026 03:18 PM New York time. Past and paper results don't guarantee future returns.</p></div>
 </main>
 </div></div></body></html>

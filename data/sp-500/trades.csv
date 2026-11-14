@@ -1,0 +1,21 @@
+date,action,ticker,shares,price,value,gain_pct,reason
+2026-11-13,BUY,MRNA,2.2384,223.37,500.0,,Rank 1 by 3-month gain
+2026-11-13,BUY,ACN,1.9961,250.49,500.0,,Rank 2 by 3-month gain
+2026-11-13,BUY,PTC,2.551,196.0,500.0,,Rank 3 by 3-month gain
+2026-11-13,BUY,ULTA,0.7568,660.66,500.0,,Rank 4 by 3-month gain
+2026-11-13,BUY,RVTY,3.2386,154.39,500.0,,Rank 5 by 3-month gain
+2026-11-13,BUY,SWKS,5.5593,89.94,500.0,,Rank 6 by 3-month gain
+2026-11-13,BUY,EL,4.4743,111.75,500.0,,Rank 7 by 3-month gain
+2026-11-13,BUY,TYL,1.1791,424.06,500.0,,Rank 8 by 3-month gain
+2026-11-13,BUY,APP,1.2222,409.1,500.0,,Rank 9 by 3-month gain
+2026-11-13,BUY,IDXX,0.71,704.23,500.0,,Rank 10 by 3-month gain
+2026-11-13,BUY,VTRS,24.0154,20.82,500.0,,Rank 11 by 3-month gain
+2026-11-13,BUY,MCK,0.4534,1102.81,500.0,,Rank 12 by 3-month gain
+2026-11-13,BUY,OKTA,2.7342,182.87,500.0,,Rank 13 by 3-month gain
+2026-11-13,BUY,CBOE,1.3318,375.42,500.0,,Rank 14 by 3-month gain
+2026-11-13,BUY,CDW,2.9129,171.65,500.0,,Rank 15 by 3-month gain
+2026-11-13,BUY,HAS,4.1477,120.55,500.0,,Rank 16 by 3-month gain
+2026-11-13,BUY,VEEV,1.6582,301.53,500.0,,Rank 17 by 3-month gain
+2026-11-13,BUY,KR,7.0621,70.8,500.0,,Rank 18 by 3-month gain
+2026-11-13,BUY,GDDY,4.3814,114.12,500.0,,Rank 19 by 3-month gain
+2026-11-13,BUY,HCA,1.0019,499.05,500.0,,Rank 20 by 3-month gain

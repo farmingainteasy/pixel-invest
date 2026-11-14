@@ -120,18 +120,90 @@ td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:now
 .wk b{color:#E2C067;white-space:nowrap}
 </style></head><body><div class="app">
 <nav class="side" aria-label="Markets"><div class="brandrow"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Pixel Invest logo: a green arrow climbing from gold coins that dissolve into pixels"><rect width="64" height="64" rx="14" fill="#1C1A14"/><polyline points="9,41 21,30 29,35 44,20" fill="none" stroke="#57B24A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,11 48.6,25.2 38.8,15.4" fill="#6ECB5E" stroke="#6ECB5E" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="48" width="16" height="9" rx="1.5" fill="#C8A951"/><rect x="24" y="48" width="5" height="5" fill="#C8A951"/><rect x="30" y="53" width="4" height="4" fill="#C8A951"/><rect x="36" y="48" width="4" height="4" fill="#C8A951"/><rect x="42" y="53" width="3" height="3" fill="#C8A951"/><rect x="47" y="49" width="3" height="3" fill="#C8A951"/><rect x="42" y="48" width="3" height="3" fill="#8A7A46"/><rect x="52" y="52" width="2.5" height="2.5" fill="#8A7A46"/></svg><div class="brand" style="display:block">Pixel Invest</div></div>
-<a href="../" class="">All markets</a><a href="../nasdaq-100/">Nasdaq-100 <small class="off">Cash</small></a><a href="../tsx-60/" class="on" aria-current="page">TSX 60 <small class="wait">Starts Nov 20</small></a><a href="../sp-500/">S&amp;P 500 <small class="wait">Starts Nov 20</small></a><a href="../dow-30/">Dow Jones <small class="wait">Starts Nov 20</small></a></nav>
+<a href="../" class="">All markets</a><a href="../nasdaq-100/">Nasdaq-100 <small class="off">Cash</small></a><a href="../tsx-60/" class="on" aria-current="page">TSX 60 <small class="on">Invested</small></a><a href="../sp-500/">S&amp;P 500 <small class="wait">Starts Nov 13</small></a><a href="../dow-30/">Dow Jones <small class="wait">Starts Nov 13</small></a></nav>
 <div class="content">
 <header class="hdr"><div class="wrap hin">
 <a class="back" href="../">&#8249; All markets</a>
 <div class="brandrow"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Pixel Invest logo: a green arrow climbing from gold coins that dissolve into pixels"><rect width="64" height="64" rx="14" fill="#1C1A14"/><polyline points="9,41 21,30 29,35 44,20" fill="none" stroke="#57B24A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,11 48.6,25.2 38.8,15.4" fill="#6ECB5E" stroke="#6ECB5E" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="48" width="16" height="9" rx="1.5" fill="#C8A951"/><rect x="24" y="48" width="5" height="5" fill="#C8A951"/><rect x="30" y="53" width="4" height="4" fill="#C8A951"/><rect x="36" y="48" width="4" height="4" fill="#C8A951"/><rect x="42" y="53" width="3" height="3" fill="#C8A951"/><rect x="47" y="49" width="3" height="3" fill="#C8A951"/><rect x="42" y="48" width="3" height="3" fill="#8A7A46"/><rect x="52" y="52" width="2.5" height="2.5" fill="#8A7A46"/></svg><div><div class="brand">Pixel Invest</div><h1 class="htitle">TSX 60 Momentum</h1></div></div>
 <div class="hval"><div><div class="big">C$10,000.00</div>
-<div class="sub">A C$ paper account, compared with XIU</div></div><span class="state wait">Starts Nov 20</span></div>
+<div class="sub">Up 0.0% since Nov 13 &middot; XIU up 0.0% &middot; prices as of Fri Nov 13</div></div>
+<span class="state on">Invested</span></div>
 </div></header>
 <nav class="switch wrap" aria-label="Markets"><a href="../nasdaq-100/" class="">Nasdaq-100</a><a href="../tsx-60/" class="on">TSX 60</a><a href="../sp-500/" class="">S&amp;P 500</a><a href="../dow-30/" class="">Dow Jones</a></nav>
 <main class="wrap">
-<section class="card sec full"><h2>Not trading yet</h2><p class="lead">The account makes its first trades at the close on Friday, November 20: the top 8 by 3-month gain, unless XIU is below its 200-day average. This page fills in after that run.</p></section>
-<div class="col full"><details class="card tuck" open><summary>How these rules did in testing</summary>
+<div class="kpis full">
+ <div class="kpi"><span class="k">Account</span><span class="v">C$10,000</span><span class="s pos">+0.0% since Nov 13</span></div>
+ <div class="kpi"><span class="k">Same money in XIU</span><span class="v">C$10,000</span><span class="s">You're C$0 ahead</span></div>
+ <div class="kpi"><span class="k">Safety switch</span><span class="v pos">Invested</span><span class="s">XIU 6.1% above the line</span></div>
+ <div class="kpi"><span class="k">Stocks held</span><span class="v">8 of 8</span><span class="s">No sells yet</span></div>
+</div>
+
+<div class="col">
+<section class="card sec o1"><div><h2>Your account vs. just holding XIU</h2><p class="lead">Started Nov 13 with C$10,000. Tap a point for that day.</p></div>
+<div class="key"><span><i style="background:#E2C067"></i>Your account</span><span><i style="background:#A39D8E"></i>Same money in XIU</span></div>
+<p class="empty">The chart starts after the first full day.</p></section>
+
+<section class="card sec o2"><div><h2>Safety switch: XIU vs. its 200-day average</h2><p class="lead">XIU is above the dashed line, so the rules stay invested.
+Today XIU is 54.55 and the line is 51.43.</p></div>
+<div class="key"><span><i style="background:#F4F0E6"></i>XIU</span><span><i style="background:#C8A951"></i>200-day average</span></div>
+<svg viewBox="0 0 380 200" class="chart" role="img" aria-label="XIU 54.55 against its 200-day average 51.43; shaded where the rules sit in cash"><line x1="40" x2="372" y1="176.0" y2="176.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="180.0" text-anchor="end" class="ax">47</text><line x1="40" x2="372" y1="120.7" y2="120.7" stroke="rgba(255,255,255,.06)"/><text x="32" y="124.7" text-anchor="end" class="ax">50</text><line x1="40" x2="372" y1="65.3" y2="65.3" stroke="rgba(255,255,255,.06)"/><text x="32" y="69.3" text-anchor="end" class="ax">53</text><line x1="40" x2="372" y1="10.0" y2="10.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="14.0" text-anchor="end" class="ax">56</text><text x="40.0" y="192" class="ax">Jun</text><text x="93.8" y="192" class="ax">Jul</text><text x="159.6" y="192" class="ax">Aug</text><text x="219.5" y="192" class="ax">Sep</text><text x="282.3" y="192" class="ax">Oct</text><polyline points="40.0,164.6 43.0,163.7 46.0,162.9 49.0,162.2 52.0,161.3 55.0,160.5 57.9,159.6 60.9,158.7 63.9,157.8 66.9,157.0 69.9,156.2 72.9,155.4 75.9,154.6 78.9,153.8 81.9,153.1 84.9,152.3 87.9,151.6 90.8,150.8 93.8,150.1 96.8,149.3 99.8,148.5 102.8,147.7 105.8,147.0 108.8,146.3 111.8,145.5 114.8,144.7 117.8,144.0 120.8,143.2 123.7,142.4 126.7,141.7 129.7,141.0 132.7,140.2 135.7,139.6 138.7,138.9 141.7,138.2 144.7,137.5 147.7,136.7 150.7,135.9 153.7,135.2 156.6,134.5 159.6,133.8 162.6,132.9 165.6,132.1 168.6,131.2 171.6,130.3 174.6,129.5 177.6,128.6 180.6,127.7 183.6,126.9 186.6,126.0 189.5,125.1 192.5,124.3 195.5,123.5 198.5,122.6 201.5,121.7 204.5,120.7 207.5,119.8 210.5,119.0 213.5,118.2 216.5,117.5 219.5,116.8 222.5,116.0 225.4,115.1 228.4,114.3 231.4,113.5 234.4,112.7 237.4,112.0 240.4,111.3 243.4,110.6 246.4,110.0 249.4,109.4 252.4,108.8 255.4,108.1 258.3,107.4 261.3,106.7 264.3,106.1 267.3,105.5 270.3,104.9 273.3,104.3 276.3,103.7 279.3,103.2 282.3,102.7 285.3,102.1 288.3,101.5 291.2,100.9 294.2,100.4 297.2,99.9 300.2,99.4 303.2,98.8 306.2,98.2 309.2,97.6 312.2,96.9 315.2,96.3 318.2,95.7 321.2,95.0 324.1,94.5 327.1,93.9 330.1,93.3 333.1,92.7 336.1,92.2 339.1,91.6 342.1,91.1 345.1,90.6 348.1,90.2 351.1,89.6 354.1,89.1 357.0,88.6 360.0,88.0 363.0,87.4 366.0,86.8 369.0,86.2 372.0,85.7" fill="none" stroke="#C8A951" stroke-width="2" stroke-dasharray="6 4"/><polyline points="40.0,96.4 43.0,94.0 46.0,94.2 49.0,98.8 52.0,85.7 55.0,79.8 57.9,73.1 60.9,70.1 63.9,76.1 66.9,80.1 69.9,83.3 72.9,78.1 75.9,76.6 78.9,80.0 81.9,76.8 84.9,75.9 87.9,79.8 90.8,78.7 93.8,76.1 96.8,70.0 99.8,70.0 102.8,64.8 105.8,74.0 108.8,67.4 111.8,62.4 114.8,61.4 117.8,60.5 120.8,57.2 123.7,57.0 126.7,59.8 129.7,69.6 132.7,61.3 135.7,59.8 138.7,67.2 141.7,61.4 144.7,53.9 147.7,46.1 150.7,58.3 153.7,54.0 156.6,61.1 159.6,49.0 162.6,39.2 165.6,38.9 168.6,35.5 171.6,33.1 174.6,32.9 177.6,27.4 180.6,21.8 183.6,22.9 186.6,25.5 189.5,32.9 192.5,35.9 195.5,38.5 198.5,31.4 201.5,29.4 204.5,21.4 207.5,30.5 210.5,32.0 213.5,37.2 216.5,44.6 219.5,54.2 222.5,47.9 225.4,32.4 228.4,36.1 231.4,48.7 234.4,56.6 237.4,64.8 240.4,58.1 243.4,56.1 246.4,58.3 249.4,60.3 252.4,52.4 255.4,55.9 258.3,49.0 261.3,42.2 264.3,57.6 267.3,57.6 270.3,55.1 273.3,61.1 276.3,61.6 279.3,68.7 282.3,69.8 285.3,60.7 288.3,59.8 291.2,55.9 294.2,71.6 297.2,69.0 300.2,55.1 303.2,42.6 306.2,51.1 309.2,36.4 312.2,35.0 315.2,42.2 318.2,35.7 321.2,29.2 324.1,35.0 327.1,40.0 330.1,35.7 333.1,32.0 336.1,29.0 339.1,28.1 342.1,42.2 345.1,36.8 348.1,47.9 351.1,23.9 354.1,45.7 357.0,41.3 360.0,25.7 363.0,31.6 366.0,22.9 369.0,27.9 372.0,27.9" fill="none" stroke="#F4F0E6" stroke-width="2" stroke-linejoin="round"/><circle cx="372.0" cy="27.9" r="4" fill="#F4F0E6"/></svg></section>
+<section class="card sec o5"><h2>The rules</h2><ul class="rules">
+<li><b>Every Friday</b>Rank the TSX 60 by 3-month gain.</li>
+<li><b>Buy</b>Own the top 8, with equal money in each new stock.</li>
+<li><b>Sell</b>When a stock falls below rank 16.</li>
+<li><b>Safety switch</b>When XIU closes below its 200-day average, sell everything and wait in cash.</li></ul></section>
+</div>
+
+<div class="col">
+<section class="card sec o3"><div><h2>Started the account <span class="lead" style="font-weight:400">&middot; Fri Nov 13</span></h2>
+<p class="lead">The bar is each stock's last 52 weeks, low to high. The dot is where it traded.</p></div><div class="rowlist"><div class="rl"><div class="rltop"><div class="nm">
+<b>DSG.TO</b>
+<small>Descartes Systems &middot; bought at C$134.65</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range C$86.02 to C$136.88; bought 96% of the way up"><span>C$86</span><div class="rtrack"><i style="left:95.6%"></i></div><span>C$137</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>FFH.TO</b>
+<small>Fairfax Financial &middot; bought at C$2,768.00</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range C$2,111.76 to C$2,773.31; bought 99% of the way up"><span>C$2,112</span><div class="rtrack"><i style="left:99.2%"></i></div><span>C$2,773</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>X.TO</b>
+<small>TMX Group (stock exchange) &middot; bought at C$63.97</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range C$44.39 to C$63.97; bought 100% of the way up"><span>C$44</span><div class="rtrack"><i style="left:100.0%"></i></div><span>C$64</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>WCN.TO</b>
+<small>Waste Connections &middot; bought at C$276.18</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range C$205.74 to C$276.18; bought 100% of the way up"><span>C$206</span><div class="rtrack"><i style="left:100.0%"></i></div><span>C$276</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>STN.TO</b>
+<small>Stantec (engineering) &middot; bought at C$122.20</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range C$93.99 to C$148.63; bought 52% of the way up"><span>C$94</span><div class="rtrack"><i style="left:51.6%"></i></div><span>C$149</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>RBA.TO</b>
+<small>RB Global (auctions) &middot; bought at C$135.65</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range C$111.46 to C$165.11; bought 45% of the way up"><span>C$111</span><div class="rtrack"><i style="left:45.1%"></i></div><span>C$165</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>DOL.TO</b>
+<small>Dollarama &middot; bought at C$220.21</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range C$165.50 to C$220.42; bought 100% of the way up"><span>C$166</span><div class="rtrack"><i style="left:99.6%"></i></div><span>C$220</span></div></div><div class="rl"><div class="rltop"><div class="nm">
+<b>GIB-A.TO</b>
+<small>CGI &middot; bought at C$116.83</small></div><span class="tag buy">Buy</span></div>
+<div class="range" role="img" aria-label="52-week range C$85.04 to C$131.51; bought 68% of the way up"><span>C$85</span><div class="rtrack"><i style="left:68.4%"></i></div><span>C$132</span></div></div></div></section>
+</div>
+<section class="card sec full o4"><div><h2>What you own</h2>
+<p class="lead">Top bar: rank (green top 8, yellow keep, red sell). Bottom bar: 52-week range.</p></div>
+<div class="rowlist"><div class="rl"><div class="rltop"><div class="nm"><b>DSG.TO</b>
+<small>Descartes Systems &middot; C$1,250.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:30.8%"></span><span style="width:30.8%"></span><span></span><i style="left:3.8%"></i></div><div class="rklabel ok">Rank 1 &middot; in the top 8</div></div><div class="range" role="img" aria-label="52-week range C$86.02 to C$136.88; now 96% of the way up"><span>C$86</span><div class="rtrack"><i style="left:95.6%"></i></div><span>C$137</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>FFH.TO</b>
+<small>Fairfax Financial &middot; C$1,250.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:30.8%"></span><span style="width:30.8%"></span><span></span><i style="left:7.7%"></i></div><div class="rklabel ok">Rank 2 &middot; in the top 8</div></div><div class="range" role="img" aria-label="52-week range C$2,111.76 to C$2,773.31; now 99% of the way up"><span>C$2,112</span><div class="rtrack"><i style="left:99.2%"></i></div><span>C$2,773</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>X.TO</b>
+<small>TMX Group (stock exchange) &middot; C$1,250.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:30.8%"></span><span style="width:30.8%"></span><span></span><i style="left:11.5%"></i></div><div class="rklabel ok">Rank 3 &middot; in the top 8</div></div><div class="range" role="img" aria-label="52-week range C$44.39 to C$63.97; now 100% of the way up"><span>C$44</span><div class="rtrack"><i style="left:100.0%"></i></div><span>C$64</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>WCN.TO</b>
+<small>Waste Connections &middot; C$1,250.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:30.8%"></span><span style="width:30.8%"></span><span></span><i style="left:15.4%"></i></div><div class="rklabel ok">Rank 4 &middot; in the top 8</div></div><div class="range" role="img" aria-label="52-week range C$205.74 to C$276.18; now 100% of the way up"><span>C$206</span><div class="rtrack"><i style="left:100.0%"></i></div><span>C$276</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>STN.TO</b>
+<small>Stantec (engineering) &middot; C$1,250.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:30.8%"></span><span style="width:30.8%"></span><span></span><i style="left:19.2%"></i></div><div class="rklabel ok">Rank 5 &middot; in the top 8</div></div><div class="range" role="img" aria-label="52-week range C$93.99 to C$148.63; now 52% of the way up"><span>C$94</span><div class="rtrack"><i style="left:51.6%"></i></div><span>C$149</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>DOL.TO</b>
+<small>Dollarama &middot; C$1,250.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:30.8%"></span><span style="width:30.8%"></span><span></span><i style="left:26.9%"></i></div><div class="rklabel ok">Rank 7 &middot; in the top 8</div></div><div class="range" role="img" aria-label="52-week range C$165.50 to C$220.42; now 100% of the way up"><span>C$166</span><div class="rtrack"><i style="left:99.6%"></i></div><span>C$220</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>GIB-A.TO</b>
+<small>CGI &middot; C$1,250.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:30.8%"></span><span style="width:30.8%"></span><span></span><i style="left:30.8%"></i></div><div class="rklabel ok">Rank 8 &middot; in the top 8</div></div><div class="range" role="img" aria-label="52-week range C$85.04 to C$131.51; now 68% of the way up"><span>C$85</span><div class="rtrack"><i style="left:68.4%"></i></div><span>C$132</span></div></div><div class="rl"><div class="rltop"><div class="nm"><b>RBA.TO</b>
+<small>RB Global (auctions) &middot; C$1,250.00</small></div><span class="chip flat">0.0%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:30.8%"></span><span style="width:30.8%"></span><span></span><i style="left:23.1%"></i></div><div class="rklabel ok">Rank 6 &middot; in the top 8</div></div><div class="range" role="img" aria-label="52-week range C$111.46 to C$165.11; now 45% of the way up"><span>C$111</span><div class="rtrack"><i style="left:45.1%"></i></div><span>C$165</span></div></div></div></section>
+<section class="card sec full o4"><h2>Where your money is</h2><div class="stack"><span style="width:37.50%;background:#6BD35A"></span><span style="width:25.00%;background:#E2C067"></span><span style="width:12.50%;background:#6FA0D8"></span><span style="width:12.50%;background:#E0875A"></span><span style="width:12.50%;background:#A8B86A"></span></div><div class="legend"><span><i style="background:#6BD35A"></i>Industrial <b>38%</b></span><span><i style="background:#E2C067"></i>Tech <b>25%</b></span><span><i style="background:#6FA0D8"></i>Insurance <b>12%</b></span><span><i style="background:#E0875A"></i>Financial services <b>12%</b></span><span><i style="background:#A8B86A"></i>Retail <b>12%</b></span></div></section>
+
+<div class="col full o6"><details class="card tuck"><summary>How these rules did in testing</summary>
 <div class="sec" style="margin-top:12px">
 <p class="lead">C$10,000 run through the same rules every week since 2016, with 0.1% trading costs
 and dividends included. The rules end at C$50,575; XIU at C$38,667.</p>
@@ -143,12 +215,25 @@ and dividends included. The rules end at C$50,575; XIU at C$38,667.</p>
 <div class="stat"><span class="k">Winning trades</span><span class="v">50%</span></div>
 <div class="stat"><span class="k">Trades a year</span><span class="v">99</span></div></div>
 <p class="warn">This test uses today's TSX 60 list, so it includes later winners and leaves out companies that dropped out of the index.
-Real results would very likely have been lower. Refreshed Nov 14, 2026.</p></div></details></div>
-<section class="card sec full"><h2>The rules</h2><ul class="rules">
-<li><b>Every Friday</b>Rank the TSX 60 by 3-month gain.</li>
-<li><b>Buy</b>Own the top 8, with equal money in each new stock.</li>
-<li><b>Sell</b>When a stock falls below rank 16.</li>
-<li><b>Safety switch</b>When XIU closes below its 200-day average, sell everything and wait in cash.</li></ul></section>
-<div class="col full"><p class="note">Pretend money only: trades at each Friday's closing price, no fees. Dividends are paid into the account's cash, and the index fund comparison includes its dividends. Prices in C$. Updates itself every weekend. Last updated Nov 14, 2026 03:14 PM New York time. Past and paper results don't guarantee future returns.</p></div>
+Real results would very likely have been lower. Refreshed Nov 14, 2026.</p></div></details>
+<details class="card tuck"><summary>Every trade (8)</summary><div class="scroll" style="margin-top:10px"><table>
+<tr><th>Date</th><th>Action</th><th>Stock</th><th>Price</th><th>Amount</th><th>Result</th></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>GIB-A.TO</b></td><td>C$116.83</td><td>C$1,250</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>DOL.TO</b></td><td>C$220.21</td><td>C$1,250</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>RBA.TO</b></td><td>C$135.65</td><td>C$1,250</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>STN.TO</b></td><td>C$122.20</td><td>C$1,250</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>WCN.TO</b></td><td>C$276.18</td><td>C$1,250</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>X.TO</b></td><td>C$63.97</td><td>C$1,250</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>FFH.TO</b></td><td>C$2,768.00</td><td>C$1,250</td><td></td></tr><tr><td>Nov 13, 2026</td>
+<td><span class="tag buy">Buy</span></td>
+<td><b>DSG.TO</b></td><td>C$134.65</td><td>C$1,250</td><td></td></tr></table></div></details>
+<p class="note">Pretend money only: trades at each Friday's closing price, no fees. Dividends are paid into the account's cash, and the index fund comparison includes its dividends. Prices in C$. Updates itself every weekend. Last updated Nov 14, 2026 03:18 PM New York time. Past and paper results don't guarantee future returns.</p></div>
 </main>
 </div></div></body></html>

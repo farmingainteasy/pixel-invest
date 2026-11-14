@@ -1,0 +1,6 @@
+date,action,ticker,shares,price,value,gain_pct,reason
+2026-11-13,BUY,V,4.6975,425.76,2000.0,,Rank 1 by 3-month gain
+2026-11-13,BUY,PG,11.7786,169.8,2000.0,,Rank 2 by 3-month gain
+2026-11-13,BUY,AAPL,5.6137,356.27,2000.0,,Rank 3 by 3-month gain
+2026-11-13,BUY,DIS,16.811,118.97,2000.0,,Rank 4 by 3-month gain
+2026-11-13,BUY,KO,20.1511,99.25,2000.0,,Rank 5 by 3-month gain
