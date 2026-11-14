@@ -53,7 +53,7 @@ MARKETS = [
         "capital": 10_000.0, "cost_pct": 0.0,
         "dividends": True,           # Canadian banks, telecoms and pipelines pay a lot
         "active": True,
-        "start_date": "2026-11-20",  # first trades at this Friday's close
+        "start_date": "2026-11-13",  # first trades at the Nov 13 close
     },
     {
         "slug": "sp-500",
@@ -66,7 +66,7 @@ MARKETS = [
         "capital": 10_000.0, "cost_pct": 0.0,
         "dividends": True,
         "active": True,
-        "start_date": "2026-11-20",  # first trades at this Friday's close
+        "start_date": "2026-11-13",  # first trades at the Nov 13 close
     },
     {
         "slug": "dow-30",
@@ -79,6 +79,6 @@ MARKETS = [
         "capital": 10_000.0, "cost_pct": 0.0,
         "dividends": True,
         "active": True,
-        "start_date": "2026-11-20",  # first trades at this Friday's close
+        "start_date": "2026-11-13",  # first trades at the Nov 13 close
     },
 ]
