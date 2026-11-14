@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Paper trader. Double-click in Finder to update now and open the dashboard.
-# Normally you never need this: GitHub runs it automatically every evening.
+# Normally you never need this: GitHub runs it automatically every weekend.
 cd "$(dirname "$0")" || exit 1
 if [ ! -x .venv/bin/python ]; then
   echo "First run: setting up Python packages..."

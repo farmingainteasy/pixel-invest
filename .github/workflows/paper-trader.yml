@@ -1,4 +1,4 @@
-# Runs the paper trader every evening after the US market closes, saves the
+# Runs the paper trader every weekend after Friday's US market close, saves the
 # updated account back to the repo, and refreshes the web page (docs/).
 # To update right now: Actions tab -> "Paper trader" -> "Run workflow"
 # (works from the GitHub phone app too).
@@ -6,7 +6,8 @@ name: Paper trader
 
 on:
   schedule:
-    - cron: "30 22 * * *"      # 22:30 UTC = 5:30pm New York in winter, 6:30pm in summer
+    - cron: "0 14 * * 6"       # Saturday 14:00 UTC (9 or 10am New York)
+    - cron: "0 14 * * 0"       # Sunday backup; does nothing if Saturday worked
   workflow_dispatch:
 
 permissions:

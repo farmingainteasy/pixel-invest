@@ -321,7 +321,7 @@ td{{padding:9px 8px;border-bottom:1px solid #f3f4f6}}
 {''.join(hist) or '<tr><td colspan="6" class="muted">No trades yet.</td></tr>'}</table></div>
 
 <p class="note">Pretend trades only, made at each week's last closing price with no fees (as in a USD account). Prices in US dollars.
-Updates itself automatically every evening. Last updated {datetime.now(ZoneInfo('America/New_York')):%b %d, %Y %I:%M %p} New York time. Past and paper results don't guarantee future returns.</p>
+Updates itself automatically every weekend. Last updated {datetime.now(ZoneInfo('America/New_York')):%b %d, %Y %I:%M %p} New York time. Past and paper results don't guarantee future returns.</p>
 </div></body></html>"""
     path = os.path.join(folder, "dashboard.html")
     with open(path, "w", encoding="utf-8") as f:

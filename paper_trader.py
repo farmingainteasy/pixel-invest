@@ -394,7 +394,7 @@ def main():
     ap.add_argument("--today", help="pretend today's date is YYYY-MM-DD, before the close (testing)")
     ap.add_argument("--no-open", action="store_true", help="don't open the dashboard")
     ap.add_argument("--auto", action="store_true",
-                    help="background mode: no browser, notify only on trades or a long outage")
+                    help="background mode: no browser, only speaks up after a week-long outage")
     a = ap.parse_args()
     print(f"--- {datetime.now():%Y-%m-%d %H:%M} ---")
     try:
@@ -412,10 +412,7 @@ def main():
                 sys.exit(1)       # a real outage: fail loudly (GitHub emails you)
             sys.exit(0)           # a blip: tomorrow's run catches up on its own
         raise
-    if a.auto:
-        if r["trades"]:
-            notify("Paper Trader made trades", trade_message(r))
-    elif not a.no_open:
+    if not a.auto and not a.no_open:
         webbrowser.open("file://" + r["path"])
 
 
