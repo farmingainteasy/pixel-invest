@@ -373,14 +373,14 @@ def updated_note(cfg):
             f'New York time. Past and paper results don\'t guarantee future returns.</p>')
 
 
-def backtest_block(cfg, bt, open_=False):
+def backtest_block(cfg, bt, open_=True):   # always shown
     if not bt:
         return ""
     r, q = bt["rules"], bt["qqq"]
     data = json.dumps({"curve": [[d, round(a, 2), round(b, 2)] for d, a, b in bt["curve"]],
                        "sym": SYM, "bench": LABEL})
-    return f'''<details class="card tuck bt"{" open" if open_ else ""}><summary>How these rules did in testing</summary>
-<div class="sec" style="margin-top:12px">
+    return f'''<section class="card sec bt"><h2>How these rules did in testing</h2>
+<div class="sec">
 <p class="lead">{money(10_000, False)} run through the same rules every week since {bt["start"][:4]}, with {bt["cost_pct"] * 100:.1f}% trading costs
 and dividends included. Drag along the chart to read any date.</p>
 <div class="bt-read" aria-live="polite"></div>
@@ -397,14 +397,14 @@ and dividends included. Drag along the chart to read any date.</p>
 <div class="stat"><span class="k">Trades a year</span><span class="v">{bt["trades_per_year"]:.0f}</span></div></div>
 <p class="warn">This test uses today's {esc(cfg["name"])} list, so it includes later winners and leaves out companies that dropped out of the index.
 Real results would very likely have been lower. Refreshed {pd.Timestamp(bt["computed_on"]):%b %d, %Y}.</p></div>
-<script type="application/json" class="bt-data">{data}</script>{BT_SCRIPT}</details>'''
+<script type="application/json" class="bt-data">{data}</script>{BT_SCRIPT}</section>'''
 
 
 # Interactive backtest chart ("stock app" style): drag to read, 1Y/3Y/5Y/All.
 # The static SVG inside .bt-plot is the fallback if scripts don't run.
 BT_SCRIPT = """<script>
 (function(){
-var box=document.currentScript.closest('details'); if(!box) return;
+var box=document.currentScript.closest('.bt'); if(!box) return;
 var D=JSON.parse(box.querySelector('.bt-data').textContent), C=D.curve, NS='http://www.w3.org/2000/svg';
 var GOLD='#E2C067', GREY='#A39D8E', GRID='rgba(255,255,255,.07)', T4='#A39D8E', T5='#7E7866', years=0;
 function el(t,a,p){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
@@ -451,7 +451,6 @@ function draw(){
 box.querySelectorAll('.bt-chips button').forEach(function(b){ b.addEventListener('click',function(){ years=+b.dataset.y;
   box.querySelectorAll('.bt-chips button').forEach(function(o){o.setAttribute('aria-pressed',String(o===b));});
   box.querySelector('.bt-note').hidden=!years; draw(); }); });
-box.addEventListener('toggle',draw);
 var t; window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(draw,150);});
 draw();
 })();
