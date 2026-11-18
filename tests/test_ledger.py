@@ -170,3 +170,46 @@ def test_price_only_markets_ignore_dividends():
     cash0 = led["cash"]
     pt.advance(px, no_splits(px), CFG, led, date(2025, 1, 9), divs)
     assert "bench_units" not in led and led["cash"] == cash0
+
+
+def _values(rows):
+    return pd.DataFrame(rows, columns=pt.VALUE_COLS)
+
+
+def test_day_change_values_unrecorded_days_from_shares_held():
+    idx = pd.to_datetime(["2026-11-13", "2026-11-16", "2026-11-17"])
+    px = pd.DataFrame({"AAA": [100.0, 110.0, 99.0], "BBB": [50.0, 50.0, 55.0],
+                       pt.BENCHMARK: [200.0, 202.0, 204.02]}, index=idx)
+    led = {"start": "2026-11-13", "qqq_start": 200.0, "cash": 0.0, "last_processed": "2026-11-13",
+           "positions": {"AAA": {"shares": 50.0, "buy_price": 100.0, "buy_date": "2026-11-13"},
+                         "BBB": {"shares": 100.0, "buy_price": 50.0, "buy_date": "2026-11-13"}}}
+    vals = _values([["2026-11-13", 10000.0, 0.0, 2, 10000.0]])
+    before = copy.deepcopy(led)
+    d = pt.day_change(px, CFG, led, vals)
+    assert led == before                                    # nothing recorded or changed
+    assert d["day"] == "2026-11-17" and d["prev"] == "2026-11-16" and not d["recorded"]
+    # Mon: 50*110 + 100*50 = 10,500. Tue: 50*99 + 100*55 = 10,450.
+    assert d["value"] == pytest.approx(10450) and d["change"] == pytest.approx(-50)
+    assert d["pct"] == pytest.approx(-50 / 10500 * 100, abs=1e-3)
+    assert d["bench_pct"] == pytest.approx(1.0, abs=1e-3)
+    assert d["week_change"] == pytest.approx(450) and d["since"] == "2026-11-13"
+    assert [m[0] for m in d["movers"]] == ["BBB", "AAA"]     # +10% then -10%
+
+
+def test_day_change_uses_record_when_nothing_newer():
+    idx = pd.to_datetime(["2026-11-12", "2026-11-13"])
+    px = pd.DataFrame({pt.BENCHMARK: [200.0, 198.0]}, index=idx)
+    led = {"start": "2026-11-12", "qqq_start": 200.0, "cash": 10000.0, "last_processed": "2026-11-13",
+           "positions": {}}
+    vals = _values([["2026-11-12", 10000.0, 10000.0, 0, 10000.0], ["2026-11-13", 10000.0, 10000.0, 0, 9900.0]])
+    d = pt.day_change(px, CFG, led, vals)
+    assert d["recorded"] and d["change"] == 0 and d["invested"] == 0
+    assert d["bench_change"] == pytest.approx(-100)
+    assert "week_change" not in d
+
+
+def test_day_change_needs_two_days():
+    idx = pd.to_datetime(["2026-11-13"])
+    px = pd.DataFrame({pt.BENCHMARK: [200.0]}, index=idx)
+    led = {"start": "2026-11-13", "qqq_start": 200.0, "cash": 10000.0, "last_processed": "2026-11-13", "positions": {}}
+    assert pt.day_change(px, CFG, led, _values([["2026-11-13", 10000.0, 10000.0, 0, 10000.0]])) is None

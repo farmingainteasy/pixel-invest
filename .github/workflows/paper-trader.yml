@@ -1,5 +1,7 @@
 # Runs Pixel Invest (the paper trader) every weekend after Friday's US market close, saves the
 # updated account back to the repo, and refreshes the web page (docs/).
+# Monday to Thursday evenings it runs again only to refresh the day's plus/minus on the pages:
+# trades still happen only when a week has finished, so those runs never trade.
 # To update right now: Actions tab -> "Pixel Invest" -> "Run workflow"
 # (works from the GitHub phone app too).
 name: Pixel Invest
@@ -8,6 +10,7 @@ on:
   schedule:
     - cron: "0 14 * * 6"       # Saturday 14:00 UTC (9 or 10am New York)
     - cron: "0 14 * * 0"       # Sunday backup; does nothing if Saturday worked
+    - cron: "15 22 * * 1-4"    # Mon-Thu 22:15 UTC (5:15 or 6:15pm New York): the day's plus/minus
   workflow_dispatch:
 
 permissions:

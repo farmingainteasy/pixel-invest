@@ -16,6 +16,8 @@ For each market in markets.py it:
          its 200-day average
      Trades happen at the closing price on the last trading day of each
      finished week. Nothing is connected to any real brokerage account.
+     Between weekends, each run also shows the latest day's plus/minus, valued
+     from the shares held. That figure is shown only; it never goes into the record.
   3. Writes that market's page (docs/<slug>/), then the Home page (docs/).
 
 Files per market, in data/<slug>/
@@ -253,6 +255,56 @@ def advance(prices, splits, cfg, ledger, cutoff, dividends=None):
     return trades, values, notes
 
 
+def day_change(prices, cfg, ledger, values, dividends=None):
+    """The plus/minus for the latest settled trading day, for the account and its index fund.
+
+    Days after the last recorded week are valued here from the shares held and those days'
+    closing prices. Nothing here is written to trades.csv or account_value.csv: the record
+    still moves forward only when a week finishes. Returns None until there are two days.
+    """
+    if ledger.get("last_processed") is None:
+        return None
+    b = cfg.get("benchmark", BENCHMARK)
+    px = prices.ffill()
+    rec = values.assign(date=pd.to_datetime(values["date"])).set_index("date")
+    rec = rec[["paper_account", "qqq_same_money"]].astype(float).set_axis(["acct", "bench"], axis=1)
+    last = pd.Timestamp(ledger["last_processed"])
+    pos = ledger["positions"]
+    pay = bool(cfg.get("dividends")) and dividends is not None and "bench_units" in ledger
+    cash, units = ledger["cash"], ledger.get("bench_units")
+    extra = {}
+    for day in px.index[px.index > last]:
+        if pay and day in dividends.index:
+            dv = dividends.loc[day]
+            cash += sum(p["shares"] * dv[t] for t, p in pos.items() if t in dv and dv[t] > 0)
+            if b in dv and dv[b] > 0:
+                units *= 1 + dv[b] / px.at[day, b]
+        acct = cash + sum(p["shares"] * px.at[day, t] for t, p in pos.items())
+        bench = (units * px.at[day, b] if units is not None
+                 else cfg["capital"] * px.at[day, b] / ledger["qqq_start"])
+        extra[day] = (acct, bench)
+    series = pd.concat([rec, pd.DataFrame.from_dict(extra, orient="index", columns=["acct", "bench"])]).sort_index()
+    if len(series) < 2:
+        return None
+    d, prev = series.index[-1], series.index[-2]
+    (a1, b1), (a0, b0) = series.iloc[-1], series.iloc[-2]
+    # Each stock held through the whole day (not bought at that day's close).
+    movers = [[t, round((px.at[d, t] / px.at[prev, t] - 1) * 100, 2)] for t, p in pos.items()
+              if p["buy_date"] < str(d.date()) and t in px and px.at[prev, t] > 0]
+    movers.sort(key=lambda m: -m[1])
+    out = dict(day=str(d.date()), prev=str(prev.date()), recorded=bool(d <= last),
+               value=round(a1, 2), change=round(a1 - a0, 2), pct=round((a1 / a0 - 1) * 100, 3),
+               bench_value=round(b1, 2), bench_change=round(b1 - b0, 2), bench_pct=round((b1 / b0 - 1) * 100, 3),
+               invested=len(pos), movers=movers)
+    # This week so far, against the previous week's last close (skipped when that's `prev`).
+    before = series[series.index < d.to_period("W-FRI").start_time]
+    if len(before) and before.index[-1] != prev:
+        a_w, b_w = before.iloc[-1]
+        out.update(week_change=round(a1 - a_w, 2), week_pct=round((a1 / a_w - 1) * 100, 3),
+                   week_bench_pct=round((b1 / b_w - 1) * 100, 3), since=str(before.index[-1].date()))
+    return out
+
+
 # --------------------------------------------------------------------------
 # Files
 # --------------------------------------------------------------------------
@@ -414,15 +466,16 @@ def run_market(m, a, cutoff):
     holdings, status, watch = status_for_display(settled, cfg, ledger)
     last_rebal = pd.Timestamp(ledger["last_rebalance"])
     bt = None if a.prices_csv else insights.backtest(cfg, p["backtest"])
+    day = day_change(prices, cfg, ledger, values, divs)          # shown only, never recorded
     html, now_val, bench_val, week = dashboard.build_dashboard(
-        cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger)
+        cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day)
     atomic_write(p["page"], html)
     started = last_rebal.normalize() == pd.Timestamp(cfg["start_date"]).normalize()
     summary = dict(value=now_val, bench_value=bench_val, start=cfg["start_date"], capital=cfg["capital"],
                    risk_on=status["risk_on"], held=len(holdings), last_day=str(status["last_day"].date()),
                    week=week_line(week.to_dict("records"), status["risk_on"], cfg["top_n"], started),
                    spark=[[r.paper_account, r.qqq_same_money] for r in values.tail(60).itertuples()],
-                   updated=str(date.today()))
+                   day=day, updated=str(date.today()))
     atomic_write(p["summary"], json.dumps(summary, default=float))
     dashboard._SUMMARIES[m["slug"]] = json.loads(json.dumps(summary, default=float))
 
@@ -431,6 +484,9 @@ def run_market(m, a, cutoff):
     for n in notes:
         print(f"  Applied stock split: {n}")
     print(f"  Paper account: {sym}{now_val:,.2f}   Same money in {cfg['bench_label']}: {sym}{bench_val:,.2f}")
+    if day:
+        print(f"  {day['day']}: {day['change']:+,.2f} ({day['pct']:+.2f}%)   {cfg['bench_label']} {day['bench_pct']:+.2f}%"
+              f"{'' if day['recorded'] else '   (shown only; not in the record yet)'}")
     print(f"  Safety switch: {'INVESTED' if status['risk_on'] else 'CASH'}")
     print(f"  New trades this run: {len(new_trades)}")
     for t in new_trades:

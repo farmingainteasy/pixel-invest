@@ -36,6 +36,53 @@ def esc(s):
     return html.escape(str(s))
 
 
+def signed_money(x):
+    if abs(x) < 0.005:
+        return money(0)
+    return f'{"+" if x > 0 else "&minus;"}{money(abs(x))}'
+
+
+def signed_pct(x, d=2):
+    if abs(x) < 0.5 * 10 ** -d:
+        return f"{0:.{d}f}%"
+    return f'{"+" if x > 0 else "&minus;"}{abs(x):.{d}f}%'
+
+
+def tone(x):
+    return "pos" if x >= 0.005 else "neg" if x <= -0.005 else ""
+
+
+def day_block(day):
+    """The latest trading day's plus/minus. A day not yet in the record is valued from the
+    shares held at that day's close; it's shown only."""
+    if not day:
+        return ""
+    d, prev = pd.Timestamp(day["day"]), pd.Timestamp(day["prev"])
+    note = (f"From the account record, compared with {prev:%a %b %d}." if day["recorded"] else
+            f"Valued from the shares held at {d:%a %b %d}'s close, compared with {prev:%a %b %d}. "
+            f"Not in the record yet: a day goes into the record after the next close, and trades happen only at the week's last close.")
+    held = "All in cash, so the account doesn't move." if not day["invested"] else \
+        f"{signed_pct(day['pct'])} on the day &middot; now {money(day['value'], False)}"
+    tiles = [
+        f'<div class="kpi"><span class="k">Your account</span><span class="v {tone(day["change"])}">{signed_money(day["change"])}</span>'
+        f'<span class="s">{held}</span></div>',
+        f'<div class="kpi"><span class="k">Same money in {LABEL}</span><span class="v {tone(day["bench_change"])}">{signed_money(day["bench_change"])}</span>'
+        f'<span class="s">{signed_pct(day["bench_pct"])} on the day</span></div>',
+    ]
+    if "week_change" in day:
+        since = pd.Timestamp(day["since"])
+        tiles.append(f'<div class="kpi"><span class="k">This week, since {since:%a %b %d}</span>'
+                     f'<span class="v {tone(day["week_change"])}">{signed_money(day["week_change"])}</span>'
+                     f'<span class="s">{signed_pct(day["week_pct"])} &middot; {LABEL} {signed_pct(day["week_bench_pct"])}</span></div>')
+    movers = ""
+    if day["movers"]:
+        movers = ('<p class="lead" style="margin:0">Each stock on the day</p><div class="movers">'
+                  + "".join(f'<span class="mv" title="{esc(name(t))}"><b>{esc(t)}</b>{chip(x)}</span>' for t, x in day["movers"])
+                  + "</div>")
+    return (f'<section class="card sec full"><div><h2>{d:%A %b %d}: the day\'s plus/minus</h2><p class="lead">{note}</p></div>'
+            f'<div class="kpis daykpis">{"".join(tiles)}</div>{movers}</section>')
+
+
 def chip(x):
     if x is None or pd.isna(x):
         return ""
@@ -332,6 +379,14 @@ td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-vari
 .mcard svg{{width:120px;height:40px;flex:none}}
 .wk{{font-size:13px;color:{T3};border-top:1px solid {LINE2};padding-top:10px;display:flex;justify-content:space-between;gap:10px}}
 .wk b{{color:{GOLD_TEXT};white-space:nowrap}}
+.mday{{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;font-size:13px;color:{T3}}}
+.mday b{{font-variant-numeric:tabular-nums}}
+/* The day's plus/minus */
+.kpis.daykpis{{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}}
+.daykpis .kpi{{background:{PANEL2}}}
+.movers{{display:flex;flex-wrap:wrap;gap:6px}}
+.mv{{display:inline-flex;align-items:center;gap:6px;font-size:13px;background:{PANEL2};border:1px solid {LINE2};border-radius:10px;padding:3px 4px 3px 9px}}
+.mv .chip{{font-size:12px;padding:2px 7px}}
 </style></head><body><div class="app">
 <nav class="side" aria-label="Markets"><div class="brandrow">{logo.svg()}<div class="brand" style="display:block">Pixel Invest</div></div>
 <a href="{rel or './'}" class="{"on" if current is None else ""}">All markets</a>{side}</nav>
@@ -369,7 +424,7 @@ def updated_note(cfg):
     divs = ("Dividends are paid into the account's cash, and the index fund comparison includes its dividends."
             if cfg.get("dividends") else "Prices only: dividends aren't counted, for the account or the index fund.")
     return (f'<p class="note">Pretend money only: trades at each Friday\'s closing price, no fees. {divs} '
-            f'Prices in {cfg["currency"]}. Updates itself every weekend. Last updated {updated:%b %d, %Y %I:%M %p} '
+            f'Prices in {cfg["currency"]}. Trades every weekend; the day\'s plus/minus updates each weekday evening. Last updated {updated:%b %d, %Y %I:%M %p} '
             f'New York time. Past and paper results don\'t guarantee future returns.</p>')
 
 
@@ -473,7 +528,7 @@ def set_market(cfg):
 # --------------------------------------------------------------------------
 # A market's page
 # --------------------------------------------------------------------------
-def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, prices, bt, markets, ledger=None):
+def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, prices, bt, markets, ledger=None, day_info=None):
     set_market(cfg)
     start_val = cfg["capital"]
     now_val = acct["paper_account"].iloc[-1]
@@ -566,6 +621,7 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
  <div class="kpi"><span class="k">Safety switch</span><span class="v {'pos' if on else 'neg'}">{'Invested' if on else 'Cash'}</span><span class="s">{LABEL} {abs(gap):.1f}% {'above' if gap >= 0 else 'under'} the line</span></div>
  <div class="kpi"><span class="k">Stocks held</span><span class="v">{len(holdings)} of {top_n}</span><span class="s">{record}</span></div>
 </div>
+{day_block(day_info)}
 
 <div class="col">
 <section class="card sec o1"><div><h2>Your account vs. just holding {LABEL}</h2><p class="lead">Started {start:%b %d} with {money(start_val, False)}. Tap a point for that day.</p></div>
@@ -639,6 +695,18 @@ def mini_spark(points, w=120, h=40):
             f'<circle cx="{xs[-1]:.1f}" cy="{y(points[-1][0]):.1f}" r="3" fill="{GOLD_TEXT}"/></svg>')
 
 
+def home_day(day):
+    """One line on a Home card: the latest day's plus/minus for the account and its index fund."""
+    if not day:
+        return ""
+    d = pd.Timestamp(day["day"])
+    return (f'<div class="mday"><span>{d:%a %b %d}</span>'
+            + (f'<b class="{tone(day["change"])}">{signed_money(day["change"])} ({signed_pct(day["pct"])})</b>'
+               if day["invested"] else f'<b>{money(0)}</b><span>(in cash)</span>') +
+            f'<span>{LABEL} {signed_pct(day["bench_pct"])}</span>'
+            f'{"" if day["recorded"] else "<span class=dim>not in the record yet</span>"}</div>')
+
+
 def build_home(markets, summary_path):
     load_summaries(markets, summary_path)
     cards = []
@@ -654,6 +722,7 @@ def build_home(markets, summary_path):
                     f'<div class="msub"><span class="{"pos" if ret >= 0 else "neg"}">{"+" if ret >= 0 else "&minus;"}{abs(ret):.1f}%</span>'
                     f' since {pd.Timestamp(s["start"]):%b %d} &middot; {money(abs(diff), False)} {"ahead of" if diff >= 0 else "behind"} {LABEL}</div></div>'
                     f'{mini_spark(s["spark"])}</div>'
+                    f'{home_day(s.get("day"))}'
                     f'<div class="wk"><span>This week: {esc(s["week"])}</span><b>Open &#8250;</b></div>')
         else:
             msg = (f"First trades at the close on {pd.Timestamp(m['start_date']):%a %b %d}"
@@ -665,7 +734,7 @@ def build_home(markets, summary_path):
 <div class="msub">{sub}</div></div><span class="state {cls}">{"In cash" if label == "Cash" else label}</span></div>{body}</a>''')
     header = f'''<header class="hdr"><div class="wrap hin">
 <div class="brandrow">{logo.svg()}<div><div class="brand">Pixel Invest</div><h1 class="htitle">All markets</h1></div></div>
-<div class="sub">Pretend money. Each market has its own account, in its own currency. Updated every weekend.</div>
+<div class="sub">Pretend money. Each market has its own account, in its own currency. Trades every weekend; the day's plus/minus updates each weekday evening.</div>
 </div></header>'''
     main = f'''<main class="wrap"><div class="mcards full">{"".join(cards)}</div>
 <p class="note full">Past and paper results don't guarantee future returns. Tap a market for its trades, charts and rules.</p></main>'''
