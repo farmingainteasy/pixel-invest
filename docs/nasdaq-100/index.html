@@ -66,7 +66,7 @@ h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;text-wrap:balan
 .kpi{background:#1B1812;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .kpi .k{font-size:12px;color:#A39D8E} .kpi .v{font-size:20px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .kpi .s{font-size:12px;color:#C4BDAA}
-.pos{color:#6BD35A} .neg{color:#FF6B5F} .dim{color:#7E7866}
+.pos{color:#6BD35A} .neg{color:#FF6B5F} .dim{color:#7E7866} .amb{color:#E2B04A}
 .chip{font-weight:700;font-size:13px;padding:3px 9px;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .chip.pos{background:rgba(107,211,90,.14);color:#6BD35A} .chip.neg{background:rgba(255,90,78,.14);color:#FF6B5F} .chip.flat{background:#262219;color:#C4BDAA}
 .tag{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;vertical-align:1px}
@@ -105,9 +105,9 @@ table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
 th{text-align:left;color:#A39D8E;font-weight:600;font-size:12px;padding:8px;border-bottom:1px solid rgba(255,255,255,.10)}
 td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;font-variant-numeric:tabular-nums}
 .note{font-size:12px;color:#7E7866;line-height:1.6;margin:4px 0 0}
-.bt-read{display:flex;flex-direction:column;gap:2px;min-height:56px}
-.bt-read .rv{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}
-.bt-read .rs{font-size:13px;color:#C4BDAA;font-variant-numeric:tabular-nums}
+.bt-read,.wk-read{display:flex;flex-direction:column;gap:2px;min-height:56px}
+.bt-read .rv,.wk-read .rv{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}
+.bt-read .rs,.wk-read .rs{font-size:13px;color:#C4BDAA;font-variant-numeric:tabular-nums}
 .pill{font-weight:700;font-size:12px;padding:2px 8px;border-radius:7px;margin-left:6px;white-space:nowrap}
 .pill.pos{background:rgba(107,211,90,.14);color:#6BD35A} .pill.neg{background:rgba(255,90,78,.14);color:#FF6B5F}
 .bt-plot{touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -129,6 +129,25 @@ td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:now
 .mcard svg{width:120px;height:40px;flex:none}
 .wk{font-size:13px;color:#C4BDAA;border-top:1px solid rgba(255,255,255,.06);padding-top:10px;display:flex;justify-content:space-between;gap:10px}
 .wk b{color:#E2C067;white-space:nowrap}
+.mday{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;font-size:13px;color:#C4BDAA}
+.mday b{font-variant-numeric:tabular-nums}
+/* The day's plus/minus */
+.kpis.daykpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.daykpis .kpi{background:#14120D}
+.movers{display:flex;flex-wrap:wrap;gap:6px}
+.mv{display:inline-flex;align-items:center;gap:6px;font-size:13px;background:#14120D;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:3px 4px 3px 9px}
+.mv .chip{font-size:12px;padding:2px 7px}
+.daykpis .kpi.hero{grid-column:1/-1} .kpi.hero .v{font-size:28px}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#8BE07C;background:rgba(107,211,90,.14);border-radius:999px;padding:3px 10px;margin-left:6px;vertical-align:3px;white-space:nowrap;letter-spacing:0}
+.live i{width:7px;height:7px;border-radius:50%;background:#6BD35A;animation:blink 2s ease-in-out infinite}
+.live.off{color:#C4BDAA;background:#262219}
+.mday .live{margin-left:0;vertical-align:0}
+@keyframes blink{50%{opacity:.3}}
+@media(prefers-reduced-motion:reduce){.live i{animation:none}}
+.wkc{display:flex;flex-direction:column;gap:8px}
+.wk-read{min-height:0} .wk-read .rv{font-size:20px}
+.wk-plot{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.wk-plot svg{display:block;width:100%;height:auto;overflow:visible} .wk-plot text{font-family:var(--sans);font-variant-numeric:tabular-nums}
 </style></head><body><div class="app">
 <nav class="side" aria-label="Markets"><div class="brandrow"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Pixel Invest logo: a green arrow climbing from gold coins that dissolve into pixels"><rect width="64" height="64" rx="14" fill="#1C1A14"/><polyline points="9,41 21,30 29,35 44,20" fill="none" stroke="#57B24A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,11 48.6,25.2 38.8,15.4" fill="#6ECB5E" stroke="#6ECB5E" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="48" width="16" height="9" rx="1.5" fill="#C8A951"/><rect x="24" y="48" width="5" height="5" fill="#C8A951"/><rect x="30" y="53" width="4" height="4" fill="#C8A951"/><rect x="36" y="48" width="4" height="4" fill="#C8A951"/><rect x="42" y="53" width="3" height="3" fill="#C8A951"/><rect x="47" y="49" width="3" height="3" fill="#C8A951"/><rect x="42" y="48" width="3" height="3" fill="#8A7A46"/><rect x="52" y="52" width="2.5" height="2.5" fill="#8A7A46"/></svg><div class="brand" style="display:block">Pixel Invest</div></div>
 <a href="../" class="">All markets</a><a href="../nasdaq-100/" class="on" aria-current="page">Nasdaq-100 <small class="off">Cash</small></a><a href="../tsx-60/">TSX 60 <small class="on">Invested</small></a><a href="../sp-500/">S&amp;P 500 <small class="on">Invested</small></a><a href="../dow-30/">Dow Jones <small class="on">Invested</small></a></nav>
@@ -137,33 +156,92 @@ td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:now
 <a class="back" href="../">&#8249; All markets</a>
 <div class="brandrow"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Pixel Invest logo: a green arrow climbing from gold coins that dissolve into pixels"><rect width="64" height="64" rx="14" fill="#1C1A14"/><polyline points="9,41 21,30 29,35 44,20" fill="none" stroke="#57B24A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,11 48.6,25.2 38.8,15.4" fill="#6ECB5E" stroke="#6ECB5E" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="48" width="16" height="9" rx="1.5" fill="#C8A951"/><rect x="24" y="48" width="5" height="5" fill="#C8A951"/><rect x="30" y="53" width="4" height="4" fill="#C8A951"/><rect x="36" y="48" width="4" height="4" fill="#C8A951"/><rect x="42" y="53" width="3" height="3" fill="#C8A951"/><rect x="47" y="49" width="3" height="3" fill="#C8A951"/><rect x="42" y="48" width="3" height="3" fill="#8A7A46"/><rect x="52" y="52" width="2.5" height="2.5" fill="#8A7A46"/></svg><div><div class="brand">Pixel Invest</div><h1 class="htitle">Nasdaq-100 Momentum</h1></div></div>
 <div class="hval"><div><div class="big">$9,844.05</div>
-<div class="sub">Down 1.6% since Nov 11 &middot; QQQ down 1.5% &middot; prices as of Fri Nov 13</div></div>
+<div class="sub">Down 1.6% since Nov 11 &middot; QQQ down 4.8% &middot; prices as of Tue Nov 17</div></div>
 <span class="state off">In cash</span></div>
 </div></header>
 <nav class="switch wrap" aria-label="Markets"><a href="../nasdaq-100/" class="on">Nasdaq-100</a><a href="../tsx-60/" class="">TSX 60</a><a href="../sp-500/" class="">S&amp;P 500</a><a href="../dow-30/" class="">Dow Jones</a></nav>
 <main class="wrap">
+<section class="card sec full"><div><h2>This week so far <span class="live off">Wed Nov 18 close</span></h2><p class="lead">Valued from the shares held at Wed Nov 18's close, compared with Tue Nov 17. Not in the record yet: a day goes into the record after the next close, and trades happen only at the week's last close.</p></div><div class="kpis daykpis"><div class="kpi hero"><span class="k">Your account, this week so far (since Fri Nov 13's close)</span><span class="v ">$0.00</span><span class="s">0.00% &middot; same money in QQQ &minus;3.00%</span></div><div class="kpi"><span class="k">Your account, on Wed Nov 18</span><span class="v ">$0.00</span><span class="s">All in cash, so the account doesn't move.</span></div><div class="kpi"><span class="k">Same money in QQQ, on Wed Nov 18</span><span class="v pos">+$37.09</span><span class="s">+0.39%</span></div></div><div class="wkc"><div class="wk-read" aria-live="polite"></div><div class="wk-plot"></div><div class="key"><span><i style="background:#E2C067"></i>Your account</span><span><i style="background:#A39D8E"></i>Same money in QQQ</span></div><script type="application/json" class="wk-data">{"pts": [[0, "Fri Nov 13 close", 9844.05, 9848.05], [30, "Mon 10:00am", 9844.05, 9672.28], [60, "Mon 10:30am", 9844.05, 9619.48], [90, "Mon 11:00am", 9844.05, 9682.55], [120, "Mon 11:30am", 9844.05, 9694.23], [150, "Mon 12:00pm", 9844.05, 9678.44], [180, "Mon 12:30pm", 9844.05, 9633.39], [210, "Mon 1:00pm", 9844.05, 9629.13], [240, "Mon 1:30pm", 9844.05, 9599.21], [270, "Mon 2:00pm", 9844.05, 9626.73], [300, "Mon 2:30pm", 9844.05, 9611.23], [330, "Mon 3:00pm", 9844.05, 9617.75], [360, "Mon 3:30pm", 9844.05, 9587.04], [390, "Mon 4:00pm", 9844.05, 9585.3], [420, "Tue 10:00am", 9844.05, 9595.73], [450, "Tue 10:30am", 9844.05, 9537.06], [480, "Tue 11:00am", 9844.05, 9460.0], [510, "Tue 11:30am", 9844.05, 9468.55], [540, "Tue 12:00pm", 9844.05, 9457.11], [570, "Tue 12:30pm", 9844.05, 9502.59], [600, "Tue 1:00pm", 9844.05, 9474.63], [630, "Tue 1:30pm", 9844.05, 9512.44], [660, "Tue 2:00pm", 9844.05, 9474.05], [690, "Tue 2:30pm", 9844.05, 9476.23], [720, "Tue 3:00pm", 9844.05, 9446.82], [750, "Tue 3:30pm", 9844.05, 9464.2], [780, "Tue 4:00pm", 9844.05, 9515.77], [810, "Wed 10:00am", 9844.05, 9572.84], [840, "Wed 10:30am", 9844.05, 9556.45], [870, "Wed 11:00am", 9844.05, 9536.2], [900, "Wed 11:30am", 9844.05, 9494.48], [930, "Wed 12:00pm", 9844.05, 9504.07], [960, "Wed 12:30pm", 9844.05, 9582.97], [990, "Wed 1:00pm", 9844.05, 9544.82], [1020, "Wed 1:30pm", 9844.05, 9554.16], [1050, "Wed 2:00pm", 9844.05, 9578.78], [1080, "Wed 2:30pm", 9844.05, 9556.48], [1110, "Wed 3:00pm", 9844.05, 9536.74], [1140, "Wed 3:30pm", 9844.05, 9528.09], [1170, "Wed 4:00pm", 9844.05, 9552.86]], "sym": "$", "bench": "QQQ"}</script><script>
+(function(){
+var box=document.currentScript.closest('.wkc'); if(!box) return;
+var D=JSON.parse(box.querySelector('.wk-data').textContent), P=D.pts, NS='http://www.w3.org/2000/svg';
+var GOLD='#E2C067', GREY='#A39D8E', GRID='rgba(255,255,255,.07)', ZERO='rgba(244,240,230,.28)', T4='#A39D8E', T5='#7E7866';
+var a0=P[0][2], b0=P[0][3], DAY=390, X=5*DAY, n=P.length;
+function el(t,a,p){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+function pa(r){return (r[2]/a0-1)*100;} function pb(r){return (r[3]/b0-1)*100;}
+function sign(v,z){return v>z?'+':v<-z?'−':'';}
+function money(v){return sign(v,.005)+D.sym+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function pct(v){return sign(v,.005)+Math.abs(v).toFixed(2)+'%';}
+function read(r){ var c=r[2]-a0, cls=c>=.005?'pos':c<=-.005?'neg':'';
+  box.querySelector('.wk-read').innerHTML='<span class="rv '+cls+'">'+money(c)+'</span><span class="rs">'+pct(pa(r))+
+  ' &middot; '+D.bench+' '+pct(pb(r))+' &middot; '+r[1]+'</span>'; }
+function hint(){ box.querySelector('.wk-read').innerHTML='<span class="rs">Drag along the chart to see any half hour this week.</span>'; }
+function draw(){
+  var host=box.querySelector('.wk-plot'), w=host.clientWidth; if(!w) return;
+  var h=Math.round(Math.min(220,Math.max(170,w*.45))), pl=4, pr=48, pt=10, pb_=22;
+  var vals=[0]; P.forEach(function(r){vals.push(pa(r),pb(r));});
+  var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals), mid=(lo+hi)/2, half=Math.max((hi-lo)/2*1.25,.5);
+  lo=mid-half; hi=mid+half;
+  var st=[.25,.5,1,2,5,10,20,50].filter(function(s){return (hi-lo)/s<=5;})[0]||100;
+  function x(m){return pl+m/X*(w-pl-pr);} function y(v){return pt+(1-(v-lo)/(hi-lo))*(h-pt-pb_);}
+  host.innerHTML=''; var svg=el('svg',{viewBox:'0 0 '+w+' '+h,width:w,height:h,role:'img',
+    'aria-label':'This week so far: your account '+pct(pa(P[n-1]))+', '+D.bench+' '+pct(pb(P[n-1]))},host);
+  var g=el('linearGradient',{id:'wkglow',x1:0,x2:0,y1:0,y2:1},el('defs',{},svg));
+  el('stop',{offset:0,'stop-color':GOLD,'stop-opacity':.22},g); el('stop',{offset:1,'stop-color':GOLD,'stop-opacity':0},g);
+  for(var v=Math.ceil(lo/st)*st; v<=hi+1e-9; v+=st){ var z=Math.abs(v)<1e-9;
+    el('line',{x1:pl,x2:w-pr,y1:y(v),y2:y(v),stroke:z?ZERO:GRID,'stroke-dasharray':z?'3 3':'none'},svg);
+    el('text',{x:w-pr+6,y:y(v)+4,'font-size':11,fill:T4},svg).textContent=(z?'0':sign(v,0)+(+Math.abs(v).toFixed(2)))+'%'; }
+  var cur=Math.floor((P[n-1][0]-1)/DAY);
+  ['Mon','Tue','Wed','Thu','Fri'].forEach(function(name,k){
+    if(k) el('line',{x1:x(k*DAY),x2:x(k*DAY),y1:pt,y2:h-pb_,stroke:GRID},svg);
+    el('text',{x:x(k*DAY+DAY/2),y:h-6,'font-size':11,'text-anchor':'middle',fill:k>cur?T5:T4,'font-weight':k===cur?700:400},svg).textContent=name; });
+  function path(f){return P.map(function(r,i){return (i?'L':'M')+x(r[0]).toFixed(1)+','+y(f(r)).toFixed(1);}).join('');}
+  el('path',{d:path(pa)+'L'+x(P[n-1][0]).toFixed(1)+','+y(lo)+'L'+x(0)+','+y(lo)+'Z',fill:'url(#wkglow)'},svg);
+  el('path',{d:path(pb),fill:'none',stroke:GREY,'stroke-width':1.5,'stroke-dasharray':'4 3','stroke-linejoin':'round'},svg);
+  el('path',{d:path(pa),fill:'none',stroke:GOLD,'stroke-width':2,'stroke-linejoin':'round'},svg);
+  el('circle',{cx:x(P[n-1][0]),cy:y(pa(P[n-1])),r:4.5,fill:GOLD},svg);
+  var vl=el('line',{y1:pt,y2:h-pb_,stroke:'rgba(244,240,230,.35)',visibility:'hidden'},svg),
+      d1=el('circle',{r:4.5,fill:GOLD,stroke:'#14120D','stroke-width':2,visibility:'hidden'},svg),
+      d2=el('circle',{r:3.5,fill:GREY,stroke:'#14120D','stroke-width':2,visibility:'hidden'},svg);
+  function at(e){var b=svg.getBoundingClientRect(),px=(e.clientX-b.left)/b.width*w,best=0;
+    P.forEach(function(r,i){if(Math.abs(x(r[0])-px)<Math.abs(x(P[best][0])-px))best=i;}); return best;}
+  function show(i){var r=P[i];[vl,d1,d2].forEach(function(e){e.setAttribute('visibility','visible');});
+    vl.setAttribute('x1',x(r[0]));vl.setAttribute('x2',x(r[0]));d1.setAttribute('cx',x(r[0]));d1.setAttribute('cy',y(pa(r)));
+    d2.setAttribute('cx',x(r[0]));d2.setAttribute('cy',y(pb(r)));read(r);}
+  host.onpointermove=function(e){show(at(e));}; host.onpointerdown=function(e){show(at(e));};
+  host.onpointerleave=function(){[vl,d1,d2].forEach(function(e){e.setAttribute('visibility','hidden');});hint();};
+  hint();
+}
+var t; window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(draw,150);});
+draw();
+})();
+</script></div></section>
 <div class="kpis full">
  <div class="kpi"><span class="k">Account</span><span class="v">$9,844</span><span class="s neg">&minus;1.6% since Nov 11</span></div>
- <div class="kpi"><span class="k">Same money in QQQ</span><span class="v">$9,848</span><span class="s">You're $4 behind</span></div>
- <div class="kpi"><span class="k">Safety switch</span><span class="v neg">Cash</span><span class="s">QQQ 0.3% under the line</span></div>
+ <div class="kpi"><span class="k">Same money in QQQ</span><span class="v">$9,516</span><span class="s">You're $328 ahead</span></div>
+ <div class="kpi"><span class="k">Safety switch</span><span class="v neg">Cash</span><span class="s">QQQ 3.8% under the line</span></div>
  <div class="kpi"><span class="k">Stocks held</span><span class="v">0 of 10</span><span class="s">3 of 10 sells gained</span></div>
 </div>
 
 <div class="col">
 <section class="card sec o1"><div><h2>Your account vs. just holding QQQ</h2><p class="lead">Started Nov 11 with $10,000. Tap a point for that day.</p></div>
 <div class="key"><span><i style="background:#E2C067"></i>Your account</span><span><i style="background:#A39D8E"></i>Same money in QQQ</span></div>
-<svg viewBox="0 0 380 200" class="chart" role="img" aria-label="Your account against the same money in QQQ, $9,844.05 vs $9,848.05"><defs><linearGradient id="af" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#E2C067" stop-opacity=".22"/><stop offset="1" stop-color="#E2C067" stop-opacity="0"/></linearGradient></defs><line x1="52" x2="372" y1="176.0" y2="176.0" stroke="rgba(255,255,255,.06)"/><text x="44" y="180.0" text-anchor="end" class="ax">$9,742</text><line x1="52" x2="372" y1="120.7" y2="120.7" stroke="rgba(255,255,255,.06)"/><text x="44" y="124.7" text-anchor="end" class="ax">$9,842</text><line x1="52" x2="372" y1="65.3" y2="65.3" stroke="rgba(255,255,255,.06)"/><text x="44" y="69.3" text-anchor="end" class="ax">$9,943</text><line x1="52" x2="372" y1="10.0" y2="10.0" stroke="rgba(255,255,255,.06)"/><text x="44" y="14.0" text-anchor="end" class="ax">$10,043</text><text x="52.0" y="192" text-anchor="start" class="ax">Nov 11</text><text x="212.0" y="192" text-anchor="middle" class="ax">Nov 12</text><text x="372.0" y="192" text-anchor="end" class="ax">Nov 13</text><polygon points="52.0,33.7 212.0,152.3 372.0,119.6 372.0,176 52.0,176" fill="url(#af)"/><polyline vector-effect="non-scaling-stroke" points="52.0,33.7 212.0,51.3 372.0,117.4" fill="none" stroke="#A39D8E" stroke-width="1.5" stroke-dasharray="4 3"/><polyline vector-effect="non-scaling-stroke" points="52.0,33.7 212.0,152.3 372.0,119.6" fill="none" stroke="#E2C067" stroke-width="2" stroke-linejoin="round"/><circle cx="372.0" cy="119.6" r="4.5" fill="#E2C067"/><circle cx="52.0" cy="33.7" r="8" class="hot"><title>Wed Nov 11
+<svg viewBox="0 0 380 200" class="chart" role="img" aria-label="Your account against the same money in QQQ, $9,844.05 vs $9,515.77"><defs><linearGradient id="af" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#E2C067" stop-opacity=".22"/><stop offset="1" stop-color="#E2C067" stop-opacity="0"/></linearGradient></defs><line x1="52" x2="372" y1="176.0" y2="176.0" stroke="rgba(255,255,255,.06)"/><text x="44" y="180.0" text-anchor="end" class="ax">$9,419</text><line x1="52" x2="372" y1="120.7" y2="120.7" stroke="rgba(255,255,255,.06)"/><text x="44" y="124.7" text-anchor="end" class="ax">$9,645</text><line x1="52" x2="372" y1="65.3" y2="65.3" stroke="rgba(255,255,255,.06)"/><text x="44" y="69.3" text-anchor="end" class="ax">$9,871</text><line x1="52" x2="372" y1="10.0" y2="10.0" stroke="rgba(255,255,255,.06)"/><text x="44" y="14.0" text-anchor="end" class="ax">$10,097</text><text x="52.0" y="192" text-anchor="start" class="ax">Nov 11</text><text x="132.0" y="192" text-anchor="middle" class="ax">Nov 12</text><text x="212.0" y="192" text-anchor="middle" class="ax">Nov 13</text><text x="292.0" y="192" text-anchor="middle" class="ax">Nov 16</text><text x="372.0" y="192" text-anchor="end" class="ax">Nov 17</text><polygon points="52.0,33.7 132.0,86.4 212.0,71.9 292.0,71.9 372.0,71.9 372.0,176 52.0,176" fill="url(#af)"/><polyline vector-effect="non-scaling-stroke" points="52.0,33.7 132.0,41.6 212.0,70.9 292.0,135.3 372.0,152.3" fill="none" stroke="#A39D8E" stroke-width="1.5" stroke-dasharray="4 3"/><polyline vector-effect="non-scaling-stroke" points="52.0,33.7 132.0,86.4 212.0,71.9 292.0,71.9 372.0,71.9" fill="none" stroke="#E2C067" stroke-width="2" stroke-linejoin="round"/><circle cx="372.0" cy="71.9" r="4.5" fill="#E2C067"/><circle cx="52.0" cy="33.7" r="8" class="hot"><title>Wed Nov 11
 Your account: $10,000.00
-QQQ: $10,000.00</title></circle><circle cx="212.0" cy="152.3" r="8" class="hot"><title>Thu Nov 12
+QQQ: $10,000.00</title></circle><circle cx="132.0" cy="86.4" r="8" class="hot"><title>Thu Nov 12
 Your account: $9,784.78
-QQQ: $9,967.99</title></circle><circle cx="372.0" cy="119.6" r="8" class="hot"><title>Fri Nov 13
+QQQ: $9,967.99</title></circle><circle cx="212.0" cy="71.9" r="8" class="hot"><title>Fri Nov 13
 Your account: $9,844.05
-QQQ: $9,848.05</title></circle></svg></section>
+QQQ: $9,848.05</title></circle><circle cx="292.0" cy="71.9" r="8" class="hot"><title>Mon Nov 16
+Your account: $9,844.05
+QQQ: $9,585.30</title></circle><circle cx="372.0" cy="71.9" r="8" class="hot"><title>Tue Nov 17
+Your account: $9,844.05
+QQQ: $9,515.77</title></circle></svg></section>
 
-<section class="card sec o2"><div><h2>Safety switch: QQQ vs. its 200-day average</h2><p class="lead">QQQ is below the dashed line, so the rules sit in cash. Shaded days are cash days.
-Today QQQ is 679.89 and the line is 682.24.</p></div>
+<section class="card sec o2"><div><h2>Safety switch: QQQ vs. its 200-day average</h2><p class="lead">QQQ is below the dashed line, so the rules sit in cash. Shaded days are below the line.
+Today QQQ is 656.95 and the line is 682.59.</p></div>
 <div class="key"><span><i style="background:#F4F0E6"></i>QQQ</span><span><i style="background:#C8A951"></i>200-day average</span></div>
-<svg viewBox="0 0 380 200" class="chart" role="img" aria-label="QQQ 679.89 against its 200-day average 682.24; shaded where the rules sit in cash"><line x1="40" x2="372" y1="176.0" y2="176.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="180.0" text-anchor="end" class="ax">611</text><line x1="40" x2="372" y1="120.7" y2="120.7" stroke="rgba(255,255,255,.06)"/><text x="32" y="124.7" text-anchor="end" class="ax">664</text><line x1="40" x2="372" y1="65.3" y2="65.3" stroke="rgba(255,255,255,.06)"/><text x="32" y="69.3" text-anchor="end" class="ax">717</text><line x1="40" x2="372" y1="10.0" y2="10.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="14.0" text-anchor="end" class="ax">771</text><rect x="352.7" y="10" width="11.9" height="166" fill="rgba(255,90,78,.16)"/><rect x="370.5" y="10" width="3.0" height="166" fill="rgba(255,90,78,.16)"/><text x="40.0" y="192" class="ax">Jun</text><text x="90.4" y="192" class="ax">Jul</text><text x="155.6" y="192" class="ax">Aug</text><text x="217.9" y="192" class="ax">Sep</text><text x="280.1" y="192" class="ax">Oct</text><polyline vector-effect="non-scaling-stroke" points="40.0,164.6 43.0,163.8 45.9,163.0 48.9,162.4 51.9,161.6 54.8,160.9 57.8,160.0 60.8,159.2 63.7,158.4 66.7,157.5 69.6,156.6 72.6,155.9 75.6,155.2 78.5,154.5 81.5,153.8 84.5,153.1 87.4,152.3 90.4,151.6 93.4,150.9 96.3,150.3 99.3,149.6 102.2,149.0 105.2,148.4 108.2,147.8 111.1,147.2 114.1,146.5 117.1,145.9 120.0,145.3 123.0,144.8 126.0,144.3 128.9,143.8 131.9,143.2 134.9,142.8 137.8,142.4 140.8,142.0 143.8,141.6 146.7,141.4 149.7,140.9 152.6,140.4 155.6,139.9 158.6,139.3 161.5,138.7 164.5,138.1 167.5,137.5 170.4,137.0 173.4,136.4 176.4,135.8 179.3,135.2 182.3,134.7 185.2,134.1 188.2,133.7 191.2,133.3 194.1,132.8 197.1,132.4 200.1,132.0 203.0,131.5 206.0,131.0 209.0,130.4 211.9,129.9 214.9,129.4 217.9,129.0 220.8,128.5 223.8,127.9 226.8,127.3 229.7,126.7 232.7,126.1 235.6,125.4 238.6,124.8 241.6,124.2 244.5,123.7 247.5,123.3 250.5,122.8 253.4,122.2 256.4,121.6 259.4,121.0 262.3,120.3 265.3,119.7 268.2,119.1 271.2,118.5 274.2,118.0 277.1,117.4 280.1,116.7 283.1,116.0 286.0,115.2 289.0,114.4 292.0,113.6 294.9,113.0 297.9,112.3 300.9,111.6 303.8,111.0 306.8,110.5 309.8,109.9 312.7,109.4 315.7,108.9 318.6,108.4 321.6,107.8 324.6,107.4 327.5,107.0 330.5,106.5 333.5,106.0 336.4,105.5 339.4,105.0 342.4,104.6 345.3,104.3 348.3,104.0 351.2,103.6 354.2,103.4 357.2,103.2 360.1,102.9 363.1,102.7 366.1,102.4 369.0,102.1 372.0,101.8" fill="none" stroke="#C8A951" stroke-width="1.5" stroke-dasharray="5 3"/><polyline vector-effect="non-scaling-stroke" points="40.0,78.1 43.0,66.7 45.9,75.3 48.9,89.9 51.9,65.6 54.8,61.2 57.8,37.7 60.8,52.4 63.7,60.0 66.7,41.2 69.6,44.0 72.6,69.2 75.6,72.4 78.5,66.4 81.5,76.6 84.5,58.4 87.4,45.6 90.4,57.3 93.4,70.3 96.3,59.7 99.3,73.6 102.2,71.5 105.2,59.2 108.2,56.9 111.1,71.2 114.1,62.9 117.1,65.0 120.0,77.2 123.0,88.2 126.0,87.5 128.9,74.1 131.9,77.8 134.9,91.7 137.8,99.8 140.8,101.9 143.8,108.8 146.7,123.1 149.7,100.5 152.6,95.9 155.6,83.3 158.6,58.6 161.5,65.4 164.5,68.2 167.5,59.5 170.4,61.7 173.4,64.2 176.4,58.8 179.3,50.1 182.3,51.1 185.2,52.4 188.2,65.2 191.2,66.7 194.1,72.0 197.1,69.4 200.1,76.8 203.0,72.3 206.0,71.6 209.0,61.5 211.9,66.3 214.9,66.0 217.9,75.5 220.8,73.8 223.8,65.0 226.8,63.7 229.7,64.3 232.7,66.5 235.6,74.4 238.6,67.9 241.6,73.9 244.5,78.7 247.5,78.5 250.5,65.8 253.4,61.1 256.4,40.3 259.4,34.1 262.3,40.6 265.3,40.7 268.2,37.2 271.2,45.5 274.2,44.0 277.1,42.1 280.1,39.8 283.1,31.9 286.0,25.0 289.0,21.4 292.0,23.5 294.9,34.0 297.9,30.2 300.9,35.6 303.8,38.2 306.8,53.3 309.8,54.3 312.7,73.2 315.7,64.3 318.6,65.1 321.6,57.2 324.6,78.7 327.5,78.8 330.5,70.7 333.5,61.3 336.4,56.8 339.4,67.5 342.4,93.3 345.3,103.0 348.3,98.7 351.2,91.7 354.2,138.4 357.2,129.0 360.1,104.8 363.1,109.6 366.1,93.4 369.0,95.7 372.0,104.3" fill="none" stroke="#F4F0E6" stroke-width="1.5" stroke-linejoin="round"/><circle cx="372.0" cy="104.3" r="4" fill="#F4F0E6"/></svg></section>
+<svg viewBox="0 0 380 200" class="chart" role="img" aria-label="QQQ 656.95 against its 200-day average 682.59; shaded where it closed below the line"><line x1="40" x2="372" y1="176.0" y2="176.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="180.0" text-anchor="end" class="ax">611</text><line x1="40" x2="372" y1="120.7" y2="120.7" stroke="rgba(255,255,255,.06)"/><text x="32" y="124.7" text-anchor="end" class="ax">664</text><line x1="40" x2="372" y1="65.3" y2="65.3" stroke="rgba(255,255,255,.06)"/><text x="32" y="69.3" text-anchor="end" class="ax">717</text><line x1="40" x2="372" y1="10.0" y2="10.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="14.0" text-anchor="end" class="ax">771</text><rect x="347.2" y="10" width="11.6" height="166" fill="rgba(255,90,78,.16)"/><rect x="364.7" y="10" width="7.3" height="166" fill="rgba(255,90,78,.16)"/><text x="40.0" y="192" class="ax">Jun</text><text x="89.5" y="192" class="ax">Jul</text><text x="153.6" y="192" class="ax">Aug</text><text x="214.7" y="192" class="ax">Sep</text><text x="275.9" y="192" class="ax">Oct</text><polyline vector-effect="non-scaling-stroke" points="40.0,164.6 42.9,163.8 45.8,163.0 48.7,162.4 51.6,161.6 54.6,160.9 57.5,160.0 60.4,159.2 63.3,158.4 66.2,157.5 69.1,156.6 72.0,155.9 74.9,155.2 77.9,154.5 80.8,153.8 83.7,153.1 86.6,152.3 89.5,151.6 92.4,150.9 95.3,150.3 98.2,149.6 101.2,149.0 104.1,148.4 107.0,147.8 109.9,147.2 112.8,146.5 115.7,145.9 118.6,145.3 121.5,144.8 124.5,144.3 127.4,143.8 130.3,143.2 133.2,142.8 136.1,142.4 139.0,142.0 141.9,141.6 144.8,141.4 147.8,140.9 150.7,140.4 153.6,139.9 156.5,139.3 159.4,138.7 162.3,138.1 165.2,137.5 168.1,137.0 171.1,136.4 174.0,135.8 176.9,135.2 179.8,134.7 182.7,134.1 185.6,133.7 188.5,133.3 191.4,132.8 194.4,132.4 197.3,132.0 200.2,131.5 203.1,131.0 206.0,130.4 208.9,129.9 211.8,129.4 214.7,129.0 217.6,128.5 220.6,127.9 223.5,127.3 226.4,126.7 229.3,126.1 232.2,125.4 235.1,124.8 238.0,124.2 240.9,123.7 243.9,123.3 246.8,122.8 249.7,122.2 252.6,121.6 255.5,121.0 258.4,120.3 261.3,119.7 264.2,119.1 267.2,118.5 270.1,118.0 273.0,117.4 275.9,116.7 278.8,116.0 281.7,115.2 284.6,114.4 287.5,113.6 290.5,113.0 293.4,112.3 296.3,111.6 299.2,111.0 302.1,110.5 305.0,109.9 307.9,109.4 310.8,108.9 313.8,108.4 316.7,107.8 319.6,107.4 322.5,107.0 325.4,106.5 328.3,106.0 331.2,105.5 334.1,105.0 337.1,104.6 340.0,104.3 342.9,104.0 345.8,103.6 348.7,103.4 351.6,103.2 354.5,102.9 357.4,102.7 360.4,102.4 363.3,102.1 366.2,101.8 369.1,101.6 372.0,101.5" fill="none" stroke="#C8A951" stroke-width="1.5" stroke-dasharray="5 3"/><polyline vector-effect="non-scaling-stroke" points="40.0,78.1 42.9,66.7 45.8,75.3 48.7,89.9 51.6,65.6 54.6,61.2 57.5,37.7 60.4,52.4 63.3,60.0 66.2,41.2 69.1,44.0 72.0,69.2 74.9,72.4 77.9,66.4 80.8,76.6 83.7,58.4 86.6,45.6 89.5,57.3 92.4,70.3 95.3,59.7 98.2,73.6 101.2,71.5 104.1,59.2 107.0,56.9 109.9,71.2 112.8,62.9 115.7,65.0 118.6,77.2 121.5,88.2 124.5,87.5 127.4,74.1 130.3,77.8 133.2,91.7 136.1,99.8 139.0,101.9 141.9,108.8 144.8,123.1 147.8,100.5 150.7,95.9 153.6,83.3 156.5,58.6 159.4,65.4 162.3,68.2 165.2,59.5 168.1,61.7 171.1,64.2 174.0,58.8 176.9,50.1 179.8,51.1 182.7,52.4 185.6,65.2 188.5,66.7 191.4,72.0 194.4,69.4 197.3,76.8 200.2,72.3 203.1,71.6 206.0,61.5 208.9,66.3 211.8,66.0 214.7,75.5 217.6,73.8 220.6,65.0 223.5,63.7 226.4,64.3 229.3,66.5 232.2,74.4 235.1,67.9 238.0,73.9 240.9,78.7 243.9,78.5 246.8,65.8 249.7,61.1 252.6,40.3 255.5,34.1 258.4,40.6 261.3,40.7 264.2,37.2 267.2,45.5 270.1,44.0 273.0,42.1 275.9,39.8 278.8,31.9 281.7,25.0 284.6,21.4 287.5,23.5 290.5,34.0 293.4,30.2 296.3,35.6 299.2,38.2 302.1,53.3 305.0,54.3 307.9,73.2 310.8,64.3 313.8,65.1 316.7,57.2 319.6,78.7 322.5,78.8 325.4,70.7 328.3,61.3 331.2,56.8 334.1,67.5 337.1,93.3 340.0,103.0 342.9,98.7 345.8,91.7 348.7,138.4 351.6,129.0 354.5,104.8 357.4,109.6 360.4,93.4 363.3,95.7 366.2,104.3 369.1,123.1 372.0,128.1" fill="none" stroke="#F4F0E6" stroke-width="1.5" stroke-linejoin="round"/><circle cx="372.0" cy="128.1" r="4" fill="#F4F0E6"/></svg></section>
 <section class="card sec o5"><h2>The rules</h2><ul class="rules">
 <li><b>Every Friday</b>Rank the Nasdaq-100 by 3-month gain.</li>
 <li><b>Buy</b>Own the top 10, with equal money in each new stock.</li>
@@ -206,27 +284,27 @@ Today QQQ is 679.89 and the line is 682.24.</p></div>
 <div class="range" role="img" aria-label="52-week range $600.66 to $973.36; sold 95% of the way up"><span>$601</span><div class="rtrack"><i style="left:95.2%"></i></div><span>$973</span></div></div></div></section>
 </div>
 <section class="card sec full o4"><div><h2>Next buys if the switch flips</h2>
-<p class="lead">Today's top 10 by 3-month gain. If QQQ closes above $682.24 on a Friday, these are bought at that close.</p></div>
+<p class="lead">Today's top 10 by 3-month gain. If QQQ closes above $682.59 on a Friday, these are bought at that close.</p></div>
 <div class="rowlist"><div class="rl"><div class="rltop"><div class="nm"><b>APP</b>
-<small>AppLovin</small></div><span class="chip pos">+31%</span></div>
+<small>AppLovin</small></div><span class="chip pos">+28%</span></div>
 <div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:3.3%"></i></div><div class="rklabel ok">Rank 1 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>IDXX</b>
-<small>IDEXX Laboratories (vet tests)</small></div><span class="chip pos">+29%</span></div>
+<small>IDEXX Laboratories (vet tests)</small></div><span class="chip pos">+23%</span></div>
 <div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:6.7%"></i></div><div class="rklabel ok">Rank 2 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>CDW</b>
-<small>CDW</small></div><span class="chip pos">+27%</span></div>
-<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:10.0%"></i></div><div class="rklabel ok">Rank 3 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>ROP</b>
-<small>Roper Technologies</small></div><span class="chip pos">+23%</span></div>
-<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:13.3%"></i></div><div class="rklabel ok">Rank 4 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>BIIB</b>
-<small>Biogen</small></div><span class="chip pos">+21%</span></div>
-<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:16.7%"></i></div><div class="rklabel ok">Rank 5 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>GILD</b>
-<small>Gilead Sciences</small></div><span class="chip pos">+21%</span></div>
-<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:20.0%"></i></div><div class="rklabel ok">Rank 6 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>KDP</b>
-<small>Keurig Dr Pepper</small></div><span class="chip pos">+20%</span></div>
-<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:23.3%"></i></div><div class="rklabel ok">Rank 7 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>MAR</b>
-<small>Marriott International</small></div><span class="chip pos">+19%</span></div>
-<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:26.7%"></i></div><div class="rklabel ok">Rank 8 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>REGN</b>
-<small>Regeneron Pharmaceuticals</small></div><span class="chip pos">+19%</span></div>
-<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:30.0%"></i></div><div class="rklabel ok">Rank 9 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>VRSK</b>
-<small>Verisk Analytics</small></div><span class="chip pos">+18%</span></div>
+<small>CDW</small></div><span class="chip pos">+19%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:10.0%"></i></div><div class="rklabel ok">Rank 3 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>MAR</b>
+<small>Marriott International</small></div><span class="chip pos">+17%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:13.3%"></i></div><div class="rklabel ok">Rank 4 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>COST</b>
+<small>Costco</small></div><span class="chip pos">+16%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:16.7%"></i></div><div class="rklabel ok">Rank 5 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>ROP</b>
+<small>Roper Technologies</small></div><span class="chip pos">+16%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:20.0%"></i></div><div class="rklabel ok">Rank 6 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>GILD</b>
+<small>Gilead Sciences</small></div><span class="chip pos">+15%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:23.3%"></i></div><div class="rklabel ok">Rank 7 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>REGN</b>
+<small>Regeneron Pharmaceuticals</small></div><span class="chip pos">+14%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:26.7%"></i></div><div class="rklabel ok">Rank 8 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>META</b>
+<small>Meta Platforms (Facebook)</small></div><span class="chip pos">+13%</span></div>
+<div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:30.0%"></i></div><div class="rklabel ok">Rank 9 &middot; in the top 10</div></div></div><div class="rl"><div class="rltop"><div class="nm"><b>BIIB</b>
+<small>Biogen</small></div><span class="chip pos">+13%</span></div>
 <div class="rank"><div class="rk" aria-hidden="true"><span style="width:33.3%"></span><span style="width:33.3%"></span><span></span><i style="left:33.3%"></i></div><div class="rklabel ok">Rank 10 &middot; in the top 10</div></div></div></div></section>
 
 <div class="col full o6"><section class="card sec bt"><h2>How these rules did in testing</h2>
@@ -342,6 +420,9 @@ draw();
 <td><b>MSTR</b></td><td>$122.35</td><td>$1,000</td><td></td></tr><tr><td>Nov 11, 2026</td>
 <td><span class="tag buy">Buy</span></td>
 <td><b>APP</b></td><td>$404.77</td><td>$1,000</td><td></td></tr></table></div></details>
-<p class="note">Pretend money only: trades at each Friday's closing price, no fees. Prices only: dividends aren't counted, for the account or the index fund. Prices in US$. Updates itself every weekend. Last updated Nov 15, 2026 04:17 PM New York time. Past and paper results don't guarantee future returns.</p></div>
+<p class="note">Pretend money only: trades at each Friday's closing price, no fees. Prices only: dividends aren't counted, for the account or the index fund. Prices in US$. Trades every weekend; the day's and week's plus/minus update every 30 minutes while markets are open. Last updated Nov 18, 2026 10:14 PM New York time. Past and paper results don't guarantee future returns.</p></div>
 </main>
-</div></div></body></html>
+</div></div>
+<script>(function(){var t=Date.now();document.addEventListener('visibilitychange',function(){
+if(document.visibilityState==='visible'&&Date.now()-t>5*60*1000)location.reload();});})();</script>
+</body></html>

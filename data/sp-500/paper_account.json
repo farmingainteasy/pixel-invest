@@ -3,7 +3,7 @@
   "ledger": {
     "start": "2026-11-13",
     "qqq_start": 754.3699951171875,
-    "cash": 0.0,
+    "cash": 2.7542371694171637,
     "positions": {
       "MRNA": {
         "shares": 2.238438514258296,
@@ -106,10 +106,10 @@
         "buy_date": "2026-11-13"
       }
     },
-    "last_processed": "2026-11-13",
+    "last_processed": "2026-11-17",
     "last_rebalance": "2026-11-13",
-    "data_through": "2026-11-13",
+    "data_through": "2026-11-18",
     "bench_units": 13.256094575244276,
-    "dividends_received": 0.0
+    "dividends_received": 2.7542371694171637
   }
 }
