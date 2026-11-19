@@ -179,38 +179,6 @@ def chip(x):
 # --------------------------------------------------------------------------
 # Small graphics
 # --------------------------------------------------------------------------
-def range_bar(price, lo, hi, verb="now"):
-    """52-week range: red low -> green high, dot at `price`."""
-    if lo is None or hi is None or hi <= lo:
-        return ""
-    p = max(0.0, min(1.0, (price - lo) / (hi - lo))) * 100
-    return (f'<div class="range" role="img" aria-label="52-week range {money(lo)} to {money(hi)}; '
-            f'{verb} {p:.0f}% of the way up"><span>{money(lo, False)}</span>'
-            f'<div class="rtrack"><i style="left:{p:.1f}%"></i></div><span>{money(hi, False)}</span></div>')
-
-
-def rank_bar(rank, top_n, exit_rank):
-    """Green = buy zone, amber = keep, red = sell; marker at the rank."""
-    if rank is None:
-        return ""
-    scale = exit_rank + 10
-    pos = min(rank, scale) / scale * 100
-    if rank <= top_n:
-        label, cls = f"Rank {rank} &middot; in the top {top_n}", "ok"
-    elif rank <= exit_rank:
-        label, cls = f"Rank {rank} &middot; kept until it falls below {exit_rank}", "warn"
-    else:
-        label, cls = f"Rank {rank} &middot; sells at the next Friday close", "bad"
-    return (f'<div class="rank"><div class="rk" aria-hidden="true"><span style="width:{top_n / scale * 100:.1f}%"></span>'
-            f'<span style="width:{(exit_rank - top_n) / scale * 100:.1f}%"></span><span></span>'
-            f'<i style="left:{pos:.1f}%"></i></div><div class="rklabel {cls}">{label}</div></div>')
-
-
-def week52(prices, ticker, day):
-    s = prices[ticker].loc[:day].dropna().iloc[-252:] if ticker in prices else pd.Series(dtype=float)
-    return (s.min(), s.max()) if len(s) > 20 else (None, None)
-
-
 def _scale(lo, hi, top, bottom):
     return lambda v: bottom - (v - lo) / (hi - lo) * (bottom - top)
 
@@ -414,15 +382,9 @@ h2{{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;text-wrap:bala
 .rl{{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid {LINE2}}} .rl:last-child{{border-bottom:0;padding-bottom:2px}}
 .rltop{{display:flex;justify-content:space-between;align-items:center;gap:10px}}
 .nm{{display:flex;flex-direction:column;min-width:0}} .nm small{{font-size:12px;color:{T4};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.range{{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:{T4};font-variant-numeric:tabular-nums}}
-.rtrack{{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,{RED} 0%,{AMBER} 50%,{GREEN} 100%)}}
-.rtrack i{{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:{PANEL};border:3px solid {T1};transform:translateX(-8px)}}
-.rank{{display:flex;flex-direction:column;gap:5px}}
-.rk{{position:relative;display:flex;height:8px;border-radius:4px}}
-.rk span:nth-child(1){{background:rgba(107,211,90,.42);border-radius:4px 0 0 4px}} .rk span:nth-child(2){{background:rgba(226,176,74,.26)}}
-.rk span:nth-child(3){{flex:1;background:rgba(255,90,78,.22);border-radius:0 4px 4px 0}}
-.rk i{{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:{T1};transform:translateX(-2px)}}
-.rklabel{{font-size:12px;font-weight:600}} .rklabel.ok{{color:{GREEN}}} .rklabel.warn{{color:{AMBER}}} .rklabel.bad{{color:{RED}}}
+.rlsub{{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:12px;color:{T4};font-variant-numeric:tabular-nums}}
+.stt{{font-weight:600;color:{T3}}} .stt.ok{{color:{GREEN}}} .stt.keep{{color:{AMBER}}} .stt.sell{{color:{RED}}}
+.subh{{margin:6px 0 0;font-size:15px;font-weight:700;color:{T1}}}
 .stack{{display:flex;height:20px;border-radius:8px;overflow:hidden}}
 .legend{{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:{T3}}} .legend i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}}
 .stats{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
@@ -664,47 +626,68 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
     def updown(r):
         return f"{'Up' if r >= 0 else 'Down'} {abs(r):.1f}%"
 
-    # This week's trades, each with its 52-week range at the trade
+    # Your stocks: one list of what's held, plus anything sold at the last close
     week = trades[trades["date"] == last_rebal.date()]
-    rows = []
-    for t in week.to_dict("records"):
-        day = pd.Timestamp(t["date"])
-        lo, hi = week52(prices, t["ticker"], day)
-        buy = t["action"] == "BUY"
-        verb = "bought" if buy else "sold"
-        right = (f'<span class="tag buy">Buy</span>' if buy else chip(t["gain_pct"]))
-        rows.append(f'''<div class="rl"><div class="rltop"><div class="nm">
-<b>{"" if buy else '<span class="tag sell">Sell</span> '}{esc(t["ticker"])}</b>
-<small>{esc(name(t["ticker"]))} &middot; {verb} at {money(t["price"])}</small></div>{right}</div>
-{range_bar(t["price"], lo, hi, verb)}</div>''')
-    if week.empty:
-        week_html = '<p class="empty">No trades this week. Every holding still ranks high enough to keep.</p>'
-    else:
-        week_html = f'<div class="rowlist">{"".join(rows)}</div>'
     started = last_rebal.normalize() == start.normalize()
-    week_title = "Started the account" if started else "This week's trades"
-    week_lead = "The bar is each stock's last 52 weeks, low to high. The dot is where it traded."
+    buys, sells = week[week["action"] == "BUY"], week[week["action"] == "SELL"]
+    when = f"{last_rebal:%a %b %d}"
 
-    # What you own, or what it would buy
+    def status_of(rank):
+        if rank is None:
+            return "", "Keeping"
+        if rank <= top_n:
+            return "ok", f"Keeping &middot; ranked {rank}"
+        if rank <= exit_rank:
+            return "keep", f"Keeping for now &middot; ranked {rank}, sold if it drops below {exit_rank}"
+        return "sell", f"Sells at Friday's close &middot; ranked {rank}"
+
+    def row(ticker, sub, right, line=""):
+        return (f'<div class="rl"><div class="rltop"><div class="nm"><b>{esc(ticker)}</b><small>{sub}</small></div>{right}</div>'
+                f'{line}</div>')
+
+    rank_note = (f"Each Friday the rules rank every {esc(cfg['name'])} stock by its 3-month gain. "
+                 f"A stock is kept while it ranks in the top {exit_rank}.")
+    parts = []
     if holdings:
+        title = f"Your {len(holdings)} stock{'s' if len(holdings) != 1 else ''}"
+        if started:
+            lead = f"Bought at the {when} close, when the account started, with equal money in each. {rank_note}"
+        elif week.empty:
+            lead = f"No trades at the {when} close: every stock still ranked high enough to keep. {rank_note}"
+        else:
+            did = " and ".join(x for x in [f"bought {len(buys)}" if len(buys) else "", f"sold {len(sells)}" if len(sells) else ""] if x)
+            lead = f"At the {when} close the rules {did}. {rank_note}"
+        if not on:
+            parts.append(f'<p class="warn">If {LABEL} is still under its 200-day average at Friday\'s close, '
+                         f'all of these are sold (the safety switch).</p>')
         hrows = []
         for h in holdings:
-            lo, hi = week52(prices, h["ticker"], status["last_day"])
-            hrows.append(f'''<div class="rl"><div class="rltop"><div class="nm"><b>{esc(h["ticker"])}</b>
-<small>{esc(name(h["ticker"]))} &middot; {money(h["value"])}</small></div>{chip(h["gain_pct"])}</div>
-{rank_bar(h["rank"], top_n, exit_rank)}{range_bar(h["price"], lo, hi)}</div>''')
-        own_html = f'''<section class="card sec full o4"><div><h2>What you own</h2>
-<p class="lead">Top bar: rank (green top {top_n}, yellow keep, red sell). Bottom bar: 52-week range.</p></div>
-<div class="rowlist">{"".join(hrows)}</div></section>
-<section class="card sec full o4"><h2>Where your money is</h2>{sector_bar(holdings, status["cash"])}</section>'''
+            cls, st = status_of(h["rank"])
+            new = ' <span class="tag buy">New</span>' if (not started and h["buy_date"] == str(last_rebal.date())) else ""
+            line = (f'<div class="rlsub"><span class="stt {cls}">{st}</span>'
+                    f'<span>Bought {pd.Timestamp(h["buy_date"]):%b %d} at {money(h["buy_price"])} &middot; now {money(h["price"])}</span></div>')
+            hrows.append(row(h["ticker"], f'{esc(name(h["ticker"]))} &middot; {money(h["value"])}', chip(h["gain_pct"]), line)
+                         .replace(f'<b>{esc(h["ticker"])}</b>', f'<b>{esc(h["ticker"])}{new}</b>', 1))
+        parts.append(f'<div class="rowlist">{"".join(hrows)}</div>')
+    else:
+        title = "Your stocks"
+        lead = f"None right now: the account is in cash because {LABEL} is under its 200-day average (the safety switch)."
+    if len(sells):
+        srows = "".join(row(t["ticker"], esc(name(t["ticker"])), chip(t["gain_pct"]),
+                            f'<div class="rlsub"><span>Sold {pd.Timestamp(t["date"]):%b %d} at {money(t["price"])}</span></div>')
+                        for t in sells.to_dict("records"))
+        parts.append(f'<h3 class="subh">Sold at the {when} close</h3><div class="rowlist">{srows}</div>')
+    if holdings:
+        parts.append(f'<h3 class="subh">Where your money is</h3>{sector_bar(holdings, status["cash"])}')
     else:
         nxt = [t for t in watch.index if t not in held][:top_n]
-        nrows = "".join(f'''<div class="rl"><div class="rltop"><div class="nm"><b>{esc(t)}</b>
-<small>{esc(name(t))}</small></div><span class="chip pos">+{watch[t] * 100:.0f}%</span></div>
-{rank_bar(i, top_n, exit_rank)}</div>''' for i, t in enumerate(nxt, 1))
-        own_html = f'''<section class="card sec full o4"><div><h2>Next buys if the switch flips</h2>
-<p class="lead">Today's top {top_n} by 3-month gain. If {LABEL} closes above {money(status["sma"])} on a Friday, these are bought at that close.</p></div>
-<div class="rowlist">{nrows}</div></section>'''
+        nrows = "".join(row(t, f'{esc(name(t))} &middot; 3-month gain', f'<span class="chip pos">+{watch[t] * 100:.0f}%</span>')
+                        for t in nxt)
+        parts.append(f'<h3 class="subh">Next buys if the switch turns back on</h3>'
+                     f'<p class="lead" style="margin:0">If {LABEL} closes above {money(status["sma"])} on a Friday, '
+                     f'today\'s top {top_n} by 3-month gain are bought at that close.</p><div class="rowlist">{nrows}</div>')
+    stocks_html = (f'<section class="card sec full"><div><h2>{title}</h2><p class="lead">{lead}</p></div>'
+                   f'{"".join(parts)}</section>')
 
     # Charts
     b = cfg["benchmark"]
@@ -743,24 +726,20 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
  <div class="kpi"><span class="k">Safety switch</span>{sw_val}<span class="s">{sw_sub}</span></div>
  <div class="kpi"><span class="k">Stocks held</span><span class="v">{len(holdings)} of {top_n}</span><span class="s">{record}</span></div>
 </div>
+{stocks_html}
 
 <div class="col">
 <section class="card sec o1"><div><h2>Your account vs. just holding {LABEL}</h2><p class="lead">Started {start:%b %d} with {money(start_val, False)}. Tap a point for that day.</p></div>
 <div class="key"><span><i style="background:{GOLD_TEXT}"></i>Your account</span><span><i style="background:{T4}"></i>Same money in {LABEL}</span></div>
 {acct_html}</section>
-
+{rules_block(cfg)}
+</div>
+<div class="col">
 <section class="card sec o2"><div><h2>Safety switch: {LABEL} vs. its 200-day average</h2><p class="lead">{switch_lead}
 Today {LABEL} is {status["qqq"]:.2f} and the line is {status["sma"]:.2f}.</p></div>
 <div class="key"><span><i style="background:{T1}"></i>{LABEL}</span><span><i style="background:{GOLD}"></i>200-day average</span></div>
 {switch_chart(sw)}</section>
-{rules_block(cfg)}
 </div>
-
-<div class="col">
-<section class="card sec o3"><div><h2>{week_title} <span class="lead" style="font-weight:400">&middot; {last_rebal:%a %b %d}</span></h2>
-<p class="lead">{week_lead}</p></div>{week_html}</section>
-</div>
-{own_html}
 
 <div class="col full o6">{backtest_block(cfg, bt)}
 <details class="card tuck"><summary>Every trade ({len(trades)})</summary><div class="scroll" style="margin-top:10px"><table>
