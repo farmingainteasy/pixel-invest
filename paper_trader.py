@@ -564,13 +564,17 @@ def run_market(m, a, cutoff, now=None):
             bars = download_intraday(sorted(ledger["positions"]) + [b])
         except Exception as e:               # the 30-minute prices are a nice-to-have
             print(f"  (no 30-minute prices: {type(e).__name__}: {e})")
-    live = None if a.prices_csv or a.today else live_prices(closes, bars, now, b)
-    shown_px = prices if live is None else pd.concat([prices, live.to_frame().T])
-    series = valued_days(shown_px, cfg, ledger, values, divs) if ledger["last_processed"] else None
-    day = day_change(shown_px, cfg, ledger, values, divs, series)
-    curve = week_curve(bars, series, shown_px, cfg, ledger, now)
-    if day and live is not None:
-        day.update(live=True, as_of=f"{now:%Y-%m-%dT%H:%M}")
+    try:
+        live = None if a.prices_csv or a.today else live_prices(closes, bars, now, b)
+        shown_px = prices if live is None else pd.concat([prices, live.to_frame().T])
+        series = valued_days(shown_px, cfg, ledger, values, divs) if ledger["last_processed"] else None
+        day = day_change(shown_px, cfg, ledger, values, divs, series)
+        curve = week_curve(bars, series, shown_px, cfg, ledger, now)
+        if day and live is not None:
+            day.update(live=True, as_of=f"{now:%Y-%m-%dT%H:%M}")
+    except Exception as e:                   # shown-only figures must never stop the page
+        print(f"  (no plus/minus this run: {type(e).__name__}: {e})")
+        day, curve = None, None
     html, now_val, bench_val, week = dashboard.build_dashboard(
         cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day, curve)
     atomic_write(p["page"], html)
