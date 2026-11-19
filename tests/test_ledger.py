@@ -277,3 +277,16 @@ def test_live_week_and_curve_meet_and_record_nothing():
     assert pts[-1][2] == pytest.approx(d["value"]) and pts[-1][1] == "Wed 10:12am"
     # Once the week's trades have happened the holdings changed, so there's no curve.
     assert pt.week_curve(bars, series, shown, CFG, {**led, "last_rebalance": "2026-11-18"}, now) is None
+
+
+def test_badge_shows_what_is_held_not_where_the_switch_points():
+    import dashboard
+    m = {"slug": "x-test", "active": True}
+    dashboard._SUMMARIES["x-test"] = {"risk_on": False, "held": 5}     # switch off mid-week, still holding
+    assert dashboard.summary_state(m) == ("Invested", "on")
+    assert "everything is sold" in dashboard.switch_heads_up(dashboard._SUMMARIES["x-test"])
+    dashboard._SUMMARIES["x-test"] = {"risk_on": True, "held": 0}      # back on mid-week, still in cash
+    assert dashboard.summary_state(m) == ("Cash", "off")
+    dashboard._SUMMARIES["x-test"] = {"risk_on": True, "held": 5}      # agree: no heads-up
+    assert dashboard.switch_heads_up(dashboard._SUMMARIES["x-test"]) == ""
+    del dashboard._SUMMARIES["x-test"]

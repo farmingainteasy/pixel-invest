@@ -595,7 +595,10 @@ def run_market(m, a, cutoff, now=None):
         if "week_change" in day:
             print(f"  Week so far: {day['week_change']:+,.2f} ({day['week_pct']:+.2f}%)   "
                   f"{cfg['bench_label']} {day['week_bench_pct']:+.2f}%")
-    print(f"  Safety switch: {'INVESTED' if status['risk_on'] else 'CASH'}")
+    sw = "INVESTED" if status["risk_on"] else "CASH"
+    if status["risk_on"] != bool(holdings):      # acted on only at the week's last close
+        sw += f" at the week's last close if it stays that way (now {f'holding {len(holdings)}' if holdings else 'in cash'})"
+    print(f"  Safety switch: {sw}")
     print(f"  New trades this run: {len(new_trades)}")
     for t in new_trades:
         print(f"    {t['date']}  {t['action']:<4} {t['ticker']:<8} at {sym}{t['price']:,.2f}")

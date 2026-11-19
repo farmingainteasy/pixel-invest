@@ -245,7 +245,7 @@ def account_chart(acct, w=380, h=200):
 
 
 def switch_chart(sw, w=380, h=200):
-    """QQQ vs its 200-day average, with the cash periods shaded."""
+    """QQQ vs its 200-day average, shaded where it closed below the line."""
     n = len(sw)
     pl, pr, pt_, pb = 40, 8, 10, 24
     lo, hi = sw.min().min(), sw.max().max()
@@ -275,7 +275,7 @@ def switch_chart(sw, w=380, h=200):
         prev = d.month
     last_q, last_s = sw["qqq"].iloc[-1], sw["sma"].iloc[-1]
     return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="{LABEL} {last_q:.2f} against its '
-            f'200-day average {last_s:.2f}; shaded where the rules sit in cash">{grid}{"".join(shade)}{"".join(months)}'
+            f'200-day average {last_s:.2f}; shaded where it closed below the line">{grid}{"".join(shade)}{"".join(months)}'
             f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["sma"])}" fill="none" stroke="{GOLD}" stroke-width="1.5" stroke-dasharray="5 3"/>'
             f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["qqq"])}" fill="none" stroke="{T1}" stroke-width="1.5" stroke-linejoin="round"/>'
             f'<circle cx="{xs[-1]:.1f}" cy="{y(last_q):.1f}" r="4" fill="{T1}"/></svg>')
@@ -401,7 +401,7 @@ h2{{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;text-wrap:bala
 .kpi{{background:{PANEL};border:1px solid {LINE};border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px;min-width:0}}
 .kpi .k{{font-size:12px;color:{T4}}} .kpi .v{{font-size:20px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}}
 .kpi .s{{font-size:12px;color:{T3}}}
-.pos{{color:{GREEN}}} .neg{{color:{RED}}} .dim{{color:{T5}}}
+.pos{{color:{GREEN}}} .neg{{color:{RED}}} .dim{{color:{T5}}} .amb{{color:{AMBER}}}
 .chip{{font-weight:700;font-size:13px;padding:3px 9px;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums}}
 .chip.pos{{background:rgba(107,211,90,.14);color:{GREEN}}} .chip.neg{{background:rgba(255,90,78,.14);color:{RED}}} .chip.flat{{background:{PANEL3};color:{T3}}}
 .tag{{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;vertical-align:1px}}
@@ -506,7 +506,8 @@ def summary_state(m):
     s = _SUMMARIES.get(m["slug"])
     if not s:
         return (f"Starts {pd.Timestamp(m['start_date']):%b %d}" if m.get("start_date") else "Waiting", "wait")
-    return ("Invested", "on") if s["risk_on"] else ("Cash", "off")
+    held = s.get("held", 1 if s["risk_on"] else 0)      # what's held, not where the switch points
+    return ("Invested", "on") if held else ("Cash", "off")
 
 
 def load_summaries(markets, summary_path):
@@ -640,7 +641,19 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
     start = pd.Timestamp(cfg["start_date"])
     held = {h["ticker"] for h in holdings}
     on = status["risk_on"]
+    invested = bool(holdings)          # what the account holds now (changes only at a week's last close)
     gap = (status["qqq"] / status["sma"] - 1) * 100
+    # The switch is read every day but acted on only at the week's last close, so mid-week it
+    # can point the other way from what's held: a heads-up for Friday, not a trade.
+    if on == invested:
+        sw_val = f'<span class="v {"pos" if on else "neg"}">{"Invested" if on else "Cash"}</span>'
+        sw_sub = f'{LABEL} {abs(gap):.1f}% {"above" if gap >= 0 else "under"} the line'
+    elif invested:
+        sw_val = '<span class="v amb">Sell signal</span>'
+        sw_sub = f"{LABEL} {abs(gap):.1f}% under the line. If it's still under at Friday's close, everything is sold."
+    else:
+        sw_val = '<span class="v amb">Buy signal</span>'
+        sw_sub = f"{LABEL} {abs(gap):.1f}% above the line. If it's still above at Friday's close, the top {top_n} are bought."
 
     closed = trades[trades["action"] == "SELL"]
     wins = int((closed["gain_pct"] > 0).sum())
@@ -697,8 +710,16 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
     b = cfg["benchmark"]
     sw = pd.DataFrame({"qqq": prices[b], "sma": prices[b].rolling(cfg["sma_days"]).mean()}
                       ).dropna().loc[:status["last_day"]].iloc[-130:]
-    switch_lead = (f"{LABEL} is above the dashed line, so the rules stay invested." if on else
-                   f"{LABEL} is below the dashed line, so the rules sit in cash. Shaded days are cash days.")
+    if on == invested:
+        switch_lead = (f"{LABEL} is above the dashed line, so the rules stay invested." if on else
+                       f"{LABEL} is below the dashed line, so the rules sit in cash. Shaded days are below the line.")
+    elif invested:
+        switch_lead = (f"{LABEL} has dipped below the dashed line. The rules act on it only at the week's last close: "
+                       f"if it's still below at Friday's close, they sell everything and sit in cash. Until then the stocks are kept. "
+                       f"Shaded days are below the line.")
+    else:
+        switch_lead = (f"{LABEL} is back above the dashed line. The rules act on it only at the week's last close: "
+                       f"if it's still above at Friday's close, they buy back in. Shaded days are below the line.")
     acct_html = (account_chart(acct) if len(acct) > 1 else
                  '<p class="empty">The chart starts after the first full day.</p>')
 
@@ -712,14 +733,14 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
 <div class="brandrow">{logo.svg()}<div><div class="brand">Pixel Invest</div><h1 class="htitle">{esc(cfg["name"])} Momentum</h1></div></div>
 <div class="hval"><div><div class="big">{money(now_val)}</div>
 <div class="sub">{updown(acct_ret)} since {start:%b %d} &middot; {LABEL} {updown(qqq_ret).lower()} &middot; prices as of {status["last_day"]:%a %b %d}</div></div>
-<span class="state {'on' if on else 'off'}">{'Invested' if on else 'In cash'}</span></div>
+<span class="state {'on' if invested else 'off'}">{'Invested' if invested else 'In cash'}</span></div>
 </div></header>'''
     main = f'''<main class="wrap">
 {day_block(day_info, curve)}
 <div class="kpis full">
  <div class="kpi"><span class="k">Account</span><span class="v">{money(now_val, False)}</span><span class="s {'pos' if acct_ret >= 0 else 'neg'}">{'+' if acct_ret >= 0 else '&minus;'}{abs(acct_ret):.1f}% since {start:%b %d}</span></div>
  <div class="kpi"><span class="k">Same money in {LABEL}</span><span class="v">{money(qqq_val, False)}</span><span class="s">You're {money(abs(diff), False)} {'ahead' if diff >= 0 else 'behind'}</span></div>
- <div class="kpi"><span class="k">Safety switch</span><span class="v {'pos' if on else 'neg'}">{'Invested' if on else 'Cash'}</span><span class="s">{LABEL} {abs(gap):.1f}% {'above' if gap >= 0 else 'under'} the line</span></div>
+ <div class="kpi"><span class="k">Safety switch</span>{sw_val}<span class="s">{sw_sub}</span></div>
  <div class="kpi"><span class="k">Stocks held</span><span class="v">{len(holdings)} of {top_n}</span><span class="s">{record}</span></div>
 </div>
 
@@ -746,7 +767,7 @@ Today {LABEL} is {status["qqq"]:.2f} and the line is {status["sma"]:.2f}.</p></d
 <tr><th>Date</th><th>Action</th><th>Stock</th><th>Price</th><th>Amount</th><th>Result</th></tr>{hist}</table></div></details>
 {updated_note(cfg)}</div>
 </main>'''
-    _SUMMARIES[cfg["slug"]] = {**(_SUMMARIES.get(cfg["slug"]) or {}), "risk_on": on}
+    _SUMMARIES[cfg["slug"]] = {**(_SUMMARIES.get(cfg["slug"]) or {}), "risk_on": on, "held": len(holdings)}
     page = page_shell(f"{esc(cfg['name'])} &middot; Pixel Invest", "../", markets, cfg["slug"], header, main)
     return page, now_val, qqq_val, week
 
@@ -815,6 +836,18 @@ def home_day(day):
     return out
 
 
+def switch_heads_up(s):
+    """A Home card note when the safety switch points away from what's held (acted on Friday)."""
+    held = bool(s.get("held"))
+    if s["risk_on"] == held:
+        return ""
+    if held:
+        return (f'<p class="warn">Safety switch: {LABEL} is under its 200-day average. '
+                f"If it's still under at Friday's close, everything is sold.</p>")
+    return (f'<p class="warn">Safety switch: {LABEL} is back above its 200-day average. '
+            f"If it's still above at Friday's close, the rules buy back in.</p>")
+
+
 def build_home(markets, summary_path):
     load_summaries(markets, summary_path)
     cards = []
@@ -830,7 +863,7 @@ def build_home(markets, summary_path):
                     f'<div class="msub"><span class="{"pos" if ret >= 0 else "neg"}">{"+" if ret >= 0 else "&minus;"}{abs(ret):.1f}%</span>'
                     f' since {pd.Timestamp(s["start"]):%b %d} &middot; {money(abs(diff), False)} {"ahead of" if diff >= 0 else "behind"} {LABEL}</div></div>'
                     f'{mini_spark(s["spark"])}</div>'
-                    f'{home_day(s.get("day"))}'
+                    f'{home_day(s.get("day"))}{switch_heads_up(s)}'
                     f'<div class="wk"><span>Last trades: {esc(s["week"])}</span><b>Open &#8250;</b></div>')
         else:
             msg = (f"First trades at the close on {pd.Timestamp(m['start_date']):%a %b %d}"
