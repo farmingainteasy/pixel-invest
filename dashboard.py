@@ -426,6 +426,8 @@ td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-vari
 .mcard svg{{width:120px;height:40px;flex:none}}
 .wk{{font-size:13px;color:{T3};border-top:1px solid {LINE2};padding-top:10px;display:flex;justify-content:space-between;gap:10px}}
 .wk b{{color:{GOLD_TEXT};white-space:nowrap}}
+.tot{{border-color:rgba(200,169,81,.35)}}
+.tval{{font-size:34px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.15}}
 .mday{{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;font-size:13px;color:{T3}}}
 .mday b{{font-variant-numeric:tabular-nums}}
 /* The day's plus/minus */
@@ -827,7 +829,66 @@ def switch_heads_up(s):
             f"If it's still above at Friday's close, the rules buy back in.</p>")
 
 
-def build_home(markets, summary_path):
+def home_total(markets, fx=None):
+    """All the accounts added up in US$ (C$ converted at `fx`, today's rate): profit/loss since
+    each started, the same money in each index fund, and today's and the week's plus/minus."""
+    rate = {"US$": 1.0}
+    if fx and fx.get("usd_per_cad"):
+        rate["C$"] = float(fx["usd_per_cad"])
+    active = [(m, _SUMMARIES.get(m["slug"])) for m in markets if m.get("active", True)]
+    rows = [(rate[m["currency"]], s) for m, s in active if s and m["currency"] in rate]
+    left_out = [m["name"] for m, s in active if s and m["currency"] not in rate]
+    if len(rows) < 2:
+        return ""
+
+    def usd(x):
+        return f"${x:,.0f}"
+
+    def signed_usd(x):
+        return "$0.00" if abs(x) < 0.005 else f'{"+" if x > 0 else "&minus;"}${abs(x):,.2f}'
+
+    cap = sum(r * s["capital"] for r, s in rows)
+    # At the latest prices: the day's value (today so far, while markets are open) when there is one.
+    val = sum(r * (s["day"]["value"] if s.get("day") else s["value"]) for r, s in rows)
+    bench = sum(r * (s["day"]["bench_value"] if s.get("day") else s["bench_value"]) for r, s in rows)
+    pl, bpl = val - cap, bench - cap
+    held = sum(1 for _, s in rows if s.get("held"))
+    lines = ""
+    days = [(r, s["day"]) for r, s in rows if s.get("day")]
+    if days:
+        ch = sum(r * d["change"] for r, d in days)
+        base = sum(r * (d["value"] - d["change"]) for r, d in days)
+        bch = sum(r * d["bench_change"] for r, d in days)
+        bbase = sum(r * (d["bench_value"] - d["bench_change"]) for r, d in days)
+        live = [d["as_of"] for _, d in days if d.get("live")]
+        when = (f'<span class="live"><i></i>Live {clock(pd.Timestamp(max(live)))}</span><span>Today</span>' if live
+                else f'<span>{pd.Timestamp(max(d["day"] for _, d in days)):%a %b %d}</span>')
+        lines += (f'<div class="mday">{when}<b class="{tone(ch)}">{signed_usd(ch)} ({signed_pct(ch / base * 100)})</b>'
+                  f'<span>index funds {signed_pct(bch / bbase * 100)}</span></div>')
+        wk = [(r, d) for r, d in days if "week_change" in d]
+        if wk:
+            wch = sum(r * d["week_change"] for r, d in wk)
+            wbase = sum(r * (d["value"] - d["week_change"]) for r, d in wk)
+            b1 = sum(r * d["bench_value"] for r, d in wk)
+            b0 = sum(r * d["bench_value"] / (1 + d["week_bench_pct"] / 100) for r, d in wk)
+            lines += (f'<div class="mday"><span>Week so far</span><b class="{tone(wch)}">{signed_usd(wch)} '
+                      f'({signed_pct(wch / wbase * 100)})</b><span>index funds {signed_pct((b1 / b0 - 1) * 100)}</span></div>')
+    cad = [m["name"] for m, s in active if s and m["currency"] == "C$" and "C$" in rate]
+    note = []
+    if cad:
+        note.append(f'{", ".join(cad)} counted in US$ at 1 C$ = {rate["C$"]:.4f} US$ ({pd.Timestamp(fx["date"]):%b %d}).')
+    if left_out:
+        note.append(f'Not counted (no exchange rate yet): {", ".join(left_out)}.')
+    return f'''<section class="card sec full tot"><div class="mtop"><div><div class="mname">All your accounts</div>
+<div class="msub">{len(rows)} paper accounts added up, in US$</div></div><span class="state {"on" if held else "off"}">{held} of {len(rows)} invested</span></div>
+<div><div class="msub">Profit/loss since each account started</div><div class="tval {tone(pl)}">{signed_usd(pl)}</div>
+<div class="msub">{signed_pct(pl / cap * 100)} &middot; worth {usd(val)} of {usd(cap)} put in, at the latest prices</div></div>
+<div class="mday"><span>Same money in the index funds</span><b class="{tone(bpl)}">{signed_usd(bpl)} ({signed_pct(bpl / cap * 100)})</b>
+<span>you're {usd(abs(pl - bpl))} {"ahead" if pl >= bpl else "behind"}</span></div>
+{lines}{f'<p class="note" style="margin:0">{" ".join(note)}</p>' if note else ""}</section>'''
+
+
+def build_home(markets, summary_path, fx=None):
     load_summaries(markets, summary_path)
     cards = []
     for m in markets:
@@ -856,6 +917,6 @@ def build_home(markets, summary_path):
 <div class="brandrow">{logo.svg()}<div><div class="brand">Pixel Invest</div><h1 class="htitle">All markets</h1></div></div>
 <div class="sub">Pretend money. Each market has its own account, in its own currency. Trades every weekend; the plus/minus updates every 30 minutes while markets are open.</div>
 </div></header>'''
-    main = f'''<main class="wrap"><div class="mcards full">{"".join(cards)}</div>
+    main = f'''<main class="wrap">{home_total(markets, fx)}<div class="mcards full">{"".join(cards)}</div>
 <p class="note full">Past and paper results don't guarantee future returns. Tap a market for its trades, charts and rules.</p></main>'''
     return page_shell("Pixel Invest", "", markets, None, header, main)

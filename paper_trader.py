@@ -53,6 +53,7 @@ import insights
 from markets import MARKETS
 
 DATA = os.path.join(HERE, "data")
+FX_PATH = os.path.join(DATA, "fx.json")      # last US$-per-C$ rate, for the Home page total
 DOCS = os.path.join(HERE, "docs")
 BENCHMARK = "QQQ"         # default index fund (tests and older callers)
 
@@ -139,6 +140,28 @@ def download_intraday(tickers):
     bars = raw["Close"].dropna(how="all", axis=1).sort_index()
     bars.index = bars.index.tz_convert("America/New_York")
     return bars
+
+
+def get_fx(download=True):
+    """US$ per C$, for adding the accounts up on the Home page (Yahoo's CAD=X is C$ per US$).
+    Saved to data/fx.json, so a failed download falls back to the last rate."""
+    saved = None
+    if os.path.exists(FX_PATH):
+        try:
+            saved = json.load(open(FX_PATH))
+        except ValueError:
+            pass
+    if not download:
+        return saved
+    try:
+        import yfinance as yf
+        c = yf.download("CAD=X", period="5d", progress=False, auto_adjust=False)["Close"]
+        c = (c.iloc[:, 0] if isinstance(c, pd.DataFrame) else c).dropna()
+        saved = {"usd_per_cad": round(1 / float(c.iloc[-1]), 5), "date": str(c.index[-1].date())}
+        atomic_write(FX_PATH, json.dumps(saved))
+    except Exception as e:                    # the total just uses the last saved rate
+        print(f"(no new exchange rate: {type(e).__name__}: {e})")
+    return saved
 
 
 def live_prices(closes, bars, now_et, benchmark):
@@ -664,7 +687,8 @@ def main():
                 if last is None or (date.today() - date.fromisoformat(last)).days > STALE_DAYS:
                     failed.append(f"{m['name']} hasn't updated since {last or 'it started'}: {msg[:100]}")
 
-    home = dashboard.build_home(MARKETS, lambda slug: paths(slug)["summary"])
+    fx = get_fx(download=not a.prices_csv)
+    home = dashboard.build_home(MARKETS, lambda slug: paths(slug)["summary"], fx)
     atomic_write(os.path.join(DOCS, "index.html"), home)
     print(f"Home page: {os.path.join(DOCS, 'index.html')}")
 

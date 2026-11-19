@@ -290,3 +290,22 @@ def test_badge_shows_what_is_held_not_where_the_switch_points():
     dashboard._SUMMARIES["x-test"] = {"risk_on": True, "held": 5}      # agree: no heads-up
     assert dashboard.switch_heads_up(dashboard._SUMMARIES["x-test"]) == ""
     del dashboard._SUMMARIES["x-test"]
+
+
+def test_home_total_adds_accounts_in_us_dollars():
+    import dashboard
+    day = lambda v, c, bv, bc: {"day": "2026-11-18", "value": v, "change": c, "bench_value": bv, "bench_change": bc,
+                                "invested": 1, "recorded": False, "week_change": c, "week_pct": 0.0, "week_bench_pct": 0.0}
+    mk = [{"slug": "us-t", "name": "US", "currency": "US$"}, {"slug": "ca-t", "name": "Canada", "currency": "C$"}]
+    dashboard._SUMMARIES["us-t"] = {"capital": 10000.0, "value": 9000.0, "bench_value": 9500.0, "held": 5,
+                                    "day": day(9100.0, 100.0, 9400.0, -100.0)}
+    dashboard._SUMMARIES["ca-t"] = {"capital": 10000.0, "value": 11000.0, "bench_value": 10000.0, "held": 0,
+                                    "day": day(11000.0, 0.0, 10000.0, 0.0)}
+    html = dashboard.home_total(mk, {"usd_per_cad": 0.7, "date": "2026-11-18"})
+    # Latest values: 9,100 + 0.7 * 11,000 = 16,800 against 10,000 + 7,000 put in: -200.
+    assert "&minus;$200.00" in html and "worth $16,800 of $17,000" in html and "1 of 2 invested" in html
+    assert "+$100.00" in html                                   # today: only the US account moved
+    assert "Canada counted in US$ at 1 C$ = 0.7000 US$" in html
+    assert dashboard.home_total(mk, None) == ""                 # one account alone isn't a total
+    for k in ("us-t", "ca-t"):
+        del dashboard._SUMMARIES[k]
