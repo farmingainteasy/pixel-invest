@@ -52,35 +52,120 @@ def tone(x):
     return "pos" if x >= 0.005 else "neg" if x <= -0.005 else ""
 
 
-def day_block(day):
-    """The latest trading day's plus/minus. A day not yet in the record is valued from the
-    shares held at that day's close; it's shown only."""
+def clock(t):
+    return f"{t.hour % 12 or 12}:{t:%M}{'am' if t.hour < 12 else 'pm'}"
+
+
+def day_block(day, curve=None):
+    """The week so far and the latest day's plus/minus. While the market is open the latest
+    day is today, at the latest prices (`day["live"]`); otherwise it's a day's close.
+    A day not yet in the record is valued from the shares held; it's shown only."""
     if not day:
         return ""
     d, prev = pd.Timestamp(day["day"]), pd.Timestamp(day["prev"])
-    note = (f"From the account record, compared with {prev:%a %b %d}." if day["recorded"] else
-            f"Valued from the shares held at {d:%a %b %d}'s close, compared with {prev:%a %b %d}. "
-            f"Not in the record yet: a day goes into the record after the next close, and trades happen only at the week's last close.")
+    live = bool(day.get("live"))
+    if live:
+        pill = f'<span class="live"><i></i>Live &middot; {clock(pd.Timestamp(day["as_of"]))} ET</span>'
+        note = ("If the week ended right now: the shares you hold, at the latest prices (they can be up to 15 minutes behind). "
+                "Updates every 30 minutes while markets are open. Nothing is traded or recorded until the week's last close.")
+        today = "today so far"
+    else:
+        pill = f'<span class="live off">{d:%a %b %d} close</span>'
+        note = (f"From the account record, compared with {prev:%a %b %d}." if day["recorded"] else
+                f"Valued from the shares held at {d:%a %b %d}'s close, compared with {prev:%a %b %d}. "
+                f"Not in the record yet: a day goes into the record after the next close, and trades happen only at the week's last close.")
+        today = f"on {d:%a %b %d}"
     held = "All in cash, so the account doesn't move." if not day["invested"] else \
-        f"{signed_pct(day['pct'])} on the day &middot; now {money(day['value'], False)}"
-    tiles = [
-        f'<div class="kpi"><span class="k">Your account</span><span class="v {tone(day["change"])}">{signed_money(day["change"])}</span>'
-        f'<span class="s">{held}</span></div>',
-        f'<div class="kpi"><span class="k">Same money in {LABEL}</span><span class="v {tone(day["bench_change"])}">{signed_money(day["bench_change"])}</span>'
-        f'<span class="s">{signed_pct(day["bench_pct"])} on the day</span></div>',
-    ]
+        f"{signed_pct(day['pct'])} &middot; now {money(day['value'], False)}"
+    tiles = []
     if "week_change" in day:
         since = pd.Timestamp(day["since"])
-        tiles.append(f'<div class="kpi"><span class="k">This week, since {since:%a %b %d}</span>'
+        tiles.append(f'<div class="kpi hero"><span class="k">Your account, this week so far (since {since:%a %b %d}\'s close)</span>'
                      f'<span class="v {tone(day["week_change"])}">{signed_money(day["week_change"])}</span>'
-                     f'<span class="s">{signed_pct(day["week_pct"])} &middot; {LABEL} {signed_pct(day["week_bench_pct"])}</span></div>')
+                     f'<span class="s">{signed_pct(day["week_pct"])} &middot; same money in {LABEL} {signed_pct(day["week_bench_pct"])}</span></div>')
+    tiles += [
+        f'<div class="kpi"><span class="k">Your account, {today}</span><span class="v {tone(day["change"])}">{signed_money(day["change"])}</span>'
+        f'<span class="s">{held}</span></div>',
+        f'<div class="kpi"><span class="k">Same money in {LABEL}, {today}</span><span class="v {tone(day["bench_change"])}">{signed_money(day["bench_change"])}</span>'
+        f'<span class="s">{signed_pct(day["bench_pct"])}</span></div>',
+    ]
     movers = ""
     if day["movers"]:
-        movers = ('<p class="lead" style="margin:0">Each stock on the day</p><div class="movers">'
+        movers = (f'<p class="lead" style="margin:0">Each stock you hold, {today}</p><div class="movers">'
                   + "".join(f'<span class="mv" title="{esc(name(t))}"><b>{esc(t)}</b>{chip(x)}</span>' for t, x in day["movers"])
                   + "</div>")
-    return (f'<section class="card sec full"><div><h2>{d:%A %b %d}: the day\'s plus/minus</h2><p class="lead">{note}</p></div>'
-            f'<div class="kpis daykpis">{"".join(tiles)}</div>{movers}</section>')
+    title = "This week so far" if not day["recorded"] else "This week"
+    return (f'<section class="card sec full"><div><h2>{title} {pill}</h2><p class="lead">{note}</p></div>'
+            f'<div class="kpis daykpis">{"".join(tiles)}</div>{week_chart(curve)}{movers}</section>')
+
+
+def week_chart(curve):
+    """This week every 30 minutes, as % since the previous week's close; drag to read."""
+    if not curve or len(curve) < 2:
+        return ""
+    data = json.dumps({"pts": curve, "sym": SYM, "bench": LABEL})
+    return (f'<div class="wkc"><div class="wk-read" aria-live="polite"></div><div class="wk-plot"></div>'
+            f'<div class="key"><span><i style="background:{GOLD_TEXT}"></i>Your account</span>'
+            f'<span><i style="background:{T4}"></i>Same money in {LABEL}</span></div>'
+            f'<script type="application/json" class="wk-data">{data}</script>{WK_SCRIPT}</div>')
+
+
+# This week's chart: Monday to Friday across the page, so the line fills in as the week goes.
+WK_SCRIPT = """<script>
+(function(){
+var box=document.currentScript.closest('.wkc'); if(!box) return;
+var D=JSON.parse(box.querySelector('.wk-data').textContent), P=D.pts, NS='http://www.w3.org/2000/svg';
+var GOLD='#E2C067', GREY='#A39D8E', GRID='rgba(255,255,255,.07)', ZERO='rgba(244,240,230,.28)', T4='#A39D8E', T5='#7E7866';
+var a0=P[0][2], b0=P[0][3], DAY=390, X=5*DAY, n=P.length;
+function el(t,a,p){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+function pa(r){return (r[2]/a0-1)*100;} function pb(r){return (r[3]/b0-1)*100;}
+function sign(v,z){return v>z?'+':v<-z?'−':'';}
+function money(v){return sign(v,.005)+D.sym+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function pct(v){return sign(v,.005)+Math.abs(v).toFixed(2)+'%';}
+function read(r){ var c=r[2]-a0, cls=c>=.005?'pos':c<=-.005?'neg':'';
+  box.querySelector('.wk-read').innerHTML='<span class="rv '+cls+'">'+money(c)+'</span><span class="rs">'+pct(pa(r))+
+  ' &middot; '+D.bench+' '+pct(pb(r))+' &middot; '+r[1]+'</span>'; }
+function hint(){ box.querySelector('.wk-read').innerHTML='<span class="rs">Drag along the chart to see any half hour this week.</span>'; }
+function draw(){
+  var host=box.querySelector('.wk-plot'), w=host.clientWidth; if(!w) return;
+  var h=Math.round(Math.min(220,Math.max(170,w*.45))), pl=4, pr=48, pt=10, pb_=22;
+  var vals=[0]; P.forEach(function(r){vals.push(pa(r),pb(r));});
+  var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals), mid=(lo+hi)/2, half=Math.max((hi-lo)/2*1.25,.5);
+  lo=mid-half; hi=mid+half;
+  var st=[.25,.5,1,2,5,10,20,50].filter(function(s){return (hi-lo)/s<=5;})[0]||100;
+  function x(m){return pl+m/X*(w-pl-pr);} function y(v){return pt+(1-(v-lo)/(hi-lo))*(h-pt-pb_);}
+  host.innerHTML=''; var svg=el('svg',{viewBox:'0 0 '+w+' '+h,width:w,height:h,role:'img',
+    'aria-label':'This week so far: your account '+pct(pa(P[n-1]))+', '+D.bench+' '+pct(pb(P[n-1]))},host);
+  var g=el('linearGradient',{id:'wkglow',x1:0,x2:0,y1:0,y2:1},el('defs',{},svg));
+  el('stop',{offset:0,'stop-color':GOLD,'stop-opacity':.22},g); el('stop',{offset:1,'stop-color':GOLD,'stop-opacity':0},g);
+  for(var v=Math.ceil(lo/st)*st; v<=hi+1e-9; v+=st){ var z=Math.abs(v)<1e-9;
+    el('line',{x1:pl,x2:w-pr,y1:y(v),y2:y(v),stroke:z?ZERO:GRID,'stroke-dasharray':z?'3 3':'none'},svg);
+    el('text',{x:w-pr+6,y:y(v)+4,'font-size':11,fill:T4},svg).textContent=(z?'0':sign(v,0)+(+Math.abs(v).toFixed(2)))+'%'; }
+  var cur=Math.floor((P[n-1][0]-1)/DAY);
+  ['Mon','Tue','Wed','Thu','Fri'].forEach(function(name,k){
+    if(k) el('line',{x1:x(k*DAY),x2:x(k*DAY),y1:pt,y2:h-pb_,stroke:GRID},svg);
+    el('text',{x:x(k*DAY+DAY/2),y:h-6,'font-size':11,'text-anchor':'middle',fill:k>cur?T5:T4,'font-weight':k===cur?700:400},svg).textContent=name; });
+  function path(f){return P.map(function(r,i){return (i?'L':'M')+x(r[0]).toFixed(1)+','+y(f(r)).toFixed(1);}).join('');}
+  el('path',{d:path(pa)+'L'+x(P[n-1][0]).toFixed(1)+','+y(lo)+'L'+x(0)+','+y(lo)+'Z',fill:'url(#wkglow)'},svg);
+  el('path',{d:path(pb),fill:'none',stroke:GREY,'stroke-width':1.5,'stroke-dasharray':'4 3','stroke-linejoin':'round'},svg);
+  el('path',{d:path(pa),fill:'none',stroke:GOLD,'stroke-width':2,'stroke-linejoin':'round'},svg);
+  el('circle',{cx:x(P[n-1][0]),cy:y(pa(P[n-1])),r:4.5,fill:GOLD},svg);
+  var vl=el('line',{y1:pt,y2:h-pb_,stroke:'rgba(244,240,230,.35)',visibility:'hidden'},svg),
+      d1=el('circle',{r:4.5,fill:GOLD,stroke:'#14120D','stroke-width':2,visibility:'hidden'},svg),
+      d2=el('circle',{r:3.5,fill:GREY,stroke:'#14120D','stroke-width':2,visibility:'hidden'},svg);
+  function at(e){var b=svg.getBoundingClientRect(),px=(e.clientX-b.left)/b.width*w,best=0;
+    P.forEach(function(r,i){if(Math.abs(x(r[0])-px)<Math.abs(x(P[best][0])-px))best=i;}); return best;}
+  function show(i){var r=P[i];[vl,d1,d2].forEach(function(e){e.setAttribute('visibility','visible');});
+    vl.setAttribute('x1',x(r[0]));vl.setAttribute('x2',x(r[0]));d1.setAttribute('cx',x(r[0]));d1.setAttribute('cy',y(pa(r)));
+    d2.setAttribute('cx',x(r[0]));d2.setAttribute('cy',y(pb(r)));read(r);}
+  host.onpointermove=function(e){show(at(e));}; host.onpointerdown=function(e){show(at(e));};
+  host.onpointerleave=function(){[vl,d1,d2].forEach(function(e){e.setAttribute('visibility','hidden');});hint();};
+  hint();
+}
+var t; window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(draw,150);});
+draw();
+})();
+</script>"""
 
 
 def chip(x):
@@ -355,9 +440,9 @@ table{{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}}
 th{{text-align:left;color:{T4};font-weight:600;font-size:12px;padding:8px;border-bottom:1px solid {LINE}}}
 td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-variant-numeric:tabular-nums}}
 .note{{font-size:12px;color:{T5};line-height:1.6;margin:4px 0 0}}
-.bt-read{{display:flex;flex-direction:column;gap:2px;min-height:56px}}
-.bt-read .rv{{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}}
-.bt-read .rs{{font-size:13px;color:{T3};font-variant-numeric:tabular-nums}}
+.bt-read,.wk-read{{display:flex;flex-direction:column;gap:2px;min-height:56px}}
+.bt-read .rv,.wk-read .rv{{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}}
+.bt-read .rs,.wk-read .rs{{font-size:13px;color:{T3};font-variant-numeric:tabular-nums}}
 .pill{{font-weight:700;font-size:12px;padding:2px 8px;border-radius:7px;margin-left:6px;white-space:nowrap}}
 .pill.pos{{background:rgba(107,211,90,.14);color:{GREEN}}} .pill.neg{{background:rgba(255,90,78,.14);color:{RED}}}
 .bt-plot{{touch-action:pan-y;user-select:none;-webkit-user-select:none}}
@@ -387,6 +472,17 @@ td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-vari
 .movers{{display:flex;flex-wrap:wrap;gap:6px}}
 .mv{{display:inline-flex;align-items:center;gap:6px;font-size:13px;background:{PANEL2};border:1px solid {LINE2};border-radius:10px;padding:3px 4px 3px 9px}}
 .mv .chip{{font-size:12px;padding:2px 7px}}
+.daykpis .kpi.hero{{grid-column:1/-1}} .kpi.hero .v{{font-size:28px}}
+.live{{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#8BE07C;background:rgba(107,211,90,.14);border-radius:999px;padding:3px 10px;margin-left:6px;vertical-align:3px;white-space:nowrap;letter-spacing:0}}
+.live i{{width:7px;height:7px;border-radius:50%;background:{GREEN};animation:blink 2s ease-in-out infinite}}
+.live.off{{color:{T3};background:{PANEL3}}}
+.mday .live{{margin-left:0;vertical-align:0}}
+@keyframes blink{{50%{{opacity:.3}}}}
+@media(prefers-reduced-motion:reduce){{.live i{{animation:none}}}}
+.wkc{{display:flex;flex-direction:column;gap:8px}}
+.wk-read{{min-height:0}} .wk-read .rv{{font-size:20px}}
+.wk-plot{{touch-action:pan-y;user-select:none;-webkit-user-select:none}}
+.wk-plot svg{{display:block;width:100%;height:auto;overflow:visible}} .wk-plot text{{font-family:var(--sans);font-variant-numeric:tabular-nums}}
 </style></head><body><div class="app">
 <nav class="side" aria-label="Markets"><div class="brandrow">{logo.svg()}<div class="brand" style="display:block">Pixel Invest</div></div>
 <a href="{rel or './'}" class="{"on" if current is None else ""}">All markets</a>{side}</nav>
@@ -394,7 +490,10 @@ td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-vari
 {header}
 {f'<nav class="switch wrap" aria-label="Markets">{chips}</nav>' if chips else ""}
 {main}
-</div></div></body></html>"""
+</div></div>
+<script>(function(){{var t=Date.now();document.addEventListener('visibilitychange',function(){{
+if(document.visibilityState==='visible'&&Date.now()-t>5*60*1000)location.reload();}});}})();</script>
+</body></html>"""
 
 
 _SUMMARIES = {}
@@ -424,7 +523,7 @@ def updated_note(cfg):
     divs = ("Dividends are paid into the account's cash, and the index fund comparison includes its dividends."
             if cfg.get("dividends") else "Prices only: dividends aren't counted, for the account or the index fund.")
     return (f'<p class="note">Pretend money only: trades at each Friday\'s closing price, no fees. {divs} '
-            f'Prices in {cfg["currency"]}. Trades every weekend; the day\'s plus/minus updates each weekday evening. Last updated {updated:%b %d, %Y %I:%M %p} '
+            f'Prices in {cfg["currency"]}. Trades every weekend; the day\'s and week\'s plus/minus update every 30 minutes while markets are open. Last updated {updated:%b %d, %Y %I:%M %p} '
             f'New York time. Past and paper results don\'t guarantee future returns.</p>')
 
 
@@ -528,7 +627,8 @@ def set_market(cfg):
 # --------------------------------------------------------------------------
 # A market's page
 # --------------------------------------------------------------------------
-def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, prices, bt, markets, ledger=None, day_info=None):
+def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, prices, bt, markets, ledger=None, day_info=None,
+                    curve=None):
     set_market(cfg)
     start_val = cfg["capital"]
     now_val = acct["paper_account"].iloc[-1]
@@ -615,13 +715,13 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
 <span class="state {'on' if on else 'off'}">{'Invested' if on else 'In cash'}</span></div>
 </div></header>'''
     main = f'''<main class="wrap">
+{day_block(day_info, curve)}
 <div class="kpis full">
  <div class="kpi"><span class="k">Account</span><span class="v">{money(now_val, False)}</span><span class="s {'pos' if acct_ret >= 0 else 'neg'}">{'+' if acct_ret >= 0 else '&minus;'}{abs(acct_ret):.1f}% since {start:%b %d}</span></div>
  <div class="kpi"><span class="k">Same money in {LABEL}</span><span class="v">{money(qqq_val, False)}</span><span class="s">You're {money(abs(diff), False)} {'ahead' if diff >= 0 else 'behind'}</span></div>
  <div class="kpi"><span class="k">Safety switch</span><span class="v {'pos' if on else 'neg'}">{'Invested' if on else 'Cash'}</span><span class="s">{LABEL} {abs(gap):.1f}% {'above' if gap >= 0 else 'under'} the line</span></div>
  <div class="kpi"><span class="k">Stocks held</span><span class="v">{len(holdings)} of {top_n}</span><span class="s">{record}</span></div>
 </div>
-{day_block(day_info)}
 
 <div class="col">
 <section class="card sec o1"><div><h2>Your account vs. just holding {LABEL}</h2><p class="lead">Started {start:%b %d} with {money(start_val, False)}. Tap a point for that day.</p></div>
@@ -696,15 +796,23 @@ def mini_spark(points, w=120, h=40):
 
 
 def home_day(day):
-    """One line on a Home card: the latest day's plus/minus for the account and its index fund."""
+    """Lines on a Home card: the latest day's plus/minus (today so far, while the market is open)
+    and the week so far, for the account and its index fund."""
     if not day:
         return ""
     d = pd.Timestamp(day["day"])
-    return (f'<div class="mday"><span>{d:%a %b %d}</span>'
-            + (f'<b class="{tone(day["change"])}">{signed_money(day["change"])} ({signed_pct(day["pct"])})</b>'
-               if day["invested"] else f'<b>{money(0)}</b><span>(in cash)</span>') +
-            f'<span>{LABEL} {signed_pct(day["bench_pct"])}</span>'
-            f'{"" if day["recorded"] else "<span class=dim>not in the record yet</span>"}</div>')
+    when = (f'<span class="live"><i></i>Live {clock(pd.Timestamp(day["as_of"]))}</span><span>Today</span>' if day.get("live")
+            else f'<span>{d:%a %b %d}</span>')
+    out = (f'<div class="mday">{when}'
+           + (f'<b class="{tone(day["change"])}">{signed_money(day["change"])} ({signed_pct(day["pct"])})</b>'
+              if day["invested"] else f'<b>{money(0)}</b><span>(in cash)</span>') +
+           f'<span>{LABEL} {signed_pct(day["bench_pct"])}</span>'
+           f'{"" if day["recorded"] or day.get("live") else "<span class=dim>not in the record yet</span>"}</div>')
+    if "week_change" in day:
+        out += (f'<div class="mday"><span>Week so far</span><b class="{tone(day["week_change"])}">'
+                f'{signed_money(day["week_change"])} ({signed_pct(day["week_pct"])})</b>'
+                f'<span>{LABEL} {signed_pct(day["week_bench_pct"])}</span></div>')
+    return out
 
 
 def build_home(markets, summary_path):
@@ -723,7 +831,7 @@ def build_home(markets, summary_path):
                     f' since {pd.Timestamp(s["start"]):%b %d} &middot; {money(abs(diff), False)} {"ahead of" if diff >= 0 else "behind"} {LABEL}</div></div>'
                     f'{mini_spark(s["spark"])}</div>'
                     f'{home_day(s.get("day"))}'
-                    f'<div class="wk"><span>This week: {esc(s["week"])}</span><b>Open &#8250;</b></div>')
+                    f'<div class="wk"><span>Last trades: {esc(s["week"])}</span><b>Open &#8250;</b></div>')
         else:
             msg = (f"First trades at the close on {pd.Timestamp(m['start_date']):%a %b %d}"
                    if m.get("active", True) and m.get("start_date") else "Starts once its size is picked from the backtest")
@@ -734,7 +842,7 @@ def build_home(markets, summary_path):
 <div class="msub">{sub}</div></div><span class="state {cls}">{"In cash" if label == "Cash" else label}</span></div>{body}</a>''')
     header = f'''<header class="hdr"><div class="wrap hin">
 <div class="brandrow">{logo.svg()}<div><div class="brand">Pixel Invest</div><h1 class="htitle">All markets</h1></div></div>
-<div class="sub">Pretend money. Each market has its own account, in its own currency. Trades every weekend; the day's plus/minus updates each weekday evening.</div>
+<div class="sub">Pretend money. Each market has its own account, in its own currency. Trades every weekend; the plus/minus updates every 30 minutes while markets are open.</div>
 </div></header>'''
     main = f'''<main class="wrap"><div class="mcards full">{"".join(cards)}</div>
 <p class="note full">Past and paper results don't guarantee future returns. Tap a market for its trades, charts and rules.</p></main>'''

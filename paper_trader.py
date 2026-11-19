@@ -16,8 +16,10 @@ For each market in markets.py it:
          its 200-day average
      Trades happen at the closing price on the last trading day of each
      finished week. Nothing is connected to any real brokerage account.
-     Between weekends, each run also shows the latest day's plus/minus, valued
-     from the shares held. That figure is shown only; it never goes into the record.
+     Between weekends, each run also shows the latest day's and the week's plus/minus,
+     valued from the shares held. While the market is open (GitHub runs it every 30
+     minutes then) that's today so far, at the latest prices, plus a 30-minute chart of
+     the week. Those figures are shown only; they never go into the record.
   3. Writes that market's page (docs/<slug>/), then the Home page (docs/).
 
 Files per market, in data/<slug>/
@@ -60,7 +62,8 @@ DEFAULTS = {"capital": 10_000.0, "top_n": 10, "exit_rank": 20, "lookback": 63,
 TRADE_COLS = ["date", "action", "ticker", "shares", "price", "value", "gain_pct", "reason"]
 VALUE_COLS = ["date", "paper_account", "cash", "positions", "qqq_same_money"]   # last = index fund
 HISTORY_DAYS = 450        # calendar days of prices needed before the first day we process
-MARKET_CLOSE_ET = time(16, 30)
+MARKET_OPEN_ET = time(9, 30)
+MARKET_CLOSE_ET = time(16, 30)      # closing prices count as final from here
 STALE_DAYS = 8            # only fail loudly if an account hasn't updated for this long
 
 
@@ -120,6 +123,39 @@ def final_cutoff(now_et):
 def now_eastern():
     from zoneinfo import ZoneInfo
     return datetime.now(ZoneInfo("America/New_York"))
+
+
+def market_open(now_et):
+    """A weekday between the open and the time that day's closing prices count as final."""
+    return now_et.weekday() < 5 and MARKET_OPEN_ET <= now_et.time() < MARKET_CLOSE_ET
+
+
+def download_intraday(tickers):
+    """The last few days' 30-minute prices (Yahoo; can be up to 15 minutes behind), indexed
+    by each bar's start in New York time."""
+    import yfinance as yf
+    raw = yf.download(tickers, period="5d", interval="30m", auto_adjust=False,
+                      progress=False, threads=True)
+    bars = raw["Close"].dropna(how="all", axis=1).sort_index()
+    bars.index = bars.index.tz_convert("America/New_York")
+    return bars
+
+
+def live_prices(closes, bars, now_et, benchmark):
+    """Today's latest prices while the market is open, or None. Uses the newest 30-minute
+    prices, and today's unfinished daily row for anything those don't have."""
+    if not market_open(now_et):
+        return None
+    today = pd.Timestamp(now_et.date())
+    row = closes.loc[today].copy() if today in closes.index else None
+    if bars is not None and len(bars):
+        tb = bars[(bars.index.tz_localize(None).normalize() == today) & (bars.index < now_et)]
+        if len(tb):
+            latest = tb.ffill().iloc[-1]
+            row = latest if row is None else latest.combine_first(row)
+    if row is None or pd.isna(row.get(benchmark)):
+        return None
+    return row.rename(today)
 
 
 # --------------------------------------------------------------------------
@@ -255,19 +291,14 @@ def advance(prices, splits, cfg, ledger, cutoff, dividends=None):
     return trades, values, notes
 
 
-def day_change(prices, cfg, ledger, values, dividends=None):
-    """The plus/minus for the latest settled trading day, for the account and its index fund.
-
-    Days after the last recorded week are valued here from the shares held and those days'
-    closing prices. Nothing here is written to trades.csv or account_value.csv: the record
-    still moves forward only when a week finishes. Returns None until there are two days.
-    """
-    if ledger.get("last_processed") is None:
-        return None
+def valued_days(prices, cfg, ledger, values, dividends=None):
+    """Each recorded day's account and index-fund value, then every later day valued from the
+    shares held at that day's price. Columns: acct, bench, cash, units (index-fund units).
+    Nothing here is written anywhere: the record moves forward only when a week finishes."""
     b = cfg.get("benchmark", BENCHMARK)
     px = prices.ffill()
     rec = values.assign(date=pd.to_datetime(values["date"])).set_index("date")
-    rec = rec[["paper_account", "qqq_same_money"]].astype(float).set_axis(["acct", "bench"], axis=1)
+    rec = rec[["paper_account", "qqq_same_money", "cash"]].astype(float).set_axis(["acct", "bench", "cash"], axis=1)
     last = pd.Timestamp(ledger["last_processed"])
     pos = ledger["positions"]
     pay = bool(cfg.get("dividends")) and dividends is not None and "bench_units" in ledger
@@ -282,12 +313,28 @@ def day_change(prices, cfg, ledger, values, dividends=None):
         acct = cash + sum(p["shares"] * px.at[day, t] for t, p in pos.items())
         bench = (units * px.at[day, b] if units is not None
                  else cfg["capital"] * px.at[day, b] / ledger["qqq_start"])
-        extra[day] = (acct, bench)
-    series = pd.concat([rec, pd.DataFrame.from_dict(extra, orient="index", columns=["acct", "bench"])]).sort_index()
+        extra[day] = (acct, bench, cash)
+    series = pd.concat([rec, pd.DataFrame.from_dict(extra, orient="index", columns=["acct", "bench", "cash"])]).sort_index()
+    series["units"] = series["bench"] / px[b].reindex(series.index)
+    return series
+
+
+def day_change(prices, cfg, ledger, values, dividends=None, series=None):
+    """The plus/minus for the latest trading day in `prices` (today's latest prices, while the
+    market is open), and for the week so far, for the account and its index fund.
+    Shown only, never recorded. Returns None until there are two days."""
+    if ledger.get("last_processed") is None:
+        return None
+    if series is None:
+        series = valued_days(prices, cfg, ledger, values, dividends)
     if len(series) < 2:
         return None
+    px = prices.ffill()
+    pos = ledger["positions"]
+    last = pd.Timestamp(ledger["last_processed"])
     d, prev = series.index[-1], series.index[-2]
-    (a1, b1), (a0, b0) = series.iloc[-1], series.iloc[-2]
+    a1, b1 = series.at[d, "acct"], series.at[d, "bench"]
+    a0, b0 = series.at[prev, "acct"], series.at[prev, "bench"]
     # Each stock held through the whole day (not bought at that day's close).
     movers = [[t, round((px.at[d, t] / px.at[prev, t] - 1) * 100, 2)] for t, p in pos.items()
               if p["buy_date"] < str(d.date()) and t in px and px.at[prev, t] > 0]
@@ -299,10 +346,52 @@ def day_change(prices, cfg, ledger, values, dividends=None):
     # This week so far, against the previous week's last close (skipped when that's `prev`).
     before = series[series.index < d.to_period("W-FRI").start_time]
     if len(before) and before.index[-1] != prev:
-        a_w, b_w = before.iloc[-1]
+        a_w, b_w = before["acct"].iloc[-1], before["bench"].iloc[-1]
         out.update(week_change=round(a1 - a_w, 2), week_pct=round((a1 / a_w - 1) * 100, 3),
                    week_bench_pct=round((b1 / b_w - 1) * 100, 3), since=str(before.index[-1].date()))
     return out
+
+
+def week_curve(bars, series, prices, cfg, ledger, now_et):
+    """This week's account and index-fund value every 30 minutes, valued from the shares held
+    now, starting at the previous week's last close. Each day's last point is that day's value
+    in `series`, so the curve ends on the same figures as the day's plus/minus.
+    None once the week's trades have happened (the holdings changed) or with no 30-minute prices.
+    Points are [minutes into the trading week, label, account, index fund]."""
+    if bars is None or series is None or len(series) < 2 or ledger.get("last_processed") is None:
+        return None
+    b = cfg.get("benchmark", BENCHMARK)
+    if b not in bars:
+        return None
+    week0 = series.index[-1].to_period("W-FRI").start_time
+    if pd.Timestamp(ledger["last_rebalance"]) >= week0:
+        return None
+    before = series[series.index < week0]
+    if before.empty:
+        return None
+    base = before.index[-1]
+    pos = ledger["positions"]
+    cols = list(pos) + [b]
+    days = bars.index.tz_localize(None).normalize()
+    keep = (days > base) & (days <= series.index[-1]) & (bars.index < now_et)
+    bars, days = bars.loc[keep].reindex(columns=cols), days[keep]
+    if bars.empty:
+        return None
+    bars = bars.ffill().fillna(prices.ffill().loc[base].reindex(cols))
+    st = series[["cash", "units"]].reindex(days, method="ffill")
+    stocks = sum(bars[t] * p["shares"] for t, p in pos.items()) if pos else 0.0
+    curve = pd.DataFrame({"acct": st["cash"].values + stocks, "bench": st["units"].values * bars[b].values},
+                         index=bars.index)
+    for d in days.unique():                       # each day ends on its value in `series`
+        if d in series.index:
+            curve.loc[curve.index[days == d][-1], ["acct", "bench"]] = series.loc[d, ["acct", "bench"]].values
+    pts = [[0, f"{base:%a %b %d} close", round(before["acct"].iloc[-1], 2), round(before["bench"].iloc[-1], 2)]]
+    for ts, r in curve.iterrows():
+        end = min(ts + pd.Timedelta(minutes=30), ts.normalize() + pd.Timedelta(hours=16), pd.Timestamp(now_et))
+        minute = end.hour * 60 + end.minute - (MARKET_OPEN_ET.hour * 60 + MARKET_OPEN_ET.minute)
+        label = f"{end:%a} {end.hour % 12 or 12}:{end:%M}{'am' if end.hour < 12 else 'pm'}"
+        pts.append([end.weekday() * 390 + minute, label, round(r.acct, 2), round(r.bench, 2)])
+    return pts if len(pts) > 1 else None
 
 
 # --------------------------------------------------------------------------
@@ -408,7 +497,7 @@ def week_line(trades_this_week, risk_on, top_n, started):
     return "No trades." if risk_on else "Still in cash."
 
 
-def run_market(m, a, cutoff):
+def run_market(m, a, cutoff, now=None):
     p = paths(m["slug"])
     os.makedirs(p["folder"], exist_ok=True)
     saved = json.load(open(p["state"])) if os.path.exists(p["state"]) else None
@@ -466,9 +555,24 @@ def run_market(m, a, cutoff):
     holdings, status, watch = status_for_display(settled, cfg, ledger)
     last_rebal = pd.Timestamp(ledger["last_rebalance"])
     bt = None if a.prices_csv else insights.backtest(cfg, p["backtest"])
-    day = day_change(prices, cfg, ledger, values, divs)          # shown only, never recorded
+    # The day's and week's plus/minus: shown only, never recorded. While the market is open
+    # the latest day is today, valued at the latest prices.
+    now = now or now_eastern()
+    bars = None
+    if not a.prices_csv and not a.today and now.weekday() < 5:
+        try:
+            bars = download_intraday(sorted(ledger["positions"]) + [b])
+        except Exception as e:               # the 30-minute prices are a nice-to-have
+            print(f"  (no 30-minute prices: {type(e).__name__}: {e})")
+    live = None if a.prices_csv or a.today else live_prices(closes, bars, now, b)
+    shown_px = prices if live is None else pd.concat([prices, live.to_frame().T])
+    series = valued_days(shown_px, cfg, ledger, values, divs) if ledger["last_processed"] else None
+    day = day_change(shown_px, cfg, ledger, values, divs, series)
+    curve = week_curve(bars, series, shown_px, cfg, ledger, now)
+    if day and live is not None:
+        day.update(live=True, as_of=f"{now:%Y-%m-%dT%H:%M}")
     html, now_val, bench_val, week = dashboard.build_dashboard(
-        cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day)
+        cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day, curve)
     atomic_write(p["page"], html)
     started = last_rebal.normalize() == pd.Timestamp(cfg["start_date"]).normalize()
     summary = dict(value=now_val, bench_value=bench_val, start=cfg["start_date"], capital=cfg["capital"],
@@ -485,8 +589,12 @@ def run_market(m, a, cutoff):
         print(f"  Applied stock split: {n}")
     print(f"  Paper account: {sym}{now_val:,.2f}   Same money in {cfg['bench_label']}: {sym}{bench_val:,.2f}")
     if day:
-        print(f"  {day['day']}: {day['change']:+,.2f} ({day['pct']:+.2f}%)   {cfg['bench_label']} {day['bench_pct']:+.2f}%"
+        when = f"{day['day']} so far (live {now:%H:%M})" if day.get("live") else day["day"]
+        print(f"  {when}: {day['change']:+,.2f} ({day['pct']:+.2f}%)   {cfg['bench_label']} {day['bench_pct']:+.2f}%"
               f"{'' if day['recorded'] else '   (shown only; not in the record yet)'}")
+        if "week_change" in day:
+            print(f"  Week so far: {day['week_change']:+,.2f} ({day['week_pct']:+.2f}%)   "
+                  f"{cfg['bench_label']} {day['week_bench_pct']:+.2f}%")
     print(f"  Safety switch: {'INVESTED' if status['risk_on'] else 'CASH'}")
     print(f"  New trades this run: {len(new_trades)}")
     for t in new_trades:
@@ -516,12 +624,17 @@ def main():
     ap.add_argument("--market", help="only this market (its slug, e.g. tsx-60)")
     ap.add_argument("--prices-csv", help="use saved prices instead of downloading (testing)")
     ap.add_argument("--today", help="pretend today's date is YYYY-MM-DD, before the close (testing)")
+    ap.add_argument("--now", help="pretend it's this New York time, e.g. '2026-11-18 14:00', to see the "
+                                  "live estimate as it was then (testing; prices after it are ignored)")
     ap.add_argument("--no-open", action="store_true", help="don't open the page")
     ap.add_argument("--auto", action="store_true",
                     help="background mode: no browser; fails only after a week-long outage")
     a = ap.parse_args()
     print(f"--- {datetime.now():%Y-%m-%d %H:%M} ---")
-    cutoff = date.fromisoformat(a.today) if a.today else final_cutoff(now_eastern())
+    now = now_eastern()
+    if a.now:
+        now = datetime.fromisoformat(a.now).replace(tzinfo=now.tzinfo)
+    cutoff = date.fromisoformat(a.today) if a.today else final_cutoff(now)
 
     failed, opened = [], None
     dashboard.load_summaries(MARKETS, lambda slug: paths(slug)["summary"])   # menu statuses
@@ -530,7 +643,7 @@ def main():
             continue
         try:
             if m.get("active", True):
-                page = run_market(m, a, cutoff)
+                page = run_market(m, a, cutoff, now)
                 opened = opened or page
             else:
                 run_waiting_market(m)

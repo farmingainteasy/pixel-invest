@@ -213,3 +213,67 @@ def test_day_change_needs_two_days():
     px = pd.DataFrame({pt.BENCHMARK: [200.0]}, index=idx)
     led = {"start": "2026-11-13", "qqq_start": 200.0, "cash": 10000.0, "last_processed": "2026-11-13", "positions": {}}
     assert pt.day_change(px, CFG, led, _values([["2026-11-13", 10000.0, 10000.0, 0, 10000.0]])) is None
+
+
+# ---- live estimate while the market is open (shown only, never recorded)
+NY = "America/New_York"
+
+
+def _ny(s):
+    return pd.Timestamp(s, tz=NY).to_pydatetime()
+
+
+def test_market_open_hours():
+    assert not pt.market_open(_ny("2026-11-18 09:29"))
+    assert pt.market_open(_ny("2026-11-18 09:30")) and pt.market_open(_ny("2026-11-18 16:29"))
+    assert not pt.market_open(_ny("2026-11-18 16:30"))          # closing prices count as final now
+    assert not pt.market_open(_ny("2026-11-21 12:00"))          # Saturday
+
+
+def _held_week():
+    """Bought AAA and BBB at Fri Nov 13's close; Mon settled, Tue unrecorded, Wed is today."""
+    idx = pd.to_datetime(["2026-11-13", "2026-11-16", "2026-11-17", "2026-11-18"])
+    closes = pd.DataFrame({"AAA": [100.0, 110.0, 99.0, 90.0], "BBB": [50.0, 50.0, 55.0, 60.0],
+                           "ZZZ": [10.0, 10.0, 10.0, 11.0], pt.BENCHMARK: [200.0, 202.0, 204.02, 210.0]}, index=idx)
+    led = {"start": "2026-11-13", "qqq_start": 200.0, "cash": 0.0, "last_processed": "2026-11-16",
+           "last_rebalance": "2026-11-13",
+           "positions": {"AAA": {"shares": 50.0, "buy_price": 100.0, "buy_date": "2026-11-13"},
+                         "BBB": {"shares": 100.0, "buy_price": 50.0, "buy_date": "2026-11-13"}}}
+    vals = _values([["2026-11-13", 10000.0, 0.0, 2, 10000.0], ["2026-11-16", 10500.0, 0.0, 2, 10100.0]])
+    bars = pd.DataFrame({"AAA": [111.0, 98.0, 97.0, 95.0, 94.0], "BBB": [50.0, 56.0, 57.0, 58.0, 59.0],
+                         pt.BENCHMARK: [203.0, 204.0, 205.0, 206.0, 207.0]},
+                        index=pd.DatetimeIndex(["2026-11-16 15:30", "2026-11-17 15:30", "2026-11-18 09:30",
+                                                "2026-11-18 10:00", "2026-11-18 10:30"]).tz_localize(NY))
+    return closes, led, vals, bars
+
+
+def test_live_prices_use_the_latest_30_minute_prices():
+    closes, led, vals, bars = _held_week()
+    now = _ny("2026-11-18 10:12")                 # the 10:30 bar hasn't started yet
+    row = pt.live_prices(closes, bars, now, pt.BENCHMARK)
+    assert row.name == pd.Timestamp("2026-11-18")
+    assert row["AAA"] == 95.0 and row[pt.BENCHMARK] == 206.0     # the 10:00 bar so far
+    assert row["ZZZ"] == 11.0                                     # not held: today's daily row
+    assert pt.live_prices(closes, bars, _ny("2026-11-18 09:00"), pt.BENCHMARK) is None
+    assert pt.live_prices(closes, bars, _ny("2026-11-18 17:00"), pt.BENCHMARK) is None
+
+
+def test_live_week_and_curve_meet_and_record_nothing():
+    closes, led, vals, bars = _held_week()
+    now = _ny("2026-11-18 10:12")
+    prices = closes[closes.index < pd.Timestamp("2026-11-18")]
+    shown = pd.concat([prices, pt.live_prices(closes, bars, now, pt.BENCHMARK).to_frame().T])
+    before = copy.deepcopy(led)
+    series = pt.valued_days(shown, CFG, led, vals)
+    d = pt.day_change(shown, CFG, led, vals, series=series)
+    assert led == before
+    # Today so far: 50*95 + 100*58 = 10,550, against Tue's 50*99 + 100*55 = 10,450.
+    assert d["day"] == "2026-11-18" and d["value"] == pytest.approx(10550) and d["change"] == pytest.approx(100)
+    assert d["week_change"] == pytest.approx(550) and d["since"] == "2026-11-13"
+    pts = pt.week_curve(bars, series, shown, CFG, led, now)
+    assert pts[0][:3] == [0, "Fri Nov 13 close", 10000.0]
+    assert [p[0] for p in pts] == [0, 390, 780, 810, 822]     # Fri close, Mon/Tue close, Wed 10:00, now (10:12)
+    assert pts[1][2] == pytest.approx(10500) and pts[2][2] == pytest.approx(10450)   # each day ends on its value
+    assert pts[-1][2] == pytest.approx(d["value"]) and pts[-1][1] == "Wed 10:12am"
+    # Once the week's trades have happened the holdings changed, so there's no curve.
+    assert pt.week_curve(bars, series, shown, CFG, {**led, "last_rebalance": "2026-11-18"}, now) is None

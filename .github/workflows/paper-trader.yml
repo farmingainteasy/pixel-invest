@@ -1,6 +1,7 @@
 # Runs Pixel Invest (the paper trader) every weekend after Friday's US market close, saves the
 # updated account back to the repo, and refreshes the web page (docs/).
-# Monday to Thursday evenings it runs again only to refresh the day's plus/minus on the pages:
+# On weekdays it also runs every 30 minutes while New York markets are open, and Monday to
+# Thursday evenings, only to refresh the live plus/minus for the day and the week on the pages:
 # trades still happen only when a week has finished, so those runs never trade.
 # To update right now: Actions tab -> "Pixel Invest" -> "Run workflow"
 # (works from the GitHub phone app too).
@@ -11,6 +12,7 @@ on:
     - cron: "0 14 * * 6"       # Saturday 14:00 UTC (9 or 10am New York)
     - cron: "0 14 * * 0"       # Sunday backup; does nothing if Saturday worked
     - cron: "15 22 * * 1-4"    # Mon-Thu 22:15 UTC (5:15 or 6:15pm New York): the day's plus/minus
+    - cron: "7,37 13-21 * * 1-5"   # every 30 min on weekdays; goes ahead only 9:30am-4:30pm New York
   workflow_dispatch:
 
 permissions:
@@ -25,23 +27,39 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Markets open? (only the every-30-minutes runs check)
+        id: gate
+        run: |
+          now=$(TZ=America/New_York date +%H%M)
+          if [ "${{ github.event.schedule }}" != "7,37 13-21 * * 1-5" ] || (( 10#$now >= 930 && 10#$now < 1630 )); then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Markets are closed in New York ($now): nothing to do."
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.go == 'true'
 
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.go == 'true'
         with:
           python-version: "3.12"
           cache: pip
 
       - name: Install
+        if: steps.gate.outputs.go == 'true'
         run: pip install -r requirements.txt
 
       - name: Safety tests (no trading if these fail)
+        if: steps.gate.outputs.go == 'true'
         run: python -m pytest -q -W ignore tests
 
       - name: Update paper account
+        if: steps.gate.outputs.go == 'true'
         run: python -W ignore paper_trader.py --auto
 
       - name: Save results
+        if: steps.gate.outputs.go == 'true'
         run: |
           git config user.name "paper-trader-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -50,5 +68,5 @@ jobs:
             echo "Nothing new to save."
           else
             git commit -m "Paper account update $(date -u +%Y-%m-%d)"
-            git push
+            git push || (git pull --rebase && git push)
           fi
