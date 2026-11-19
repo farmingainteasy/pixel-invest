@@ -79,15 +79,9 @@ h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;text-wrap:balan
 .rl{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)} .rl:last-child{border-bottom:0;padding-bottom:2px}
 .rltop{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .nm{display:flex;flex-direction:column;min-width:0} .nm small{font-size:12px;color:#A39D8E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.range{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:#A39D8E;font-variant-numeric:tabular-nums}
-.rtrack{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,#FF6B5F 0%,#E2B04A 50%,#6BD35A 100%)}
-.rtrack i{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:#1B1812;border:3px solid #F4F0E6;transform:translateX(-8px)}
-.rank{display:flex;flex-direction:column;gap:5px}
-.rk{position:relative;display:flex;height:8px;border-radius:4px}
-.rk span:nth-child(1){background:rgba(107,211,90,.42);border-radius:4px 0 0 4px} .rk span:nth-child(2){background:rgba(226,176,74,.26)}
-.rk span:nth-child(3){flex:1;background:rgba(255,90,78,.22);border-radius:0 4px 4px 0}
-.rk i{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:#F4F0E6;transform:translateX(-2px)}
-.rklabel{font-size:12px;font-weight:600} .rklabel.ok{color:#6BD35A} .rklabel.warn{color:#E2B04A} .rklabel.bad{color:#FF6B5F}
+.rlsub{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:12px;color:#A39D8E;font-variant-numeric:tabular-nums}
+.stt{font-weight:600;color:#C4BDAA} .stt.ok{color:#6BD35A} .stt.keep{color:#E2B04A} .stt.sell{color:#FF6B5F}
+.subh{margin:6px 0 0;font-size:15px;font-weight:700;color:#F4F0E6}
 .stack{display:flex;height:20px;border-radius:8px;overflow:hidden}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:#C4BDAA} .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
 .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -129,6 +123,8 @@ td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:now
 .mcard svg{width:120px;height:40px;flex:none}
 .wk{font-size:13px;color:#C4BDAA;border-top:1px solid rgba(255,255,255,.06);padding-top:10px;display:flex;justify-content:space-between;gap:10px}
 .wk b{color:#E2C067;white-space:nowrap}
+.tot{border-color:rgba(200,169,81,.35)}
+.tval{font-size:34px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.15}
 .mday{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;font-size:13px;color:#C4BDAA}
 .mday b{font-variant-numeric:tabular-nums}
 /* The day's plus/minus */
@@ -157,7 +153,13 @@ td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:now
 <div class="sub">Pretend money. Each market has its own account, in its own currency. Trades every weekend; the plus/minus updates every 30 minutes while markets are open.</div>
 </div></header>
 
-<main class="wrap"><div class="mcards full"><a class="mcard" href="nasdaq-100/"><div class="mtop"><div><div class="mname">Nasdaq-100</div>
+<main class="wrap"><section class="card sec full tot"><div class="mtop"><div><div class="mname">All your accounts</div>
+<div class="msub">4 paper accounts added up, in US$</div></div><span class="state on">3 of 4 invested</span></div>
+<div><div class="msub">Profit/loss since each account started</div><div class="tval neg">&minus;$735.52</div>
+<div class="msub">&minus;1.99% &middot; worth $36,233 of $36,968 put in, at the latest prices</div></div>
+<div class="mday"><span>Same money in the index funds</span><b class="neg">&minus;$1,473.34 (&minus;3.99%)</b>
+<span>you're $738 ahead</span></div>
+<div class="mday"><span>Wed Nov 18</span><b class="pos">+$16.33 (+0.05%)</b><span>index funds &minus;0.69%</span></div><div class="mday"><span>Week so far</span><b class="neg">&minus;$579.57 (&minus;1.57%)</b><span>index funds &minus;3.59%</span></div><p class="note" style="margin:0">TSX 60 counted in US$ at 1 C$ = 0.6968 US$ (Nov 19).</p></section><div class="mcards full"><a class="mcard" href="nasdaq-100/"><div class="mtop"><div><div class="mname">Nasdaq-100</div>
 <div class="msub">US tech-heavy &middot; compared with QQQ &middot; US$</div></div><span class="state off">In cash</span></div><div class="mrow"><div><div class="mval">$9,844<small>US$</small></div><div class="msub"><span class="neg">&minus;1.6%</span> since Nov 11 &middot; $328 ahead of QQQ</div></div><svg viewBox="0 0 120 40" aria-hidden="true"><polyline vector-effect="non-scaling-stroke" points="2.0,3.0 31.0,5.2 60.0,13.7 89.0,32.1 118.0,37.0" fill="none" stroke="#7E7866" stroke-width="1.5" stroke-dasharray="4 3"/><polyline vector-effect="non-scaling-stroke" points="2.0,3.0 31.0,18.1 60.0,13.9 89.0,13.9 118.0,13.9" fill="none" stroke="#E2C067" stroke-width="2.5" stroke-linejoin="round"/><circle cx="118.0" cy="13.9" r="3" fill="#E2C067"/></svg></div><div class="mday"><span>Wed Nov 18</span><b>$0.00</b><span>(in cash)</span><span>QQQ +0.39%</span><span class=dim>not in the record yet</span></div><div class="mday"><span>Week so far</span><b class="">$0.00 (0.00%)</b><span>QQQ &minus;3.00%</span></div><div class="wk"><span>Last trades: Sold all 10 (safety switch).</span><b>Open &#8250;</b></div></a><a class="mcard" href="tsx-60/"><div class="mtop"><div><div class="mname">TSX 60</div>
 <div class="msub">Canada&#x27;s largest companies &middot; compared with XIU &middot; C$</div></div><span class="state on">Invested</span></div><div class="mrow"><div><div class="mval">C$9,727<small>C$</small></div><div class="msub"><span class="neg">&minus;2.7%</span> since Nov 13 &middot; C$59 behind XIU</div></div><svg viewBox="0 0 120 40" aria-hidden="true"><polyline vector-effect="non-scaling-stroke" points="2.0,3.8 60.0,16.1 118.0,29.9" fill="none" stroke="#7E7866" stroke-width="1.5" stroke-dasharray="4 3"/><polyline vector-effect="non-scaling-stroke" points="2.0,3.8 60.0,3.0 118.0,37.0" fill="none" stroke="#E2C067" stroke-width="2.5" stroke-linejoin="round"/><circle cx="118.0" cy="37.0" r="3" fill="#E2C067"/></svg></div><div class="mday"><span>Wed Nov 18</span><b class="pos">+C$33.47 (+0.34%)</b><span>XIU &minus;2.15%</span><span class=dim>not in the record yet</span></div><div class="mday"><span>Week so far</span><b class="neg">&minus;C$239.74 (&minus;2.40%)</b><span>XIU &minus;4.25%</span></div><div class="wk"><span>Last trades: Started: bought 8.</span><b>Open &#8250;</b></div></a><a class="mcard" href="sp-500/"><div class="mtop"><div><div class="mname">S&amp;P 500</div>
 <div class="msub">500 large US companies &middot; compared with SPY &middot; US$</div></div><span class="state on">Invested</span></div><div class="mrow"><div><div class="mval">$9,682<small>US$</small></div><div class="msub"><span class="neg">&minus;3.2%</span> since Nov 13 &middot; $27 behind SPY</div></div><svg viewBox="0 0 120 40" aria-hidden="true"><polyline vector-effect="non-scaling-stroke" points="2.0,3.0 60.0,23.4 118.0,34.1" fill="none" stroke="#7E7866" stroke-width="1.5" stroke-dasharray="4 3"/><polyline vector-effect="non-scaling-stroke" points="2.0,3.0 60.0,13.3 118.0,37.0" fill="none" stroke="#E2C067" stroke-width="2.5" stroke-linejoin="round"/><circle cx="118.0" cy="37.0" r="3" fill="#E2C067"/></svg></div><div class="mday"><span>Wed Nov 18</span><b class="neg">&minus;$62.91 (&minus;0.65%)</b><span>SPY &minus;0.31%</span><span class=dim>not in the record yet</span></div><div class="mday"><span>Week so far</span><b class="neg">&minus;$380.94 (&minus;3.81%)</b><span>SPY &minus;3.20%</span></div><div class="wk"><span>Last trades: Started: bought 20.</span><b>Open &#8250;</b></div></a><a class="mcard" href="dow-30/"><div class="mtop"><div><div class="mname">Dow Jones</div>
