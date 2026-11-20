@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 import logo
+import looks
 from company_info import name, sector
 
 # Pixel Ag dark palette
@@ -447,7 +448,7 @@ td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-vari
 .wk-read{{min-height:0}} .wk-read .rv{{font-size:20px}}
 .wk-plot{{touch-action:pan-y;user-select:none;-webkit-user-select:none}}
 .wk-plot svg{{display:block;width:100%;height:auto;overflow:visible}} .wk-plot text{{font-family:var(--sans);font-variant-numeric:tabular-nums}}
-</style></head><body><div class="app">
+{looks.CSS}</style></head><body><div class="app">
 <nav class="side" aria-label="Markets"><div class="brandrow">{logo.svg()}<div class="brand" style="display:block">Pixel Invest</div></div>
 <a href="{rel or './'}" class="{"on" if current is None else ""}">All markets</a>{side}</nav>
 <div class="content">
@@ -455,6 +456,7 @@ td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-vari
 {f'<nav class="switch wrap" aria-label="Markets">{chips}</nav>' if chips else ""}
 {main}
 </div></div>
+{looks.switch(rel, current, is_new=False)}
 <script>(function(){{var t=Date.now();document.addEventListener('visibilitychange',function(){{
 if(document.visibilityState==='visible'&&Date.now()-t>5*60*1000)location.reload();}});}})();</script>
 </body></html>"""

@@ -1,5 +1,10 @@
+# Pinned to the versions the safety tests pass with on the Mac. GitHub used to install the
+# newest ones (pandas 3.1, numpy 2.5), the tests failed there from Nov 19 and the site stopped
+# updating. Upgrade these on purpose, after running the tests with the new versions.
+pandas==2.3.3
+numpy==2.0.2
+matplotlib==3.9.4
+pytest==8.4.2
+# Left current: yfinance keeps up with Yahoo's changes, tzdata with time-zone rules.
 yfinance
-pandas
-matplotlib
-pytest
 tzdata

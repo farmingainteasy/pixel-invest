@@ -49,12 +49,14 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import dashboard
+import dashboard_new
 import insights
 from markets import MARKETS
 
 DATA = os.path.join(HERE, "data")
 FX_PATH = os.path.join(DATA, "fx.json")      # last US$-per-C$ rate, for the Home page total
 DOCS = os.path.join(HERE, "docs")
+NEW_DOCS = os.path.join(DOCS, "new")    # the new look, beside the old one while they're compared (looks.py)
 BENCHMARK = "QQQ"         # default index fund (tests and older callers)
 
 DEFAULTS = {"capital": 10_000.0, "top_n": 10, "exit_rank": 20, "lookback": 63,
@@ -428,6 +430,15 @@ def atomic_write(path, text):
     os.replace(tmp, path)
 
 
+def write_new_look(page, build):
+    """Write the new look's copy of an old-look page (docs/x -> docs/new/x). It's only for
+    comparing: if it fails, the old look (already written) and the account carry on."""
+    try:
+        atomic_write(os.path.join(NEW_DOCS, os.path.relpath(page, DOCS)), build())
+    except Exception as e:
+        print(f"  (new look skipped: {type(e).__name__}: {e})")
+
+
 def read_ledger_csv(path, cols, through):
     """Existing rows, minus any written after `through` by a run that crashed."""
     if not os.path.exists(path) or through is None:
@@ -551,6 +562,7 @@ def run_market(m, a, cutoff, now=None):
         # Not started yet: show the waiting page until its first trading day closes.
         bt = None if a.prices_csv else insights.backtest(cfg, p["backtest"])
         atomic_write(p["page"], dashboard.build_waiting(cfg, bt, MARKETS))
+        write_new_look(p["page"], lambda: dashboard_new.build_waiting(cfg, bt, MARKETS))
         print(f"[{m['name']}] starts at the close on {cfg['start_date']}; page shows its backtest")
         return None
     if ledger is None:
@@ -601,6 +613,8 @@ def run_market(m, a, cutoff, now=None):
     html, now_val, bench_val, week = dashboard.build_dashboard(
         cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day, curve)
     atomic_write(p["page"], html)
+    write_new_look(p["page"], lambda: dashboard_new.build_dashboard(
+        cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day, curve)[0])
     started = last_rebal.normalize() == pd.Timestamp(cfg["start_date"]).normalize()
     summary = dict(value=now_val, bench_value=bench_val, start=cfg["start_date"], capital=cfg["capital"],
                    risk_on=status["risk_on"], held=len(holdings), last_day=str(status["last_day"].date()),
@@ -609,6 +623,7 @@ def run_market(m, a, cutoff, now=None):
                    day=day, updated=str(date.today()))
     atomic_write(p["summary"], json.dumps(summary, default=float))
     dashboard._SUMMARIES[m["slug"]] = json.loads(json.dumps(summary, default=float))
+    dashboard_new._SUMMARIES[m["slug"]] = json.loads(json.dumps(summary, default=float))
 
     sym = cfg["symbol"]
     print(f"[{m['name']}] prices settled through {ledger['last_processed']}")
@@ -638,6 +653,7 @@ def run_waiting_market(m):
     cfg = {**DEFAULTS, **m}
     bt = insights.backtest(cfg, p["backtest"])
     atomic_write(p["page"], dashboard.build_waiting(cfg, bt, MARKETS))
+    write_new_look(p["page"], lambda: dashboard_new.build_waiting(cfg, bt, MARKETS))
     print(f"[{m['name']}] not started yet; page shows its backtest")
 
 
@@ -668,6 +684,7 @@ def main():
 
     failed, opened = [], None
     dashboard.load_summaries(MARKETS, lambda slug: paths(slug)["summary"])   # menu statuses
+    dashboard_new.load_summaries(MARKETS, lambda slug: paths(slug)["summary"])
     for m in MARKETS:
         if a.market and m["slug"] != a.market:
             continue
@@ -690,6 +707,8 @@ def main():
     fx = get_fx(download=not a.prices_csv)
     home = dashboard.build_home(MARKETS, lambda slug: paths(slug)["summary"], fx)
     atomic_write(os.path.join(DOCS, "index.html"), home)
+    write_new_look(os.path.join(DOCS, "index.html"),
+                   lambda: dashboard_new.build_home(MARKETS, lambda slug: paths(slug)["summary"], fx))
     print(f"Home page: {os.path.join(DOCS, 'index.html')}")
 
     if failed:

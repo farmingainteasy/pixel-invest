@@ -309,3 +309,30 @@ def test_home_total_adds_accounts_in_us_dollars():
     assert dashboard.home_total(mk, None) == ""                 # one account alone isn't a total
     for k in ("us-t", "ca-t"):
         del dashboard._SUMMARIES[k]
+
+
+def test_new_look_home_total_matches_the_old_numbers():
+    import dashboard_new
+    day = lambda v, c, bv, bc: {"day": "2026-11-18", "value": v, "change": c, "bench_value": bv, "bench_change": bc,
+                                "invested": 1, "recorded": False, "week_change": c, "week_pct": 0.0, "week_bench_pct": 0.0}
+    mk = [{"slug": "us-t", "name": "US", "currency": "US$"}, {"slug": "ca-t", "name": "Canada", "currency": "C$"}]
+    dashboard_new._SUMMARIES["us-t"] = {"capital": 10000.0, "value": 9000.0, "bench_value": 9500.0, "held": 5,
+                                        "day": day(9100.0, 100.0, 9400.0, -100.0)}
+    dashboard_new._SUMMARIES["ca-t"] = {"capital": 10000.0, "value": 11000.0, "bench_value": 10000.0, "held": 0,
+                                        "day": day(11000.0, 0.0, 10000.0, 0.0)}
+    html = dashboard_new.home_total(mk, {"usd_per_cad": 0.7, "date": "2026-11-18"})
+    # Same sums as the old look: 16,800 against 17,000 put in (-200); the index funds 16,400, so $400 ahead.
+    assert "&minus;$200.00" in html and "worth $16,800, from $17,000 put in" in html
+    assert "$400 ahead of the index funds" in html and "+$100.00" in html
+    assert "Canada counted in US$ at 1 C$ = 0.7000 US$" in html
+    assert dashboard_new.home_total(mk, None) == ""
+    for k in ("us-t", "ca-t"):
+        del dashboard_new._SUMMARIES[k]
+
+
+def test_look_switch_links_to_the_same_page_in_the_other_look():
+    import looks
+    assert 'href="new/"' in looks.switch("", None, is_new=False)                 # old Home -> new Home
+    assert 'href="../new/dow-30/"' in looks.switch("../", "dow-30", is_new=False)
+    assert 'href="../"' in looks.switch("", None, is_new=True)                   # new Home -> old Home
+    assert 'href="../../dow-30/"' in looks.switch("../", "dow-30", is_new=True)
