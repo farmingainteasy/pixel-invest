@@ -60,10 +60,19 @@ def short_date(d):
     return f"{d:%b} {d.day}"
 
 
+def week_closed(day):
+    """Friday's close has happened, and the weekend update hasn't traded on it yet."""
+    if not day or pd.Timestamp(day["day"]).weekday() != 4:
+        return False
+    return not day.get("live") or pd.Timestamp(day["as_of"]).hour >= 16
+
+
 def day_name(day, short=False):
-    """'Today' while the market is open or on the day itself; otherwise that day's date."""
+    """'Today' while the market is open or on the day itself; otherwise that day's date. Once
+    Friday has closed, the date: the page stays up until the weekend update replaces it."""
     d = pd.Timestamp(day["day"])
-    if day.get("live") or d.date() == datetime.now(ZoneInfo("America/New_York")).date():
+    today = d.date() == datetime.now(ZoneInfo("America/New_York")).date()
+    if not week_closed(day) and (day.get("live") or today):
         return "Today"
     return f"{d:%a}" if short else f"{d:%a} {short_date(d)}"
 
@@ -105,7 +114,7 @@ def as_of(day, every=False):
     """When the numbers are from: live, or a day's close."""
     if not day:
         return ""
-    if day.get("live"):
+    if day.get("live") and pd.Timestamp(day["as_of"]).hour < 16:
         more = " Updates every 30 minutes." if every else ""
         return (f'<p class="asof"><i class="dot"></i>Live at {clock(pd.Timestamp(day["as_of"]))} '
                 f'New York time.{more}</p>')
@@ -113,13 +122,21 @@ def as_of(day, every=False):
     return f'<p class="asof">At the close on {d:%a} {short_date(d)}.</p>'
 
 
-def switch_heads_up(s, gap=None):
+def switch_heads_up(s, gap=None, closed=False):
     """A warning when the safety switch points away from what's held. It's acted on only at
-    the week's last close, so mid-week it's a heads-up for Friday, not a trade."""
+    the week's last close, so mid-week it's a heads-up for Friday; once Friday has `closed`,
+    it says what the weekend update will do."""
     held = bool(s.get("held"))
     if s["risk_on"] == held:
         return ""
     by = f" {abs(gap):.1f}%" if gap is not None else ""
+    if closed and held:
+        return (f'<div class="heads"><b>Selling everything at Friday\'s close</b><span>{LABEL} ended the week{by} '
+                f"under its 200-day average, so the weekend update sells everything at Friday's closing prices "
+                f"and the account waits in cash.</span></div>")
+    if closed:
+        return (f'<div class="heads"><b>Buying back in at Friday\'s close</b><span>{LABEL} ended the week{by} '
+                f"above its 200-day average, so the weekend update buys back in at Friday's closing prices.</span></div>")
     if held:
         return (f'<div class="heads"><b>Friday: may sell everything</b><span>{LABEL} is{by} under its 200-day average. '
                 f"If it's still under at Friday's close, everything is sold and the account waits in cash.</span></div>")
@@ -792,7 +809,9 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
             f'<p class="worth">Worth {money(val, False)}, from {money(start_val, False)} on {short_date(start)}</p>'
             f'{vs_table(spans(day_info, start_val, val, bench, start, signed_money), LABEL)}{as_of(day_info)}')
     header = market_header(cfg, ("Invested", "on") if invested else ("In cash", "off"), body)
-    heads = switch_heads_up({"risk_on": on, "held": len(holdings)}, gap)
+    latest_sw = (day_info or {}).get("switch")         # the switch at the latest prices
+    heads = switch_heads_up({"risk_on": latest_sw["on"] if latest_sw else on, "held": len(holdings)},
+                            latest_sw["gap"] if latest_sw else gap, week_closed(day_info))
     week_html = (f'<section class="sec"><h2>This week</h2>{week_chart(curve)}</section>' if curve and len(curve) > 1 else "")
     main = f'''<main class="wrap">
 {heads}
@@ -900,6 +919,13 @@ def home_total(markets, fx=None):
             f'{fxnote}</section>')
 
 
+def heads_for(s, day):
+    """A Home card's switch heads-up, from the latest prices when the summary has them."""
+    sw = (day or {}).get("switch")
+    return switch_heads_up({"risk_on": sw["on"] if sw else s["risk_on"], "held": s.get("held")},
+                           sw["gap"] if sw else None, week_closed(day))
+
+
 def build_home(markets, summary_path, fx=None):
     load_summaries(markets, summary_path)
     cards = []
@@ -917,7 +943,7 @@ def build_home(markets, summary_path, fx=None):
             body = (f'{standing(val - bench, LABEL, lambda x: money(x, False))}'
                     f'<p class="worth">Worth {money(val, False)}</p>'
                     f'{vs_table(spans(day, s["capital"], val, bench, pd.Timestamp(s["start"]), signed_money), LABEL)}'
-                    f'{switch_heads_up(s)}'
+                    f'{heads_for(s, day)}'
                     f'<p class="last">Last trades: {esc(s["week"])}</p>')
         else:
             msg = (f"First trades at the close on {pd.Timestamp(m['start_date']):%a %b} {pd.Timestamp(m['start_date']).day}"

@@ -355,3 +355,32 @@ def test_late_friday_close_waits_but_a_holiday_trades():
     with pytest.raises(pt.DataError, match="Fri Jan 10"):
         pt.check_week_end_closes(px.index[px.index < "2025-01-10"], None, date(2025, 1, 11),
                                  pt.BENCHMARK, bars_on("2025-01-10"))
+
+
+def test_switch_now_reads_the_latest_price():
+    idx = pd.bdate_range("2026-01-01", periods=260)
+    px = pd.DataFrame({pt.BENCHMARK: np.r_[np.full(259, 100.0), 90.0]}, index=idx)
+    sw = pt.switch_now(px, {**CFG, "sma_days": 200})
+    assert sw["on"] is False and sw["gap"] == round((90 / 99.95 - 1) * 100, 2)
+    assert pt.switch_now(px.tail(50), {**CFG, "sma_days": 200}) is None       # too short for an average
+
+
+def test_heads_up_after_fridays_close_says_what_the_weekend_does():
+    import dashboard
+    fri = lambda **k: {"day": "2026-11-20", **k}
+    assert dashboard.week_closed(fri(live=True, as_of="2026-11-20T16:00"))
+    assert not dashboard.week_closed(fri(live=True, as_of="2026-11-20T15:30"))
+    assert dashboard.week_closed(fri())                                       # an evening or weekend run
+    assert not dashboard.week_closed({"day": "2026-11-19"})                   # Thursday: the week goes on
+    assert not dashboard.week_closed(None)
+    held_off = {"risk_on": False, "held": 5}
+    after = dashboard.switch_heads_up(held_off, -0.3, closed=True)
+    assert "Selling everything at Friday" in after and "Friday's closing prices" in after and "0.3%" in after
+    assert "If it's still under" in dashboard.switch_heads_up(held_off, -0.3)
+    assert "Buying back in" in dashboard.switch_heads_up({"risk_on": True, "held": 0}, 0.4, closed=True)
+    assert dashboard.day_name(fri(live=True, as_of="2026-11-20T16:00")) == "Fri Nov 20"
+    # On the Home page the latest prices win over the last recorded day
+    s = {"risk_on": True, "held": 5}
+    assert "Selling everything" in dashboard.heads_for(s, fri(live=True, as_of="2026-11-20T16:00",
+                                                            switch={"on": False, "gap": -0.3}))
+    assert dashboard.heads_for(s, None) == ""

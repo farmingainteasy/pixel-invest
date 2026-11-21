@@ -217,6 +217,17 @@ def rebalance_days(days, cutoff, first_day=None):
     return rebal, known
 
 
+def switch_now(px, cfg):
+    """The safety switch at the latest prices shown (today's, while markets are open): whether
+    the index fund is above its average, and by how much. Shown only; the rules act on it at
+    the week's last close."""
+    s = px[cfg.get("benchmark", BENCHMARK)].dropna()
+    sma = s.rolling(cfg["sma_days"]).mean()
+    if s.empty or pd.isna(sma.iloc[-1]):
+        return None
+    return dict(on=bool(s.iloc[-1] > sma.iloc[-1]), gap=round(float(s.iloc[-1] / sma.iloc[-1] - 1) * 100, 2))
+
+
 def week_end_gaps(days, after, cutoff):
     """Weekdays that would end a finished week but have no daily close: from the day after the
     last close we have in that week (or its Monday, if none) to its Friday, for weeks after
@@ -636,6 +647,8 @@ def run_market(m, a, cutoff, now=None):
         curve = week_curve(bars, series, shown_px, cfg, ledger, now)
         if day and live is not None:
             day.update(live=True, as_of=f"{now:%Y-%m-%dT%H:%M}")
+        if day:
+            day["switch"] = switch_now(shown_px, cfg)
     except Exception as e:                   # shown-only figures must never stop the page
         print(f"  (no plus/minus this run: {type(e).__name__}: {e})")
         day, curve = None, None
