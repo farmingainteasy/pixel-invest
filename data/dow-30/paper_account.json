@@ -3,38 +3,12 @@
   "ledger": {
     "start": "2026-11-13",
     "qqq_start": 523.1500244140625,
-    "cash": 0.0,
-    "positions": {
-      "V": {
-        "shares": 4.697482041822041,
-        "buy_price": 425.760009765625,
-        "buy_date": "2026-11-13"
-      },
-      "PG": {
-        "shares": 11.778562803620018,
-        "buy_price": 169.8000030517578,
-        "buy_date": "2026-11-13"
-      },
-      "AAPL": {
-        "shares": 5.613720104623378,
-        "buy_price": 356.2699890136719,
-        "buy_date": "2026-11-13"
-      },
-      "DIS": {
-        "shares": 16.81096057391618,
-        "buy_price": 118.97000122070312,
-        "buy_date": "2026-11-13"
-      },
-      "KO": {
-        "shares": 20.151133501259444,
-        "buy_price": 99.25,
-        "buy_date": "2026-11-13"
-      }
-    },
-    "last_processed": "2026-11-18",
-    "last_rebalance": "2026-11-13",
+    "cash": 9743.563735264719,
+    "positions": {},
+    "last_processed": "2026-11-20",
+    "last_rebalance": "2026-11-20",
     "data_through": "2026-11-20",
-    "bench_units": 19.114975692107024,
+    "bench_units": 19.13667016499968,
     "dividends_received": 0.0
   }
 }

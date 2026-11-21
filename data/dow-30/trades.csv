@@ -4,3 +4,8 @@ date,action,ticker,shares,price,value,gain_pct,reason
 2026-11-13,BUY,AAPL,5.6137,356.27,2000.0,,Rank 3 by 3-month gain
 2026-11-13,BUY,DIS,16.811,118.97,2000.0,,Rank 4 by 3-month gain
 2026-11-13,BUY,KO,20.1511,99.25,2000.0,,Rank 5 by 3-month gain
+2026-11-20,SELL,V,4.6975,401.87,1887.78,-5.6,Safety switch: DIA below 200-day avg
+2026-11-20,SELL,PG,11.7786,169.37,1994.94,-0.3,Safety switch: DIA below 200-day avg
+2026-11-20,SELL,AAPL,5.6137,342.56,1923.04,-3.8,Safety switch: DIA below 200-day avg
+2026-11-20,SELL,DIS,16.811,117.98,1983.36,-0.8,Safety switch: DIA below 200-day avg
+2026-11-20,SELL,KO,20.1511,96.99,1954.46,-2.3,Safety switch: DIA below 200-day avg

@@ -7,3 +7,11 @@ date,action,ticker,shares,price,value,gain_pct,reason
 2026-11-13,BUY,RBA.TO,9.2149,135.65,1250.0,,Rank 6 by 3-month gain
 2026-11-13,BUY,DOL.TO,5.6764,220.21,1250.0,,Rank 7 by 3-month gain
 2026-11-13,BUY,GIB-A.TO,10.6993,116.83,1250.0,,Rank 8 by 3-month gain
+2026-11-20,SELL,DSG.TO,9.2833,127.84,1186.78,-5.1,Safety switch: XIU below 200-day avg
+2026-11-20,SELL,FFH.TO,0.4516,2628.81,1187.14,-5.0,Safety switch: XIU below 200-day avg
+2026-11-20,SELL,X.TO,19.5404,60.34,1179.07,-5.7,Safety switch: XIU below 200-day avg
+2026-11-20,SELL,WCN.TO,4.526,257.92,1167.35,-6.6,Safety switch: XIU below 200-day avg
+2026-11-20,SELL,STN.TO,10.2291,120.69,1234.55,-1.2,Safety switch: XIU below 200-day avg
+2026-11-20,SELL,RBA.TO,9.2149,130.76,1204.94,-3.6,Safety switch: XIU below 200-day avg
+2026-11-20,SELL,DOL.TO,5.6764,216.61,1229.56,-1.6,Safety switch: XIU below 200-day avg
+2026-11-20,SELL,GIB-A.TO,10.6993,113.76,1217.15,-2.6,Safety switch: XIU below 200-day avg

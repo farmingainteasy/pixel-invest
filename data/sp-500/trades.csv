@@ -19,3 +19,23 @@ date,action,ticker,shares,price,value,gain_pct,reason
 2026-11-13,BUY,KR,7.0621,70.8,500.0,,Rank 18 by 3-month gain
 2026-11-13,BUY,GDDY,4.3814,114.12,500.0,,Rank 19 by 3-month gain
 2026-11-13,BUY,HCA,1.0019,499.05,500.0,,Rank 20 by 3-month gain
+2026-11-20,SELL,MRNA,2.2384,195.0,436.5,-12.7,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,ACN,1.9961,221.17,441.47,-11.7,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,PTC,2.551,195.1,497.7,-0.5,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,ULTA,0.7568,615.74,466.0,-6.8,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,RVTY,3.2386,145.22,470.3,-5.9,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,SWKS,5.5593,73.91,410.89,-17.8,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,EL,4.4743,99.46,445.01,-11.0,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,TYL,1.1791,404.44,476.87,-4.6,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,APP,1.2222,348.29,425.68,-14.9,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,IDXX,0.71,676.21,480.11,-4.0,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,VTRS,24.0154,19.63,471.42,-5.7,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,MCK,0.4534,1069.43,484.87,-3.0,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,OKTA,2.7342,191.46,523.49,4.7,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,CBOE,1.3318,357.71,476.41,-4.7,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,CDW,2.9129,161.78,471.25,-5.8,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,HAS,4.1477,112.41,466.24,-6.8,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,VEEV,1.6582,266.22,441.45,-11.7,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,KR,7.0621,68.44,483.33,-3.3,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,GDDY,4.3814,99.53,436.08,-12.8,Safety switch: SPY below 200-day avg
+2026-11-20,SELL,HCA,1.0019,475.57,476.48,-4.7,Safety switch: SPY below 200-day avg
