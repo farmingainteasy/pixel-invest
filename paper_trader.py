@@ -49,14 +49,12 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import dashboard
-import dashboard_new
 import insights
 from markets import MARKETS
 
 DATA = os.path.join(HERE, "data")
 FX_PATH = os.path.join(DATA, "fx.json")      # last US$-per-C$ rate, for the Home page total
 DOCS = os.path.join(HERE, "docs")
-NEW_DOCS = os.path.join(DOCS, "new")    # the new look, beside the old one while they're compared (looks.py)
 BENCHMARK = "QQQ"         # default index fund (tests and older callers)
 
 DEFAULTS = {"capital": 10_000.0, "top_n": 10, "exit_rank": 20, "lookback": 63,
@@ -217,6 +215,44 @@ def rebalance_days(days, cutoff, first_day=None):
     if first_day is not None:
         rebal.add(first_day)
     return rebal, known
+
+
+def week_end_gaps(days, after, cutoff):
+    """Weekdays that would end a finished week but have no daily close: from the day after the
+    last close we have in that week (or its Monday, if none) to its Friday, for weeks after
+    `after` whose Friday is before `cutoff`. A holiday looks the same, so these are only suspects."""
+    days = pd.DatetimeIndex(days).normalize()
+    if days.empty:
+        return []
+    lo = pd.Timestamp(after) if after else days[0] - pd.Timedelta(days=1)
+    gaps, fri = [], lo + pd.offsets.Week(weekday=4)
+    while fri.date() < cutoff:
+        mon = fri - pd.Timedelta(days=4)
+        have = days[(days >= mon) & (days <= fri)]
+        start = max(have.max() + pd.Timedelta(days=1) if len(have) else mon, lo + pd.Timedelta(days=1))
+        gaps += [d.date() for d in pd.bdate_range(start, fri)]
+        fri += pd.Timedelta(days=7)
+    return gaps
+
+
+def check_week_end_closes(days, after, cutoff, benchmark, intraday=None):
+    """Wait (DataError: nothing is traded or saved) when a finished week's last close isn't in
+    yet. The rules trade at a week's last close, and with Friday missing, Thursday would look
+    like the last day, as in a holiday week. The 30-minute prices tell them apart: if the index
+    fund traded that day, Yahoo is just late with the daily close."""
+    gaps = week_end_gaps(days, after, cutoff)
+    if not gaps:
+        return
+    try:
+        bars = (intraday or download_intraday)([benchmark])
+        traded = {ts.date() for ts in bars[benchmark].dropna().index}
+    except Exception as e:
+        raise DataError(f"can't tell whether the market was open on {gaps[-1]:%a %b %d} "
+                        f"(no 30-minute prices: {type(e).__name__}), so the week's trades wait")
+    late = [d for d in gaps if d in traded]
+    if late:
+        raise DataError(f"Yahoo hasn't posted the {late[-1]:%a %b %d} closing prices yet, "
+                        f"so the week's trades wait for the next run")
 
 
 def advance(prices, splits, cfg, ledger, cutoff, dividends=None):
@@ -430,15 +466,6 @@ def atomic_write(path, text):
     os.replace(tmp, path)
 
 
-def write_new_look(page, build):
-    """Write the new look's copy of an old-look page (docs/x -> docs/new/x). It's only for
-    comparing: if it fails, the old look (already written) and the account carry on."""
-    try:
-        atomic_write(os.path.join(NEW_DOCS, os.path.relpath(page, DOCS)), build())
-    except Exception as e:
-        print(f"  (new look skipped: {type(e).__name__}: {e})")
-
-
 def read_ledger_csv(path, cols, through):
     """Existing rows, minus any written after `through` by a run that crashed."""
     if not os.path.exists(path) or through is None:
@@ -562,7 +589,6 @@ def run_market(m, a, cutoff, now=None):
         # Not started yet: show the waiting page until its first trading day closes.
         bt = None if a.prices_csv else insights.backtest(cfg, p["backtest"])
         atomic_write(p["page"], dashboard.build_waiting(cfg, bt, MARKETS))
-        write_new_look(p["page"], lambda: dashboard_new.build_waiting(cfg, bt, MARKETS))
         print(f"[{m['name']}] starts at the close on {cfg['start_date']}; page shows its backtest")
         return None
     if ledger is None:
@@ -575,6 +601,8 @@ def run_market(m, a, cutoff, now=None):
         ledger = new_ledger(first.date(), prices.at[first, b], cfg["capital"], cfg["dividends"])
     state["start_date"] = cfg["start_date"]
 
+    if not a.prices_csv:
+        check_week_end_closes(prices.index, ledger["last_processed"], cutoff, b)
     old_trades = read_ledger_csv(p["trades"], TRADE_COLS, ledger["last_processed"])
     old_values = read_ledger_csv(p["values"], VALUE_COLS, ledger["last_processed"])
     new_trades, new_values, notes = advance(prices, splits, cfg, ledger, cutoff, divs)
@@ -612,11 +640,9 @@ def run_market(m, a, cutoff, now=None):
         print(f"  (no plus/minus this run: {type(e).__name__}: {e})")
         day, curve = None, None
     html, now_val, bench_val, week = dashboard.build_dashboard(
-        cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day, curve)
-    atomic_write(p["page"], html)
-    write_new_look(p["page"], lambda: dashboard_new.build_dashboard(
         cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day, curve,
-        latest=shown_px)[0])
+        latest=shown_px)
+    atomic_write(p["page"], html)
     started = last_rebal.normalize() == pd.Timestamp(cfg["start_date"]).normalize()
     summary = dict(value=now_val, bench_value=bench_val, start=cfg["start_date"], capital=cfg["capital"],
                    risk_on=status["risk_on"], held=len(holdings), last_day=str(status["last_day"].date()),
@@ -625,7 +651,6 @@ def run_market(m, a, cutoff, now=None):
                    day=day, updated=str(date.today()))
     atomic_write(p["summary"], json.dumps(summary, default=float))
     dashboard._SUMMARIES[m["slug"]] = json.loads(json.dumps(summary, default=float))
-    dashboard_new._SUMMARIES[m["slug"]] = json.loads(json.dumps(summary, default=float))
 
     sym = cfg["symbol"]
     print(f"[{m['name']}] prices settled through {ledger['last_processed']}")
@@ -655,7 +680,6 @@ def run_waiting_market(m):
     cfg = {**DEFAULTS, **m}
     bt = insights.backtest(cfg, p["backtest"])
     atomic_write(p["page"], dashboard.build_waiting(cfg, bt, MARKETS))
-    write_new_look(p["page"], lambda: dashboard_new.build_waiting(cfg, bt, MARKETS))
     print(f"[{m['name']}] not started yet; page shows its backtest")
 
 
@@ -686,7 +710,6 @@ def main():
 
     failed, opened = [], None
     dashboard.load_summaries(MARKETS, lambda slug: paths(slug)["summary"])   # menu statuses
-    dashboard_new.load_summaries(MARKETS, lambda slug: paths(slug)["summary"])
     for m in MARKETS:
         if a.market and m["slug"] != a.market:
             continue
@@ -709,8 +732,6 @@ def main():
     fx = get_fx(download=not a.prices_csv)
     home = dashboard.build_home(MARKETS, lambda slug: paths(slug)["summary"], fx)
     atomic_write(os.path.join(DOCS, "index.html"), home)
-    write_new_look(os.path.join(DOCS, "index.html"),
-                   lambda: dashboard_new.build_home(MARKETS, lambda slug: paths(slug)["summary"], fx))
     print(f"Home page: {os.path.join(DOCS, 'index.html')}")
 
     if failed:

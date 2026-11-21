@@ -298,57 +298,60 @@ def test_home_total_adds_accounts_in_us_dollars():
                                 "invested": 1, "recorded": False, "week_change": c, "week_pct": 0.0, "week_bench_pct": 0.0}
     mk = [{"slug": "us-t", "name": "US", "currency": "US$"}, {"slug": "ca-t", "name": "Canada", "currency": "C$"}]
     dashboard._SUMMARIES["us-t"] = {"capital": 10000.0, "value": 9000.0, "bench_value": 9500.0, "held": 5,
-                                    "day": day(9100.0, 100.0, 9400.0, -100.0)}
+                                        "day": day(9100.0, 100.0, 9400.0, -100.0)}
     dashboard._SUMMARIES["ca-t"] = {"capital": 10000.0, "value": 11000.0, "bench_value": 10000.0, "held": 0,
-                                    "day": day(11000.0, 0.0, 10000.0, 0.0)}
+                                        "day": day(11000.0, 0.0, 10000.0, 0.0)}
     html = dashboard.home_total(mk, {"usd_per_cad": 0.7, "date": "2026-11-18"})
-    # Latest values: 9,100 + 0.7 * 11,000 = 16,800 against 10,000 + 7,000 put in: -200.
-    assert "&minus;$200.00" in html and "worth $16,800 of $17,000" in html and "1 of 2 invested" in html
-    assert "+$100.00" in html                                   # today: only the US account moved
+    # Latest values: 9,100 + 0.7 * 11,000 = 16,800 against 17,000 put in (-200); the index funds 16,400, so $400 ahead.
+    assert "&minus;$200.00" in html and "worth $16,800, from $17,000 put in" in html
+    assert "$400 ahead of the index funds" in html and "+$100.00" in html
     assert "Canada counted in US$ at 1 C$ = 0.7000 US$" in html
-    assert dashboard.home_total(mk, None) == ""                 # one account alone isn't a total
+    assert dashboard.home_total(mk, None) == ""
     for k in ("us-t", "ca-t"):
         del dashboard._SUMMARIES[k]
 
 
-def test_new_look_home_total_matches_the_old_numbers():
-    import dashboard_new
-    day = lambda v, c, bv, bc: {"day": "2026-11-18", "value": v, "change": c, "bench_value": bv, "bench_change": bc,
-                                "invested": 1, "recorded": False, "week_change": c, "week_pct": 0.0, "week_bench_pct": 0.0}
-    mk = [{"slug": "us-t", "name": "US", "currency": "US$"}, {"slug": "ca-t", "name": "Canada", "currency": "C$"}]
-    dashboard_new._SUMMARIES["us-t"] = {"capital": 10000.0, "value": 9000.0, "bench_value": 9500.0, "held": 5,
-                                        "day": day(9100.0, 100.0, 9400.0, -100.0)}
-    dashboard_new._SUMMARIES["ca-t"] = {"capital": 10000.0, "value": 11000.0, "bench_value": 10000.0, "held": 0,
-                                        "day": day(11000.0, 0.0, 10000.0, 0.0)}
-    html = dashboard_new.home_total(mk, {"usd_per_cad": 0.7, "date": "2026-11-18"})
-    # Same sums as the old look: 16,800 against 17,000 put in (-200); the index funds 16,400, so $400 ahead.
-    assert "&minus;$200.00" in html and "worth $16,800, from $17,000 put in" in html
-    assert "$400 ahead of the index funds" in html and "+$100.00" in html
-    assert "Canada counted in US$ at 1 C$ = 0.7000 US$" in html
-    assert dashboard_new.home_total(mk, None) == ""
-    for k in ("us-t", "ca-t"):
-        del dashboard_new._SUMMARIES[k]
-
-
-def test_look_switch_links_to_the_same_page_in_the_other_look():
-    import looks
-    assert 'href="new/"' in looks.switch("", None, is_new=False)                 # old Home -> new Home
-    assert 'href="../new/dow-30/"' in looks.switch("../", "dow-30", is_new=False)
-    assert 'href="../"' in looks.switch("", None, is_new=True)                   # new Home -> old Home
-    assert 'href="../../dow-30/"' in looks.switch("../", "dow-30", is_new=True)
-
-
 def test_52_week_bar_uses_the_last_year_of_closes():
-    import dashboard_new
+    import dashboard
     idx = pd.bdate_range("2025-06-02", "2026-11-20")
     px = pd.DataFrame({"AAA": np.linspace(50.0, 150.0, len(idx))}, index=idx)
     px.loc["2025-09-01":"2025-09-30", "AAA"] = 400.0      # over a year ago: left out
     px.iloc[-1] = 140.0                                    # the latest price, below the high
-    lo, hi, now = dashboard_new.year_range(px, "AAA")
+    lo, hi, now = dashboard.year_range(px, "AAA")
     assert hi == px["AAA"].iloc[-2] and now == 140.0
     assert lo == px.loc[px.index > idx[-1] - pd.Timedelta(days=365), "AAA"].min()
-    bar = dashboard_new.range_bar((100.0, 150.0, 140.0))
+    bar = dashboard.range_bar((100.0, 150.0, 140.0))
     assert "7% below high" in bar and "left:80.0%" in bar
-    assert "At its high" in dashboard_new.range_bar((100.0, 150.0, 150.0))
-    assert dashboard_new.year_range(px.tail(50), "AAA") is None              # under a year of prices
-    assert dashboard_new.year_range(px, "ZZZ") is None and dashboard_new.range_bar(None) == ""
+    assert "At its high" in dashboard.range_bar((100.0, 150.0, 150.0))
+    assert dashboard.year_range(px.tail(50), "AAA") is None              # under a year of prices
+    assert dashboard.year_range(px, "ZZZ") is None and dashboard.range_bar(None) == ""
+
+
+def test_week_end_gaps_find_a_missing_friday_close():
+    days = pd.bdate_range("2026-11-09", "2026-11-19")                    # Fri Nov 20 not posted yet
+    assert pt.week_end_gaps(days, "2026-11-18", date(2026, 11, 21)) == [date(2026, 11, 20)]
+    assert pt.week_end_gaps(days, "2026-11-18", date(2026, 11, 20)) == []   # Friday not final yet
+    assert pt.week_end_gaps(days, "2026-11-13", date(2026, 11, 21)) == [date(2026, 11, 20)]
+    full = pd.bdate_range("2026-11-09", "2026-11-20")
+    assert pt.week_end_gaps(full, "2026-11-18", date(2026, 11, 21)) == []
+
+
+def test_late_friday_close_waits_but_a_holiday_trades():
+    days = pd.bdate_range("2026-11-09", "2026-11-19")
+    def bars_on(*dates):
+        idx = pd.DatetimeIndex([f"{d} 15:30" for d in dates]).tz_localize(NY)
+        return lambda tickers: pd.DataFrame({pt.BENCHMARK: 1.0}, index=idx)
+    def down(tickers):
+        raise ConnectionError("no network")
+    check = lambda d, intraday: pt.check_week_end_closes(d, "2026-11-18", date(2026, 11, 21), pt.BENCHMARK, intraday)
+    with pytest.raises(pt.DataError, match="Fri Nov 20"):
+        check(days, bars_on("2026-11-19", "2026-11-20"))      # Friday traded: its close is just late
+    check(days, bars_on("2026-11-18", "2026-11-19"))           # no trading Friday: a holiday, go ahead
+    with pytest.raises(pt.DataError):
+        check(days, down)                                      # can't tell: wait
+    check(pd.bdate_range("2026-11-09", "2026-11-20"), down)    # nothing missing: no download needed
+    # A new account (nothing processed yet) checks its whole history the same way
+    px = make_prices()
+    with pytest.raises(pt.DataError, match="Fri Jan 10"):
+        pt.check_week_end_closes(px.index[px.index < "2025-01-10"], None, date(2025, 1, 11),
+                                 pt.BENCHMARK, bars_on("2025-01-10"))
