@@ -197,6 +197,41 @@ draw();
 </script>"""
 
 
+def year_range(px, ticker):
+    """(52-week low, high, latest) for a stock from daily closes, which Yahoo adjusts for
+    splits. None without most of a year of prices."""
+    if px is None or ticker not in px.columns:
+        return None
+    s = px[ticker].dropna()
+    if s.empty:
+        return None
+    s = s[s.index > s.index[-1] - pd.Timedelta(days=365)]
+    if len(s) < 200:
+        return None
+    return float(s.min()), float(s.max()), float(s.iloc[-1])
+
+
+def range_bar(r):
+    """Where a stock sits in its 52-week range: low on the left, high on the right, a dot for now."""
+    if not r:
+        return ""
+    lo, hi, now = r
+    pos = 50.0 if hi <= lo else min(100.0, max(0.0, (now - lo) / (hi - lo) * 100))
+    off = (1 - now / hi) * 100 if hi > 0 else 0.0
+    note = "At its high" if off < 0.5 else f"{off:.0f}% below high"
+    label = (f"52-week range {money(lo, False)} to {money(hi, False)}; "
+             f"now {money(now, False)}, {note[0].lower() + note[1:]}")
+    return (f'<div class="yr" role="img" aria-label="{label}"><span aria-hidden="true">{money(lo, False)}</span>'
+            f'<span class="track" aria-hidden="true"><i style="left:{pos:.1f}%"></i></span>'
+            f'<span aria-hidden="true">{money(hi, False)}</span><span class="off" aria-hidden="true">{note}</span></div>')
+
+
+def bar_note(bars):
+    """Says once, under a list, what the bars are."""
+    return ('<p class="note">The bar under each stock runs from its 52-week low to its 52-week high, '
+            'from closing prices. The dot is the latest price.</p>' if any(bars.values()) else "")
+
+
 def chip(x):
     if x is None or pd.isna(x):
         return ""
@@ -429,6 +464,11 @@ h3{{margin:8px 0 0;font-size:15px;font-weight:700}}
 .row .nm b{{font-weight:700;margin-right:8px}} .row .nm span{{color:{T4};font-size:13px}}
 .row .r{{text-align:right;font-size:13px;color:{T4};white-space:nowrap;font-variant-numeric:tabular-nums}}
 .row .st{{font-size:13px;color:{T3}}} .st.ok{{color:{GREEN}}} .st.keep{{color:{AMBER}}} .st.sell{{color:{RED}}}
+.yr{{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:7px;font-size:12px;color:{T4};white-space:nowrap;font-variant-numeric:tabular-nums}}
+.yr .track{{flex:1;min-width:60px;position:relative;height:4px;border-radius:2px;background:rgba(255,255,255,.16)}}
+.yr .track i{{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:{GOLD_TEXT};box-shadow:0 0 0 2px {PAGE}}}
+.yr > span:first-child{{min-width:3.4em}} .yr > span:nth-child(3){{min-width:3.4em;text-align:right}}
+.yr .off{{min-width:7.6em;text-align:right;color:{T3}}}
 .chip{{font-weight:700;font-size:13px;padding:3px 9px;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums}}
 .chip.pos{{background:rgba(107,211,90,.14);color:{GREEN}}} .chip.neg{{background:rgba(255,90,78,.14);color:{RED}}} .chip.flat{{background:{PANEL3};color:{T3}}}
 .tag{{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;vertical-align:1px}}
@@ -635,7 +675,9 @@ def market_header(cfg, state, body):
 # A market's page
 # --------------------------------------------------------------------------
 def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, prices, bt, markets, ledger=None, day_info=None,
-                    curve=None):
+                    curve=None, latest=None):
+    """`latest`: every price downloaded, today's live row included, for the 52-week bars
+    (`prices` stops at the last day in the record)."""
     set_market(cfg)
     start_val = cfg["capital"]
     now_val = acct["paper_account"].iloc[-1]
@@ -673,9 +715,16 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
             return "keep", f"Ranked {rank}, sold if it drops below {exit_rank}"
         return "sell", f"Ranked {rank}, sells at Friday's close"
 
-    def row(ticker, company, right, left2="", right2=""):
+    px = latest if latest is not None else prices
+    bars = {}
+
+    def bar(t):
+        bars[t] = year_range(px, t)
+        return range_bar(bars[t])
+
+    def row(ticker, company, right, left2="", right2="", extra=""):
         return (f'<div class="row"><div class="nm"><b>{ticker}</b><span>{company}</span></div><div class="r">{right}</div>'
-                f'<div class="st-l">{left2}</div><div class="r">{right2}</div></div>')
+                f'<div class="st-l">{left2}</div><div class="r">{right2}</div>{extra}</div>')
 
     rank_note = (f"Each Friday the rules rank every {esc(cfg['name'])} stock by its 3-month gain. "
                  f"A stock stays while it's in the top {exit_rank}.")
@@ -696,8 +745,8 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
             mv = moves.get(h["ticker"])
             hrows.append(row(f'{esc(h["ticker"])}{new}', esc(name(h["ticker"])), chip(h["gain_pct"]),
                              f'<span class="st {cls}">{st}</span>',
-                             f'{today} {signed_pct(mv, 1)}' if mv is not None else ""))
-        parts.append(f'<div class="rows">{"".join(hrows)}</div>')
+                             f'{today} {signed_pct(mv, 1)}' if mv is not None else "", bar(h["ticker"])))
+        parts.append(f'<div class="rows">{"".join(hrows)}</div>{bar_note(bars)}')
     else:
         title = "Your stocks"
         lead = f"None right now: the account is in cash because {LABEL} is under its 200-day average (the safety switch)."
@@ -711,10 +760,11 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
     else:
         nxt = [t for t in watch.index if t not in held][:top_n]
         nrows = "".join(row(esc(t), esc(name(t)), f'<span class="chip pos">+{watch[t] * 100:.0f}%</span>',
-                            '<span class="st">3-month gain</span>') for t in nxt)
+                            '<span class="st">3-month gain</span>', extra=bar(t)) for t in nxt)
         parts.append(f'<h3>Next buys if the switch turns back on</h3>'
                      f'<p class="lead">If {LABEL} closes above {money(status["sma"])} on a Friday, '
-                     f'today\'s top {top_n} by 3-month gain are bought at that close.</p><div class="rows">{nrows}</div>')
+                     f'today\'s top {top_n} by 3-month gain are bought at that close.</p><div class="rows">{nrows}</div>'
+                     f'{bar_note(bars)}')
     if record:
         parts.append(f'<p class="lead">{". ".join(record)}.</p>')
     stocks_html = f'<section class="sec"><h2>{title}</h2><p class="lead">{lead}</p>{"".join(parts)}</section>'

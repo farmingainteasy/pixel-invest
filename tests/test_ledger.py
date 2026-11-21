@@ -336,3 +336,19 @@ def test_look_switch_links_to_the_same_page_in_the_other_look():
     assert 'href="../new/dow-30/"' in looks.switch("../", "dow-30", is_new=False)
     assert 'href="../"' in looks.switch("", None, is_new=True)                   # new Home -> old Home
     assert 'href="../../dow-30/"' in looks.switch("../", "dow-30", is_new=True)
+
+
+def test_52_week_bar_uses_the_last_year_of_closes():
+    import dashboard_new
+    idx = pd.bdate_range("2025-06-02", "2026-11-20")
+    px = pd.DataFrame({"AAA": np.linspace(50.0, 150.0, len(idx))}, index=idx)
+    px.loc["2025-09-01":"2025-09-30", "AAA"] = 400.0      # over a year ago: left out
+    px.iloc[-1] = 140.0                                    # the latest price, below the high
+    lo, hi, now = dashboard_new.year_range(px, "AAA")
+    assert hi == px["AAA"].iloc[-2] and now == 140.0
+    assert lo == px.loc[px.index > idx[-1] - pd.Timedelta(days=365), "AAA"].min()
+    bar = dashboard_new.range_bar((100.0, 150.0, 140.0))
+    assert "7% below high" in bar and "left:80.0%" in bar
+    assert "At its high" in dashboard_new.range_bar((100.0, 150.0, 150.0))
+    assert dashboard_new.year_range(px.tail(50), "AAA") is None              # under a year of prices
+    assert dashboard_new.year_range(px, "ZZZ") is None and dashboard_new.range_bar(None) == ""

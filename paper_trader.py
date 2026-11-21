@@ -599,6 +599,7 @@ def run_market(m, a, cutoff, now=None):
             bars = download_intraday(sorted(ledger["positions"]) + [b])
         except Exception as e:               # the 30-minute prices are a nice-to-have
             print(f"  (no 30-minute prices: {type(e).__name__}: {e})")
+    shown_px = prices
     try:
         live = None if a.prices_csv or a.today else live_prices(closes, bars, now, b)
         shown_px = prices if live is None else pd.concat([prices, live.to_frame().T])
@@ -614,7 +615,8 @@ def run_market(m, a, cutoff, now=None):
         cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day, curve)
     atomic_write(p["page"], html)
     write_new_look(p["page"], lambda: dashboard_new.build_dashboard(
-        cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day, curve)[0])
+        cfg, acct, shown, holdings, status, watch, last_rebal, settled, bt, MARKETS, ledger, day, curve,
+        latest=shown_px)[0])
     started = last_rebal.normalize() == pd.Timestamp(cfg["start_date"]).normalize()
     summary = dict(value=now_val, bench_value=bench_val, start=cfg["start_date"], capital=cfg["capital"],
                    risk_on=status["risk_on"], held=len(holdings), last_day=str(status["last_day"].date()),
