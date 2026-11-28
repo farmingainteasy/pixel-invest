@@ -31,7 +31,6 @@ SECTOR_COLORS = ["#6BD35A", "#E2C067", "#6FA0D8", "#E0875A", "#A8B86A", "#5FB3AC
 
 
 SYM, LABEL = "$", "QQQ"      # set per market by set_market()
-SHOW_FIRST = 5               # long stock lists show this many, with a "Show all" button for the rest
 
 
 def money(x, cents=True):
@@ -248,14 +247,6 @@ def range_bar(r):
             f'<span aria-hidden="true">{money(hi, False)}</span><span class="off" aria-hidden="true">{note}</span></div>')
 
 
-def clipped(rows_html, n):
-    """A list of n rows that shows SHOW_FIRST of them, with a button for the rest."""
-    if n <= SHOW_FIRST:
-        return f'<div class="rows">{rows_html}</div>'
-    return (f'<div class="rows clip">{rows_html}</div><button class="more" type="button" hidden aria-expanded="false" '
-            f'data-less="Show the first {SHOW_FIRST} only">Show all {n}</button>')
-
-
 def bar_note(bars):
     """Says once, under a list, what the bars are."""
     return ('<p class="note">The bar under each stock runs from its 52-week low to its 52-week high, '
@@ -273,6 +264,26 @@ def chip(x):
 # --------------------------------------------------------------------------
 # Small graphics
 # --------------------------------------------------------------------------
+def nice_ticks(lo, hi, most=5):
+    """Round numbers for a chart's side (like 9,800 / 10,000 / 10,200): the smallest step of
+    1, 2, 2.5 or 5 times a power of ten that puts no more than `most` marks between lo and hi."""
+    if hi <= lo:
+        return [lo]
+    for e in range(-3, 10):
+        for m in (1, 2, 2.5, 5):
+            step = m * 10 ** e
+            first, last = math.ceil(lo / step), math.floor(hi / step)
+            if last - first + 1 <= most:
+                return [k * step for k in range(first, last + 1)]
+    return [lo, hi]
+
+
+def even_spots(n, most=5):
+    """Up to `most` evenly spread positions out of n, always the first and the last."""
+    m = min(n, most)
+    return sorted({round(k * (n - 1) / (m - 1)) for k in range(m)}) if m > 1 else [0]
+
+
 def _scale(lo, hi, top, bottom):
     return lambda v: bottom - (v - lo) / (hi - lo) * (bottom - top)
 
@@ -289,10 +300,9 @@ def account_chart(acct, w=380, h=200):
     pts = lambda s: " ".join(f"{xs[i]:.1f},{y(v):.1f}" for i, v in enumerate(s))
     grid = "".join(f'<line x1="{pl}" x2="{w - pr}" y1="{y(v):.1f}" y2="{y(v):.1f}" stroke="{LINE2}"/>'
                    f'<text x="{pl - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="ax">{money(v, False)}</text>'
-                   for v in [lo + (hi - lo) * k / 3 for k in range(4)])
-    idx = sorted(set([0, n - 1] + list(range(0, n, max(1, n // 5)))))
+                   for v in nice_ticks(lo, hi, 5))
     xl = "".join(f'<text x="{xs[i]:.1f}" y="{h - 8}" text-anchor="{"start" if i == 0 else "end" if i == n - 1 else "middle"}" '
-                 f'class="ax">{a.index[i]:%b %d}</text>' for i in idx)
+                 f'class="ax">{a.index[i]:%b} {a.index[i].day}</text>' for i in even_spots(n, 5))
     dots = "".join(f'<circle cx="{xs[i]:.1f}" cy="{y(a.iloc[i]):.1f}" r="8" class="hot"><title>{a.index[i]:%a %b %d}'
                    f'\nYour account: {money(a.iloc[i])}\n{LABEL}: {money(q.iloc[i])}</title></circle>' for i in range(n))
     return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="Your account against the same money in {LABEL}, '
@@ -325,7 +335,7 @@ def switch_chart(sw, w=380, h=200):
             run = None
     grid = "".join(f'<line x1="{pl}" x2="{w - pr}" y1="{y(v):.1f}" y2="{y(v):.1f}" stroke="{LINE2}"/>'
                    f'<text x="{pl - 8}" y="{y(v) + 4:.1f}" text-anchor="end" class="ax">{v:,.0f}</text>'
-                   for v in [lo + (hi - lo) * k / 3 for k in range(4)])
+                   for v in nice_ticks(lo, hi, 5))
     months, prev = [], None
     for i, d in enumerate(sw.index):
         if d.month != prev and i < n - 12:
@@ -470,7 +480,6 @@ def page_shell(title, rel, markets, current, header, main, sections=()):
     return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<script>document.documentElement.className="js"</script>
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="{INK}">
 <meta name="apple-mobile-web-app-title" content="Pixel Invest">
@@ -635,10 +644,6 @@ h3{{margin:10px 0 0;font-size:15px;font-weight:650}}
 .chip.pos{{color:{GREEN}}} .chip.neg{{color:{RED}}} .chip.flat{{color:{T3}}}
 .tag{{font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;vertical-align:1px}}
 .tag.buy{{background:rgba(107,211,90,.14);color:{GREEN}}} .tag.sell{{background:rgba(255,90,78,.14);color:{RED}}}
-.js .rows.clip:not(.open) .row:nth-child(n+{SHOW_FIRST + 1}){{display:none}}
-.js .rows.clip:not(.open) .row:nth-child({SHOW_FIRST}){{border-bottom:1px solid {LINE2}}}
-button.more{{align-self:flex-start;font:inherit;font-size:14px;font-weight:600;color:{T1};background:transparent;border:1.5px solid {T1};border-radius:6px;padding:8px 16px;min-height:40px;cursor:pointer}}
-button.more:hover{{background:{PANEL}}}
 .stack{{display:flex;height:14px;border-radius:3px;overflow:hidden;gap:2px}}
 .legend{{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:{T3}}} .legend i{{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}}
 .rules{{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:15px}} .rules b{{display:block;font-size:14px;font-weight:700;font-stretch:115%;color:{T1}}}
@@ -707,10 +712,7 @@ var done=window.innerHeight+window.scrollY>=document.documentElement.scrollHeigh
 secs.forEach(function(s){{if(s.getBoundingClientRect().top<=off)id=s.id;}});if(done&&id)id=secs[secs.length-1].id;if(want)id=want;
 if(id===cur)return;cur=id;links.forEach(function(a){{var hit=a.getAttribute('data-sec')===id;a.classList.toggle('on',hit);
 if(hit&&a.parentNode.classList.contains('secs')){{var r=a.parentNode;r.scrollLeft=Math.max(0,a.offsetLeft-r.offsetWidth/2+a.offsetWidth/2);}}}});}}
-window.addEventListener('scroll',function(){{if(!busy){{busy=true;requestAnimationFrame(pick);}}}},{{passive:true}});pick();}})();
-/* "Show all" buttons under long lists */
-[].forEach.call(document.querySelectorAll('button.more'),function(b){{var list=b.previousElementSibling,a=b.textContent,c=b.getAttribute('data-less');
-b.hidden=false;b.addEventListener('click',function(){{var open=list.classList.toggle('open');b.textContent=open?c:a;b.setAttribute('aria-expanded',open);}});}});</script>
+window.addEventListener('scroll',function(){{if(!busy){{busy=true;requestAnimationFrame(pick);}}}},{{passive:true}});pick();}})();</script>
 </body></html>"""
 
 
@@ -937,7 +939,7 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
         srows = "".join(row(esc(t["ticker"]), esc(name(t["ticker"])), chip(t["gain_pct"]),
                             f'<span class="st">Sold at {money(t["price"])}</span>')
                         for t in sells.to_dict("records"))
-        parts.append(f'<h3>Sold at the close on {when}</h3>{clipped(srows, len(sells))}')
+        parts.append(f'<h3>Sold at the close on {when}</h3><div class="rows">{srows}</div>')
     if holdings:
         parts.append(f'<h3>Where your money is</h3>{sector_bar(holdings, status["cash"])}')
     else:
@@ -947,7 +949,7 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
         parts.append(f'<h3>Next buys if the switch turns back on</h3>'
                      f'<p class="lead">If {LABEL} closes above {money(status["sma"])} on a Friday, '
                      f'today\'s top {top_n} by 3-month gain are bought at that close.</p>'
-                     f'{clipped(nrows, len(nxt))}'
+                     f'<div class="rows">{nrows}</div>'
                      f'{bar_note(bars)}')
     if record:
         parts.append(f'<p class="lead">{". ".join(record)}.</p>')

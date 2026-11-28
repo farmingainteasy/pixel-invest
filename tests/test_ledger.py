@@ -415,3 +415,11 @@ def test_refresh_menus_brings_in_later_scores_and_keeps_section_links():
     assert "+$100" not in new and "&minus;$100" in new
     assert new.count('data-sec="week"') == page.count('data-sec="week"') == 2      # side menu + phone strip
     del dashboard._SUMMARIES["x-a"]
+
+
+def test_chart_sides_use_round_numbers_and_dates_spread_out():
+    import dashboard
+    assert dashboard.nice_ticks(9650, 10250, 5) == [9800, 10000, 10200]
+    assert dashboard.nice_ticks(48.2, 53.9, 5) == [49, 50, 51, 52, 53]
+    assert dashboard.even_spots(12) == [0, 3, 6, 8, 11]          # 5 labels, first and last kept
+    assert dashboard.even_spots(2) == [0, 1] and dashboard.even_spots(1) == [0]
