@@ -33,6 +33,7 @@ MARKETS = [
     {
         "slug": "nasdaq-100",
         "name": "Nasdaq-100",
+        "short": "Nasdaq",
         "about": "US tech-heavy",
         "benchmark": "QQQ", "bench_label": "QQQ",
         "currency": "US$", "symbol": "$",
@@ -45,6 +46,7 @@ MARKETS = [
     {
         "slug": "tsx-60",
         "name": "TSX 60",
+        "short": "TSX",
         "about": "Canada's largest companies",
         "benchmark": "XIU.TO", "bench_label": "XIU",
         "currency": "C$", "symbol": "C$",
@@ -58,6 +60,7 @@ MARKETS = [
     {
         "slug": "sp-500",
         "name": "S&P 500",
+        "short": "S&P",
         "about": "500 large US companies",
         "benchmark": "SPY", "bench_label": "SPY",
         "currency": "US$", "symbol": "$",
@@ -71,6 +74,7 @@ MARKETS = [
     {
         "slug": "dow-30",
         "name": "Dow Jones",
+        "short": "Dow",
         "about": "30 blue-chip US companies",
         "benchmark": "DIA", "bench_label": "DIA",
         "currency": "US$", "symbol": "$",

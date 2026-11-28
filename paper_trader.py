@@ -742,6 +742,17 @@ def main():
                 if last is None or (date.today() - date.fromisoformat(last)).days > STALE_DAYS:
                     failed.append(f"{m['name']} hasn't updated since {last or 'it started'}: {msg[:100]}")
 
+    # Pages built early in the run show the later markets' scores from the run before: bring every
+    # page's menus up to date now that all the markets have run.
+    for m in MARKETS:
+        page = paths(m["slug"])["page"]
+        if os.path.exists(page):
+            with open(page, encoding="utf-8") as f:
+                old = f.read()
+            new = dashboard.refresh_menus(old, "../", MARKETS, m["slug"])
+            if new != old:
+                atomic_write(page, new)
+
     fx = get_fx(download=not a.prices_csv)
     home = dashboard.build_home(MARKETS, lambda slug: paths(slug)["summary"], fx)
     atomic_write(os.path.join(DOCS, "index.html"), home)

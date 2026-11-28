@@ -1,6 +1,7 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<script>document.documentElement.className="js"</script>
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#1C1A14">
 <meta name="apple-mobile-web-app-title" content="Pixel Invest">
@@ -11,46 +12,52 @@
 <link rel="apple-touch-icon" href="../apple-touch-icon.png">
 <link rel="manifest" href="../site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Inter:wght@800&display=swap" rel="stylesheet">
 <style>
-/* Pixel Ag's dark palette in every theme. One column on phone and computer; on a computer
-   the markets also sit in a sidebar. Gold is always your account, grey dashed its index fund. */
-:root{color-scheme:dark;--sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+/* Pixel Invest. One typeface, Archivo: regular width for words, narrow and heavy for the
+   figures that answer "am I ahead?", wide for headings. Ultramarine is always your account,
+   dashed grey its index fund; green ahead, red behind, amber a heads-up for Friday.
+   The race board (each market a lane, its bar left or right of the centre line) is the one
+   loud thing; it is the Home hero, the side menu on a computer and the pinned strip on a phone. */
+:root{color-scheme:dark;--sans:Archivo,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 *{box-sizing:border-box}
 html{background:#0B0A07}
-body{margin:0;background:#0B0A07;color:#F4F0E6;font-family:var(--sans);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{margin:0;background:#0B0A07;color:#F4F0E6;font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
 a{color:#E2C067}
-a:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid #C8A951;outline-offset:3px;border-radius:6px}
-.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
-.pos{color:#6BD35A} .neg{color:#FF6B5F} .amb{color:#E2B04A}
+a:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid #E2C067;outline-offset:2px;border-radius:4px}
+.wrap{max-width:680px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+.pos{color:#6BD35A} .neg{color:#FF6B5F} .amb{color:#E2B04A} .flat{color:#C4BDAA} .wait{color:#E2B04A}
+.fig{font-stretch:76%;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:0}
 
-/* Header: the scoreboard */
-.hdr{background:#1C1A14;border-bottom:4px solid #C8A951;padding-top:max(14px,env(safe-area-inset-top))}
-.hin{display:flex;flex-direction:column;padding-bottom:20px}
-.back{font-size:14px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;min-height:40px;align-self:flex-start;margin-bottom:4px}
-.brandrow{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-.brandrow svg{width:40px;height:40px;flex:none}
-.brand{margin:0;font-size:17px;font-weight:700;letter-spacing:-.01em;color:#F4F0E6}
-.tagline{margin:0;font-size:13px;color:#A39D8E}
-.mtop{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.mname{margin:0;font-size:17px;font-weight:700;letter-spacing:-.01em}
-.msub{margin:2px 0 0;font-size:13px;color:#A39D8E}
-.verdict{margin:14px 0 0;font-size:32px;font-weight:800;letter-spacing:-.035em;line-height:1.08;font-variant-numeric:tabular-nums;text-wrap:balance}
-.worth{margin:6px 0 0;font-size:14px;color:#C4BDAA;font-variant-numeric:tabular-nums}
-.state{font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;white-space:nowrap}
-.state.on,small.on{color:#8BE07C} .state.on{background:rgba(107,211,90,.14)}
-.state.off,small.off{color:#FF9A90} .state.off{background:rgba(255,90,78,.16)}
-.state.wait,small.wait{color:#E2C067} .state.wait{background:rgba(226,192,103,.14)}
-.asof{margin:10px 0 0;font-size:12px;color:#A39D8E;display:flex;align-items:baseline;gap:7px}
-.dot{width:7px;height:7px;border-radius:50%;background:#6BD35A;flex:none;align-self:flex-start;margin-top:5px;animation:blink 2s ease-in-out infinite}
-@keyframes blink{50%{opacity:.3}}
+/* Header: the scoreboard, closed by a heavy rule */
+.hdr{background:#1C1A14;border-bottom:4px solid #C8A951;padding-top:max(22px,env(safe-area-inset-top))}
+.hin{display:flex;flex-direction:column;padding-bottom:22px}
+.brandrow{display:flex;align-items:center;gap:12px;margin-bottom:24px;color:#F4F0E6;text-decoration:none}
+.brandrow svg{width:34px;height:34px;flex:none}
+/* Market pages on a phone: the logo above the pinned strip, a link back to Home */
+.topbrand{background:#1C1A14;padding-top:max(16px,env(safe-area-inset-top))}
+.topbrand .brandrow{margin:0;padding-bottom:6px;align-self:flex-start;display:inline-flex}
+.topbrand + .strip{padding-top:0}
+.topbrand ~ .hdr{padding-top:20px}
+.brand{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;font-weight:800;letter-spacing:-.01em;color:#fff}
+.tagline{margin:1px 0 0;font-size:13px;color:#A39D8E}
+.mtop{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.mname{margin:0;font-size:19px;font-weight:700;font-stretch:115%}
+.msub{margin:2px 0 0;font-size:14px;color:#A39D8E}
+.verdict{margin:12px 0 0;font-size:46px;font-weight:800;font-stretch:70%;line-height:.96;font-variant-numeric:tabular-nums;text-wrap:balance}
+.worth{margin:10px 0 0;font-size:15px;color:#C4BDAA;font-variant-numeric:tabular-nums}
+.state{font-size:12px;font-weight:600;padding:3px 8px;border-radius:4px;white-space:nowrap;background:#14120D;color:#C4BDAA}
+.state.on{color:#6BD35A;background:rgba(107,211,90,.14)} .state.off{color:#FF9A90;background:rgba(255,90,78,.16)} .state.wait{color:#E2B04A;background:rgba(226,176,74,.14)}
+.asof{margin:12px 0 0;font-size:13px;color:#A39D8E;display:flex;align-items:baseline;gap:7px}
+.dot{width:7px;height:7px;border-radius:50%;background:#6BD35A;flex:none;align-self:flex-start;margin-top:6px;animation:blink 2s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
 @media(prefers-reduced-motion:reduce){.dot{animation:none}}
 .fxnote{margin:4px 0 0;font-size:12px;color:#7E7866}
 
 /* You against the index fund */
-table.vs{width:100%;border-collapse:collapse;margin-top:16px;font-variant-numeric:tabular-nums}
-.vs th,.vs td{padding:8px 0;border-top:1px solid rgba(255,255,255,.06);white-space:nowrap;text-align:right;font-size:15px}
-.vs thead th{border-top:0;padding-top:0;font-size:12px;font-weight:600}
+table.vs{width:100%;border-collapse:collapse;margin-top:18px;font-variant-numeric:tabular-nums}
+.vs th,.vs td{padding:9px 0;border-top:1px solid rgba(255,255,255,.10);white-space:nowrap;text-align:right;font-size:15px}
+.vs thead th{border-top:0;padding:0 0 6px;font-size:12px;font-weight:600}
 .vs tbody th{text-align:left;font-weight:500;color:#C4BDAA;font-size:14px}
 .vs td b{font-weight:700} .vs td small{font-size:12px;color:#A39D8E;margin-left:6px}
 .vs td:last-child,.vs thead th:last-child{padding-left:18px;width:1%} .vs td:last-child{color:#C4BDAA}
@@ -62,36 +69,85 @@ table.vs{width:100%;border-collapse:collapse;margin-top:16px;font-variant-numeri
 .sw{color:#C4BDAA;white-space:nowrap} .sw::before{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px;background:var(--c)}
 .sw.dash::before{background:repeating-linear-gradient(90deg,var(--c) 0 4px,transparent 4px 7px)}
 
-/* Market buttons (phone) and sidebar (computer) */
+/* The race: a lane per market, a bar from the centre line (right = ahead of its fund) */
+.lane{text-decoration:none;color:#C4BDAA}
+.lane .short,.lane .st{display:none}
+.gauge{position:relative;display:block}
+.gauge::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:#F4F0E6;opacity:.5}
+.gauge i{position:absolute;top:0;bottom:0;width:calc(var(--w) / 2)}
+.gauge i.pos{left:50%;background:#6BD35A;border-radius:0 2px 2px 0}
+.gauge i.neg{right:50%;background:#FF6B5F;border-radius:2px 0 0 2px}
+.gauge i.flat{left:50%;width:0}
+
+/* Home: the board */
+.board{margin-top:22px}
+.bkey{display:grid;grid-template-columns:7.4rem minmax(0,1fr) 4.8rem;column-gap:12px;font-size:12px;color:#7E7866;padding-bottom:6px}
+.bkey span{grid-column:2;grid-row:1;justify-self:end;padding-right:calc(50% + 8px)}
+.bkey span + span{justify-self:start;padding:0 0 0 calc(50% + 8px)}
+.board .lane{display:grid;grid-template-columns:7.4rem minmax(0,1fr) 4.8rem;grid-template-rows:auto auto;column-gap:12px;align-items:center;min-height:62px;padding:9px 0;border-top:1px solid rgba(255,255,255,.10);color:#F4F0E6}
+.board .lane:last-child{border-bottom:1px solid rgba(255,255,255,.10)}
+.board .ln{grid-column:1;grid-row:1;font-size:15px;font-weight:650;align-self:end}
+.board .st{display:block;grid-column:1;grid-row:2;font-size:12px;color:#A39D8E;align-self:start}
+.board .gauge{grid-column:2;grid-row:1/3;align-self:stretch;margin-block:-9px}
+.board .gauge i{top:50%;bottom:auto;height:20px;margin-top:-10px}
+.board .amt{grid-column:3;grid-row:1/3;text-align:right;font-size:24px;line-height:1}
+.board .lane:hover .ln{text-decoration:underline;text-underline-offset:3px}
+
+/* Phone: the pinned strip on a market page, with links to the page's sections */
 .side{display:none}
-.switch{display:flex;gap:6px;overflow-x:auto;background:#14120D;border-bottom:1px solid rgba(255,255,255,.10);padding-block:10px;scrollbar-width:none}
-.switch a{flex:none;font-size:13px;font-weight:700;text-decoration:none;color:#C4BDAA;border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:8px 14px;min-height:36px;display:inline-flex;align-items:center}
-.switch a.on{background:#C8A951;color:#1C1A14;border-color:#C8A951}
+.strip{position:sticky;top:0;z-index:20;background:#1C1A14;border-bottom:1px solid rgba(255,255,255,.10);padding-top:env(safe-area-inset-top)}
+.strip .lanes{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr))}
+.strip .lane{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:54px;padding:8px 2px 9px;color:#A39D8E}
+.strip .ln .full{display:none} .strip .ln .short{display:inline}
+.strip .ln{font-size:13px;font-weight:600}
+.strip .amt{font-size:14px;line-height:1.2;white-space:nowrap}
+.strip .all .amt{font-size:12px;font-weight:500;color:#7E7866;line-height:1.4}
+.strip .gauge{width:72%;height:5px;margin-top:4px}
+.strip .gauge::before{top:-2px;bottom:-2px}
+.strip .lane.on{color:#F4F0E6}
+.strip .lane.on::after{content:"";position:absolute;left:12%;right:12%;bottom:0;height:3px;background:#F4F0E6;border-radius:2px 2px 0 0}
+.secs{display:flex;gap:20px;overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.06)}
+.secs::-webkit-scrollbar{display:none}
+.secs a{flex:none;font-size:13px;font-weight:500;color:#A39D8E;text-decoration:none;padding:9px 0 7px;border-bottom:2px solid transparent}
+.secs a.on{color:#F4F0E6;border-bottom-color:#F4F0E6}
+main [id]{scroll-margin-top:104px}
+
+/* Computer: the board becomes the side menu */
 @media(min-width:900px){
- .app{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100vh}
- .side{display:flex;flex-direction:column;gap:4px;background:#1C1A14;border-right:1px solid rgba(255,255,255,.10);padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}
- .side .brandrow{padding:0 6px 14px;border-bottom:4px solid #C8A951;margin-bottom:10px}
- .side a{display:flex;justify-content:space-between;align-items:center;gap:8px;text-decoration:none;color:#C4BDAA;font-size:14px;font-weight:600;padding:10px;border-radius:10px;min-height:44px}
- .side a small{font-size:12px;font-weight:600}
- .side a.on{background:#1B1812;color:#F4F0E6;box-shadow:inset 3px 0 0 #C8A951}
- .side a:hover{background:#1B1812}
- .switch,.hdr .back,.hdr .brandrow{display:none}
- .hdr{padding-top:28px}
+ .app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+ .side{display:flex;flex-direction:column;background:#1C1A14;border-right:1px solid rgba(255,255,255,.10);padding:22px 14px;position:sticky;top:0;height:100vh;overflow-y:auto}
+ .side .brandrow{margin:0 6px 14px;padding-bottom:16px;border-bottom:4px solid #C8A951}
+ .side .home{font-size:14px;font-weight:600;color:#C4BDAA;text-decoration:none;padding:9px 10px;border-radius:6px}
+ .side .home.on{color:#F4F0E6;background:#1B1812}
+ .side .home:hover,.side .lane:hover{background:#1B1812}
+ .side .lane{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;row-gap:8px;padding:11px 10px 12px;border-radius:6px;margin-top:2px}
+ .side .ln{font-size:14px;font-weight:600}
+ .side .amt{font-size:17px}
+ .side .gauge{grid-column:1/-1;height:6px}
+ .side .gauge::before{top:-3px;bottom:-3px}
+ .side .lane.on{background:#1B1812;color:#F4F0E6;box-shadow:inset 3px 0 0 #F4F0E6}
+ .side .sub{display:flex;flex-direction:column;margin:4px 0 10px 13px;border-left:1px solid rgba(255,255,255,.10)}
+ .side .sub a{font-size:13px;color:#A39D8E;text-decoration:none;padding:6px 12px;margin-left:-1px;border-left:2px solid transparent}
+ .side .sub a:hover{color:#F4F0E6}
+ .side .sub a.on{color:#F4F0E6;font-weight:600;border-left-color:#F4F0E6}
+ .strip,.hdr .brandrow,.topbrand{display:none}
+ .hdr{padding-top:34px}
+ main [id]{scroll-margin-top:24px}
 }
 
 /* Page body */
-main.wrap{padding-top:24px;padding-bottom:48px;display:flex;flex-direction:column;gap:36px}
+main.wrap{padding-top:28px;padding-bottom:56px;display:flex;flex-direction:column;gap:40px}
 .sec{display:flex;flex-direction:column;gap:12px}
-h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
-h3{margin:8px 0 0;font-size:15px;font-weight:700}
-.lead{margin:0;font-size:14px;color:#C4BDAA}
-.heads{display:flex;flex-direction:column;gap:3px;background:rgba(226,176,74,.10);border:1px solid rgba(226,176,74,.32);border-radius:12px;padding:12px 14px;font-size:14px;color:#F4F0E6}
+h2{margin:0;font-size:18px;font-weight:700;font-stretch:115%;text-wrap:balance}
+h3{margin:10px 0 0;font-size:15px;font-weight:650}
+.lead{margin:0;font-size:15px;color:#C4BDAA;max-width:62ch}
+.heads{display:flex;flex-direction:column;gap:3px;background:rgba(226,176,74,.10);border:1px solid rgba(226,176,74,.32);border-radius:8px;padding:12px 14px;font-size:14px;color:#F4F0E6}
 .heads b{color:#E2B04A;font-size:15px}
 .key{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px}
 .chart{width:100%;height:auto;display:block;shape-rendering:geometricPrecision} .chart .ax{fill:#A39D8E;font-size:11px;font-family:var(--sans)}
-.chart .hot{fill:transparent;cursor:crosshair} .chart .hot:hover{fill:#E2C067;fill-opacity:.3}
+.chart .hot{fill:transparent;cursor:crosshair} .chart .hot:hover{fill:#E2C067;fill-opacity:.25}
 .empty{margin:0;color:#C4BDAA;font-size:14px}
-.note{font-size:12px;color:#7E7866;line-height:1.6;margin:0}
+.note{font-size:12px;color:#7E7866;line-height:1.6;margin:0;max-width:72ch}
 
 /* Stock rows */
 .rows{display:flex;flex-direction:column}
@@ -102,71 +158,78 @@ h3{margin:8px 0 0;font-size:15px;font-weight:700}
 .row .r{text-align:right;font-size:13px;color:#A39D8E;white-space:nowrap;font-variant-numeric:tabular-nums}
 .row .st{font-size:13px;color:#C4BDAA} .st.ok{color:#6BD35A} .st.keep{color:#E2B04A} .st.sell{color:#FF6B5F}
 .yr{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:7px;font-size:12px;color:#A39D8E;white-space:nowrap;font-variant-numeric:tabular-nums}
-.yr .track{flex:1;min-width:60px;position:relative;height:4px;border-radius:2px;background:rgba(255,255,255,.16)}
-.yr .track i{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#E2C067;box-shadow:0 0 0 2px #0B0A07}
+.yr .track{flex:1;min-width:60px;position:relative;height:4px;border-radius:2px;background:#262219}
+.yr .track i{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#F4F0E6;box-shadow:0 0 0 2px #0B0A07}
 .yr > span:first-child{min-width:3.4em} .yr > span:nth-child(3){min-width:3.4em;text-align:right}
 .yr .off{min-width:7.6em;text-align:right;color:#C4BDAA}
-.chip{font-weight:700;font-size:13px;padding:3px 9px;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.chip.pos{background:rgba(107,211,90,.14);color:#6BD35A} .chip.neg{background:rgba(255,90,78,.14);color:#FF6B5F} .chip.flat{background:#262219;color:#C4BDAA}
-.tag{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;vertical-align:1px}
+.chip{font-size:16px;font-stretch:76%;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.chip.pos{color:#6BD35A} .chip.neg{color:#FF6B5F} .chip.flat{color:#C4BDAA}
+.tag{font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;vertical-align:1px}
 .tag.buy{background:rgba(107,211,90,.14);color:#6BD35A} .tag.sell{background:rgba(255,90,78,.14);color:#FF6B5F}
-.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:#C4BDAA} .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
-.rules{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14px} .rules b{display:block;font-size:13px;color:#E2C067}
+.js .rows.clip:not(.open) .row:nth-child(n+6){display:none}
+.js .rows.clip:not(.open) .row:nth-child(5){border-bottom:1px solid rgba(255,255,255,.06)}
+button.more{align-self:flex-start;font:inherit;font-size:14px;font-weight:600;color:#F4F0E6;background:transparent;border:1.5px solid #F4F0E6;border-radius:6px;padding:8px 16px;min-height:40px;cursor:pointer}
+button.more:hover{background:#1B1812}
+.stack{display:flex;height:14px;border-radius:3px;overflow:hidden;gap:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:#C4BDAA} .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.rules{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:15px} .rules b{display:block;font-size:14px;font-weight:700;font-stretch:115%;color:#F4F0E6}
 
 /* Folded extras */
 .folds{display:flex;flex-direction:column;border-top:1px solid rgba(255,255,255,.10)}
 details.fold{border-bottom:1px solid rgba(255,255,255,.10)}
-details.fold summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:54px;font-weight:600;font-size:16px}
+details.fold summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;font-weight:650;font-size:16px}
 details.fold summary::-webkit-details-marker{display:none}
-details.fold summary::after{content:"+";color:#E2C067;font-size:22px;font-weight:400;line-height:1}
+details.fold summary::after{content:"+";color:#F4F0E6;font-size:22px;font-weight:400;line-height:1}
 details.fold[open] summary::after{content:"\2212"}
-.fold .in{display:flex;flex-direction:column;gap:12px;padding-bottom:20px}
+.fold .in{display:flex;flex-direction:column;gap:12px;padding-bottom:22px}
 .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.stat{background:#1B1812;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:2px}
-.stat .k{font-size:12px;color:#A39D8E} .stat .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums} .stat small{color:#A39D8E;font-weight:500}
+.stat{background:#1B1812;border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.stat .k{font-size:12px;color:#A39D8E} .stat .v{font-size:20px;font-stretch:76%;font-weight:800;font-variant-numeric:tabular-nums} .stat small{color:#A39D8E;font-weight:500;font-stretch:100%;font-size:12px}
 .warn{margin:0;font-size:13px;line-height:1.5;color:#C4BDAA}
 .trades{overflow-x:auto}
 .trades table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
 .trades th{text-align:left;color:#A39D8E;font-weight:600;font-size:12px;padding:8px;border-bottom:1px solid rgba(255,255,255,.10)}
 .trades td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;font-variant-numeric:tabular-nums}
+.trades .chip{font-size:14px}
 .bt-read,.wk-read{display:flex;flex-direction:column;gap:2px}
 .bt-read{min-height:56px}
-.bt-read .rv,.wk-read .rv{font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}
+.bt-read .rv,.wk-read .rv{font-size:28px;font-stretch:76%;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.05}
 .bt-read .rs,.wk-read .rs{font-size:13px;color:#C4BDAA;font-variant-numeric:tabular-nums}
-.wk-read{min-height:46px} .wk-read .rv{font-size:20px}
-.pill{font-weight:700;font-size:12px;padding:2px 8px;border-radius:7px;margin-left:6px;white-space:nowrap}
+.wk-read{min-height:46px} .wk-read .rv{font-size:22px}
+.pill{font-weight:700;font-size:12px;padding:2px 7px;border-radius:4px;margin-left:6px;white-space:nowrap}
 .pill.pos{background:rgba(107,211,90,.14);color:#6BD35A} .pill.neg{background:rgba(255,90,78,.14);color:#FF6B5F}
 .bt-plot,.wk-plot{touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .bt-plot svg,.wk-plot svg{display:block;width:100%;height:auto;overflow:visible}
 .bt-plot text,.wk-plot text{font-family:var(--sans);font-variant-numeric:tabular-nums}
 .bt-chips{display:flex;gap:6px}
-.bt-chips button{font:inherit;font-size:13px;font-weight:700;color:#C4BDAA;background:transparent;border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:7px 14px;min-height:36px;cursor:pointer}
-.bt-chips button[aria-pressed="true"]{background:#C8A951;color:#1C1A14;border-color:#C8A951}
+.bt-chips button{font:inherit;font-size:13px;font-weight:600;color:#C4BDAA;background:transparent;border:1px solid rgba(255,255,255,.10);border-radius:6px;padding:7px 14px;min-height:36px;cursor:pointer}
+.bt-chips button[aria-pressed="true"]{background:#F4F0E6;color:#0B0A07;border-color:#F4F0E6}
 
-/* Home */
-.mcards{display:flex;flex-direction:column;gap:12px}
-.mcard{display:block;text-decoration:none;color:inherit;background:#1B1812;border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:16px}
-.mcard:hover{border-color:rgba(226,192,103,.4)}
-.mcard .verdict{font-size:24px;margin-top:12px}
-.mcard .worth{margin-top:4px}
-.mcard table.vs{margin-top:12px}
-.mcard .heads{margin-top:14px}
-.mcard .last{margin:12px 0 0;font-size:13px;color:#A39D8E}
+/* Home: one block per market under the board */
+.mcards{display:flex;flex-direction:column}
+.mcard{display:block;text-decoration:none;color:inherit;padding:26px 0 28px;border-top:1px solid rgba(255,255,255,.10)}
+.mcard:first-child{border-top:0;padding-top:4px}
+.mcard .verdict{font-size:32px;margin-top:10px}
+.mcard .worth{margin-top:6px}
+.mcard table.vs{margin-top:14px}
+.mcard .heads{margin-top:16px}
+.mcard .last{margin:12px 0 0;font-size:14px;color:#A39D8E}
+.mcard .go{display:inline-block;margin-top:12px;font-size:14px;font-weight:600;color:#E2C067}
+.mcard:hover .go{text-decoration:underline;text-underline-offset:3px}
 </style></head><body><div class="app">
-<nav class="side" aria-label="Markets"><div class="brandrow"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Pixel Invest logo: a green arrow climbing from gold coins that dissolve into pixels"><rect width="64" height="64" rx="14" fill="#1C1A14"/><polyline points="9,41 21,30 29,35 44,20" fill="none" stroke="#57B24A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,11 48.6,25.2 38.8,15.4" fill="#6ECB5E" stroke="#6ECB5E" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="48" width="16" height="9" rx="1.5" fill="#C8A951"/><rect x="24" y="48" width="5" height="5" fill="#C8A951"/><rect x="30" y="53" width="4" height="4" fill="#C8A951"/><rect x="36" y="48" width="4" height="4" fill="#C8A951"/><rect x="42" y="53" width="3" height="3" fill="#C8A951"/><rect x="47" y="49" width="3" height="3" fill="#C8A951"/><rect x="42" y="48" width="3" height="3" fill="#8A7A46"/><rect x="52" y="52" width="2.5" height="2.5" fill="#8A7A46"/></svg><div class="brand">Pixel Invest</div></div>
-<a href="../">All markets</a><a href="../nasdaq-100/">Nasdaq-100 <small class="off">Cash</small></a><a href="../tsx-60/">TSX 60 <small class="off">Cash</small></a><a href="../sp-500/">S&amp;P 500 <small class="off">Cash</small></a><a href="../dow-30/" class="on" aria-current="page">Dow Jones <small class="off">Cash</small></a></nav>
+<nav class="side" aria-label="Markets"><a class="brandrow" href="../"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Pixel Invest logo: a green arrow climbing from gold coins that dissolve into pixels"><rect width="64" height="64" rx="14" fill="#1C1A14"/><polyline points="9,41 21,30 29,35 44,20" fill="none" stroke="#57B24A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,11 48.6,25.2 38.8,15.4" fill="#6ECB5E" stroke="#6ECB5E" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="48" width="16" height="9" rx="1.5" fill="#C8A951"/><rect x="24" y="48" width="5" height="5" fill="#C8A951"/><rect x="30" y="53" width="4" height="4" fill="#C8A951"/><rect x="36" y="48" width="4" height="4" fill="#C8A951"/><rect x="42" y="53" width="3" height="3" fill="#C8A951"/><rect x="47" y="49" width="3" height="3" fill="#C8A951"/><rect x="42" y="48" width="3" height="3" fill="#8A7A46"/><rect x="52" y="52" width="2.5" height="2.5" fill="#8A7A46"/></svg><span class="brand">Pixel Invest</span></a>
+<!--side--><a class="home" href="../">All markets</a><a class="lane" href="../nasdaq-100/" aria-label="Nasdaq-100, $418 ahead of QQQ"><span class="ln"><span class="full">Nasdaq-100</span><span class="short">Nasdaq</span></span><span class="st">In cash</span><span class="amt fig pos">+$418</span><span class="gauge" aria-hidden="true"><i class="pos" style="--w:100.0%"></i></span></a><a class="lane" href="../tsx-60/" aria-label="TSX 60, C$17 behind XIU"><span class="ln"><span class="full">TSX 60</span><span class="short">TSX</span></span><span class="st">In cash</span><span class="amt fig neg">&minus;C$17</span><span class="gauge" aria-hidden="true"><i class="neg" style="--w:4.0%"></i></span></a><a class="lane" href="../sp-500/" aria-label="S&amp;P 500, $336 behind SPY"><span class="ln"><span class="full">S&amp;P 500</span><span class="short">S&amp;P</span></span><span class="st">In cash</span><span class="amt fig neg">&minus;$336</span><span class="gauge" aria-hidden="true"><i class="neg" style="--w:80.3%"></i></span></a><a class="lane on" href="../dow-30/" aria-current=page aria-label="Dow Jones, $53 ahead of DIA"><span class="ln"><span class="full">Dow Jones</span><span class="short">Dow</span></span><span class="st">In cash</span><span class="amt fig pos">+$53</span><span class="gauge" aria-hidden="true"><i class="pos" style="--w:12.8%"></i></span></a><div class="sub" aria-label="On this page"><a href="#week" data-sec="week">This week</a><a href="#stocks" data-sec="stocks">Stocks</a><a href="#since" data-sec="since">Since start</a><a href="#rules" data-sec="rules">Rules</a><a href="#more" data-sec="more">More</a></div><!--/side--></nav>
 <div class="content">
+<div class="topbrand"><div class="wrap"><a class="brandrow" href="../"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Pixel Invest logo: a green arrow climbing from gold coins that dissolve into pixels"><rect width="64" height="64" rx="14" fill="#1C1A14"/><polyline points="9,41 21,30 29,35 44,20" fill="none" stroke="#57B24A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polygon points="53,11 48.6,25.2 38.8,15.4" fill="#6ECB5E" stroke="#6ECB5E" stroke-width="1.5" stroke-linejoin="round"/><rect x="6" y="48" width="16" height="9" rx="1.5" fill="#C8A951"/><rect x="24" y="48" width="5" height="5" fill="#C8A951"/><rect x="30" y="53" width="4" height="4" fill="#C8A951"/><rect x="36" y="48" width="4" height="4" fill="#C8A951"/><rect x="42" y="53" width="3" height="3" fill="#C8A951"/><rect x="47" y="49" width="3" height="3" fill="#C8A951"/><rect x="42" y="48" width="3" height="3" fill="#8A7A46"/><rect x="52" y="52" width="2.5" height="2.5" fill="#8A7A46"/></svg><span class="brand">Pixel Invest</span></a></div></div>
+<!--bar--><nav class="strip" aria-label="Markets"><div class="wrap"><div class="lanes" style="--n:5"><a class="lane all" href="../"><span class="ln">All</span><span class="amt">4 markets</span></a><a class="lane" href="../nasdaq-100/" aria-label="Nasdaq-100, $418 ahead of QQQ"><span class="ln"><span class="full">Nasdaq-100</span><span class="short">Nasdaq</span></span><span class="st">In cash</span><span class="amt fig pos">+$418</span><span class="gauge" aria-hidden="true"><i class="pos" style="--w:100.0%"></i></span></a><a class="lane" href="../tsx-60/" aria-label="TSX 60, C$17 behind XIU"><span class="ln"><span class="full">TSX 60</span><span class="short">TSX</span></span><span class="st">In cash</span><span class="amt fig neg">&minus;C$17</span><span class="gauge" aria-hidden="true"><i class="neg" style="--w:4.0%"></i></span></a><a class="lane" href="../sp-500/" aria-label="S&amp;P 500, $336 behind SPY"><span class="ln"><span class="full">S&amp;P 500</span><span class="short">S&amp;P</span></span><span class="st">In cash</span><span class="amt fig neg">&minus;$336</span><span class="gauge" aria-hidden="true"><i class="neg" style="--w:80.3%"></i></span></a><a class="lane on" href="../dow-30/" aria-current=page aria-label="Dow Jones, $53 ahead of DIA"><span class="ln"><span class="full">Dow Jones</span><span class="short">Dow</span></span><span class="st">In cash</span><span class="amt fig pos">+$53</span><span class="gauge" aria-hidden="true"><i class="pos" style="--w:12.8%"></i></span></a></div><div class=secs><a href="#week" data-sec="week">This week</a><a href="#stocks" data-sec="stocks">Stocks</a><a href="#since" data-sec="since">Since start</a><a href="#rules" data-sec="rules">Rules</a><a href="#more" data-sec="more">More</a></div></div></nav><!--/bar-->
 <header class="hdr"><div class="wrap hin">
-<a class="back" href="../">&#8249; All markets</a>
 <div class="mtop"><h1 class="mname">Dow Jones</h1><span class="state off">In cash</span></div>
 <p class="msub">30 blue-chip US companies, up against DIA</p>
-<p class="verdict pos">$151 ahead of DIA</p><p class="worth">Worth $9,744, from $10,000 on Nov 13</p><table class="vs"><thead><tr><th></th><th scope="col"><span class="you">You</span></th><th scope="col"><span class="fund">DIA</span></th></tr></thead><tbody><tr><th scope="row">Wed Nov 25</th><td><b class="">$0.00</b><small>0.00%</small></td><td>+0.31%</td></tr><tr><th scope="row">This week</th><td><b class="">$0.00</b><small>0.00%</small></td><td>+4.20%</td></tr><tr><th scope="row">Since Nov 13</th><td><b class="neg">&minus;$256.44</b><small>&minus;2.56%</small></td><td>&minus;4.07%</td></tr></tbody></table><p class="asof">At the close on Wed Nov 25.</p>
+<p class="verdict pos">$53 ahead of DIA</p><p class="worth">Worth $9,744, from $10,000 on Nov 13</p><table class="vs"><thead><tr><th></th><th scope="col"><span class="you">You</span></th><th scope="col"><span class="fund">DIA</span></th></tr></thead><tbody><tr><th scope="row">Fri Nov 27</th><td><b class="">$0.00</b><small>0.00%</small></td><td>+1.02%</td></tr><tr><th scope="row">This week</th><td><b class="">$0.00</b><small>0.00%</small></td><td>+5.26%</td></tr><tr><th scope="row">Since Nov 13</th><td><b class="neg">&minus;$256.44</b><small>&minus;2.56%</small></td><td>&minus;3.10%</td></tr></tbody></table><p class="asof">At the close on Fri Nov 27.</p>
 </div></header>
-<nav class="switch wrap" aria-label="Markets"><a href="../nasdaq-100/">Nasdaq-100</a><a href="../tsx-60/">TSX 60</a><a href="../sp-500/">S&amp;P 500</a><a href="../dow-30/" class="on" aria-current="page">Dow Jones</a></nav>
 <main class="wrap">
 
-<section class="sec"><h2>This week</h2><div class="wkc"><div class="key"><span class="you">Your account</span><span class="fund">Same money in DIA</span></div><div class="wk-plot"></div><div class="wk-read" aria-live="polite"></div><script type="application/json" class="wk-data">{"pts": [[0, "Fri Nov 20 close", 9743.56, 9206.27], [30, "Mon 10:00am", 9743.56, 9442.42], [60, "Mon 10:30am", 9743.56, 9497.15], [90, "Mon 11:00am", 9743.56, 9495.42], [120, "Mon 11:30am", 9743.56, 9499.25], [150, "Mon 12:00pm", 9743.56, 9494.28], [180, "Mon 12:30pm", 9743.56, 9485.86], [210, "Mon 1:00pm", 9743.56, 9483.65], [240, "Mon 1:30pm", 9743.56, 9502.5], [270, "Mon 2:00pm", 9743.56, 9479.92], [300, "Mon 2:30pm", 9743.56, 9503.46], [330, "Mon 3:00pm", 9743.56, 9487.96], [360, "Mon 3:30pm", 9743.56, 9509.39], [390, "Mon 4:00pm", 9743.56, 9487.96], [420, "Tue 10:00am", 9743.56, 9528.53], [450, "Tue 10:30am", 9743.56, 9485.09], [480, "Tue 11:00am", 9743.56, 9487.77], [510, "Tue 11:30am", 9743.56, 9496.57], [540, "Tue 12:00pm", 9743.56, 9501.93], [570, "Tue 12:30pm", 9743.56, 9549.2], [600, "Tue 1:00pm", 9743.56, 9558.77], [630, "Tue 1:30pm", 9743.56, 9560.3], [660, "Tue 2:00pm", 9743.56, 9540.97], [690, "Tue 2:30pm", 9743.56, 9561.64], [720, "Tue 3:00pm", 9743.56, 9536.38], [750, "Tue 3:30pm", 9743.56, 9538.87], [780, "Tue 4:00pm", 9743.56, 9563.36], [810, "Wed 10:00am", 9743.56, 9425.96], [840, "Wed 10:30am", 9743.56, 9399.17], [870, "Wed 11:00am", 9743.56, 9419.26], [900, "Wed 11:30am", 9743.56, 9436.96], [930, "Wed 12:00pm", 9743.56, 9455.62], [960, "Wed 12:30pm", 9743.56, 9511.69], [990, "Wed 1:00pm", 9743.56, 9558.19], [1020, "Wed 1:30pm", 9743.56, 9602.4], [1050, "Wed 2:00pm", 9743.56, 9602.58], [1080, "Wed 2:30pm", 9743.56, 9626.51], [1110, "Wed 3:00pm", 9743.56, 9597.23], [1140, "Wed 3:30pm", 9743.56, 9594.65], [1170, "Wed 4:00pm", 9743.56, 9592.64]], "sym": "$", "bench": "DIA"}</script><script>
+<section class="sec" id="week"><h2>This week</h2><div class="wkc"><div class="key"><span class="you">Your account</span><span class="fund">Same money in DIA</span></div><div class="wk-plot"></div><div class="wk-read" aria-live="polite"></div><script type="application/json" class="wk-data">{"pts": [[0, "Fri Nov 20 close", 9743.56, 9206.27], [30, "Mon 10:00am", 9743.56, 9442.42], [60, "Mon 10:30am", 9743.56, 9497.15], [90, "Mon 11:00am", 9743.56, 9495.42], [120, "Mon 11:30am", 9743.56, 9499.25], [150, "Mon 12:00pm", 9743.56, 9494.28], [180, "Mon 12:30pm", 9743.56, 9485.86], [210, "Mon 1:00pm", 9743.56, 9483.65], [240, "Mon 1:30pm", 9743.56, 9502.5], [270, "Mon 2:00pm", 9743.56, 9479.92], [300, "Mon 2:30pm", 9743.56, 9503.46], [330, "Mon 3:00pm", 9743.56, 9487.96], [360, "Mon 3:30pm", 9743.56, 9509.39], [390, "Mon 4:00pm", 9743.56, 9487.96], [420, "Tue 10:00am", 9743.56, 9528.53], [450, "Tue 10:30am", 9743.56, 9485.09], [480, "Tue 11:00am", 9743.56, 9487.77], [510, "Tue 11:30am", 9743.56, 9496.57], [540, "Tue 12:00pm", 9743.56, 9501.93], [570, "Tue 12:30pm", 9743.56, 9549.2], [600, "Tue 1:00pm", 9743.56, 9558.77], [630, "Tue 1:30pm", 9743.56, 9560.3], [660, "Tue 2:00pm", 9743.56, 9540.97], [690, "Tue 2:30pm", 9743.56, 9561.64], [720, "Tue 3:00pm", 9743.56, 9536.38], [750, "Tue 3:30pm", 9743.56, 9538.87], [780, "Tue 4:00pm", 9743.56, 9563.36], [810, "Wed 10:00am", 9743.56, 9425.96], [840, "Wed 10:30am", 9743.56, 9399.17], [870, "Wed 11:00am", 9743.56, 9419.26], [900, "Wed 11:30am", 9743.56, 9436.96], [930, "Wed 12:00pm", 9743.56, 9455.62], [960, "Wed 12:30pm", 9743.56, 9511.69], [990, "Wed 1:00pm", 9743.56, 9558.19], [1020, "Wed 1:30pm", 9743.56, 9602.4], [1050, "Wed 2:00pm", 9743.56, 9602.58], [1080, "Wed 2:30pm", 9743.56, 9626.51], [1110, "Wed 3:00pm", 9743.56, 9597.23], [1140, "Wed 3:30pm", 9743.56, 9594.65], [1170, "Wed 4:00pm", 9743.56, 9592.64], [1590, "Fri 10:00am", 9743.56, 9634.55], [1620, "Fri 10:30am", 9743.56, 9667.46], [1650, "Fri 11:00am", 9743.56, 9687.37], [1680, "Fri 11:30am", 9743.56, 9688.51], [1710, "Fri 12:00pm", 9743.56, 9702.48], [1740, "Fri 12:30pm", 9743.56, 9705.35], [1770, "Fri 1:00pm", 9743.56, 9690.24]], "sym": "$", "bench": "DIA"}</script><script>
 (function(){
 var box=document.currentScript.closest('.wkc'); if(!box) return;
 var D=JSON.parse(box.querySelector('.wk-data').textContent), P=D.pts, NS='http://www.w3.org/2000/svg';
@@ -218,8 +281,8 @@ var t; window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(
 draw();
 })();
 </script></div></section>
-<section class="sec"><h2>Your stocks</h2><p class="lead">None right now: the account is in cash because DIA is under its 200-day average (the safety switch).</p><h3>Sold at the close on Fri Nov 20</h3><div class="rows"><div class="row"><div class="nm"><b>V</b><span>Visa Inc.</span></div><div class="r"><span class="chip neg">&minus;5.6%</span></div><div class="st-l"><span class="st">Sold at $401.87</span></div><div class="r"></div></div><div class="row"><div class="nm"><b>PG</b><span>Procter &amp; Gamble</span></div><div class="r"><span class="chip neg">&minus;0.3%</span></div><div class="st-l"><span class="st">Sold at $169.37</span></div><div class="r"></div></div><div class="row"><div class="nm"><b>AAPL</b><span>Apple</span></div><div class="r"><span class="chip neg">&minus;3.8%</span></div><div class="st-l"><span class="st">Sold at $342.56</span></div><div class="r"></div></div><div class="row"><div class="nm"><b>DIS</b><span>Walt Disney Company (The)</span></div><div class="r"><span class="chip neg">&minus;0.8%</span></div><div class="st-l"><span class="st">Sold at $117.98</span></div><div class="r"></div></div><div class="row"><div class="nm"><b>KO</b><span>Coca-Cola Company (The)</span></div><div class="r"><span class="chip neg">&minus;2.3%</span></div><div class="st-l"><span class="st">Sold at $96.99</span></div><div class="r"></div></div></div><h3>Next buys if the switch turns back on</h3><p class="lead">If DIA closes above $507.60 on a Friday, today's top 5 by 3-month gain are bought at that close.</p><div class="rows"><div class="row"><div class="nm"><b>WMT</b><span>Walmart</span></div><div class="r"><span class="chip pos">+27%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $103 to $134; now $132, 2% below high"><span aria-hidden="true">$103</span><span class="track" aria-hidden="true"><i style="left:92.8%"></i></span><span aria-hidden="true">$134</span><span class="off" aria-hidden="true">2% below high</span></div></div><div class="row"><div class="nm"><b>PG</b><span>Procter &amp; Gamble</span></div><div class="r"><span class="chip pos">+19%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $138 to $173; now $173, at its high"><span aria-hidden="true">$138</span><span class="track" aria-hidden="true"><i style="left:100.0%"></i></span><span aria-hidden="true">$173</span><span class="off" aria-hidden="true">At its high</span></div></div><div class="row"><div class="nm"><b>AAPL</b><span>Apple</span></div><div class="r"><span class="chip pos">+13%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $247 to $356; now $356, at its high"><span aria-hidden="true">$247</span><span class="track" aria-hidden="true"><i style="left:99.4%"></i></span><span aria-hidden="true">$356</span><span class="off" aria-hidden="true">At its high</span></div></div><div class="row"><div class="nm"><b>DIS</b><span>Walt Disney Company (The)</span></div><div class="r"><span class="chip pos">+12%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $92 to $126; now $126, at its high"><span aria-hidden="true">$92</span><span class="track" aria-hidden="true"><i style="left:100.0%"></i></span><span aria-hidden="true">$126</span><span class="off" aria-hidden="true">At its high</span></div></div><div class="row"><div class="nm"><b>V</b><span>Visa Inc.</span></div><div class="r"><span class="chip pos">+9%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $296 to $437; now $424, 3% below high"><span aria-hidden="true">$296</span><span class="track" aria-hidden="true"><i style="left:91.4%"></i></span><span aria-hidden="true">$437</span><span class="off" aria-hidden="true">3% below high</span></div></div></div><p class="note">The bar under each stock runs from its 52-week low to its 52-week high, from closing prices. The dot is the latest price.</p><p class="lead">0 of 5 sells made money.</p></section>
-<section class="sec"><h2>Since you started</h2><p class="lead">Started Nov 13 with $10,000. Tap a point for that day.</p>
+<section class="sec" id="stocks"><h2>Your stocks</h2><p class="lead">None right now: the account is in cash because DIA is under its 200-day average (the safety switch).</p><h3>Sold at the close on Fri Nov 20</h3><div class="rows"><div class="row"><div class="nm"><b>V</b><span>Visa Inc.</span></div><div class="r"><span class="chip neg">&minus;5.6%</span></div><div class="st-l"><span class="st">Sold at $401.87</span></div><div class="r"></div></div><div class="row"><div class="nm"><b>PG</b><span>Procter &amp; Gamble</span></div><div class="r"><span class="chip neg">&minus;0.3%</span></div><div class="st-l"><span class="st">Sold at $169.37</span></div><div class="r"></div></div><div class="row"><div class="nm"><b>AAPL</b><span>Apple</span></div><div class="r"><span class="chip neg">&minus;3.8%</span></div><div class="st-l"><span class="st">Sold at $342.56</span></div><div class="r"></div></div><div class="row"><div class="nm"><b>DIS</b><span>Walt Disney Company (The)</span></div><div class="r"><span class="chip neg">&minus;0.8%</span></div><div class="st-l"><span class="st">Sold at $117.98</span></div><div class="r"></div></div><div class="row"><div class="nm"><b>KO</b><span>Coca-Cola Company (The)</span></div><div class="r"><span class="chip neg">&minus;2.3%</span></div><div class="st-l"><span class="st">Sold at $96.99</span></div><div class="r"></div></div></div><h3>Next buys if the switch turns back on</h3><p class="lead">If DIA closes above $507.60 on a Friday, today's top 5 by 3-month gain are bought at that close.</p><div class="rows"><div class="row"><div class="nm"><b>WMT</b><span>Walmart</span></div><div class="r"><span class="chip pos">+27%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $103 to $134; now $133, 1% below high"><span aria-hidden="true">$103</span><span class="track" aria-hidden="true"><i style="left:96.6%"></i></span><span aria-hidden="true">$134</span><span class="off" aria-hidden="true">1% below high</span></div></div><div class="row"><div class="nm"><b>PG</b><span>Procter &amp; Gamble</span></div><div class="r"><span class="chip pos">+19%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $138 to $173; now $173, at its high"><span aria-hidden="true">$138</span><span class="track" aria-hidden="true"><i style="left:98.9%"></i></span><span aria-hidden="true">$173</span><span class="off" aria-hidden="true">At its high</span></div></div><div class="row"><div class="nm"><b>AAPL</b><span>Apple</span></div><div class="r"><span class="chip pos">+13%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $247 to $359; now $359, at its high"><span aria-hidden="true">$247</span><span class="track" aria-hidden="true"><i style="left:100.0%"></i></span><span aria-hidden="true">$359</span><span class="off" aria-hidden="true">At its high</span></div></div><div class="row"><div class="nm"><b>DIS</b><span>Walt Disney Company (The)</span></div><div class="r"><span class="chip pos">+12%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $92 to $127; now $127, at its high"><span aria-hidden="true">$92</span><span class="track" aria-hidden="true"><i style="left:100.0%"></i></span><span aria-hidden="true">$127</span><span class="off" aria-hidden="true">At its high</span></div></div><div class="row"><div class="nm"><b>V</b><span>Visa Inc.</span></div><div class="r"><span class="chip pos">+9%</span></div><div class="st-l"><span class="st">3-month gain</span></div><div class="r"></div><div class="yr" role="img" aria-label="52-week range $296 to $437; now $430, 2% below high"><span aria-hidden="true">$296</span><span class="track" aria-hidden="true"><i style="left:95.0%"></i></span><span aria-hidden="true">$437</span><span class="off" aria-hidden="true">2% below high</span></div></div></div><p class="note">The bar under each stock runs from its 52-week low to its 52-week high, from closing prices. The dot is the latest price.</p><p class="lead">0 of 5 sells made money.</p></section>
+<section class="sec" id="since"><h2>Since you started</h2><p class="lead">Started Nov 13 with $10,000. Tap a point for that day.</p>
 <div class="key"><span class="you">Your account</span><span class="fund">Same money in DIA</span></div><svg viewBox="0 0 380 200" class="chart" role="img" aria-label="Your account against the same money in DIA, $9,743.56 vs $9,563.36"><line x1="52" x2="372" y1="176.0" y2="176.0" stroke="rgba(255,255,255,.06)"/><text x="44" y="180.0" text-anchor="end" class="ax">$9,043</text><line x1="52" x2="372" y1="120.7" y2="120.7" stroke="rgba(255,255,255,.06)"/><text x="44" y="124.7" text-anchor="end" class="ax">$9,424</text><line x1="52" x2="372" y1="65.3" y2="65.3" stroke="rgba(255,255,255,.06)"/><text x="44" y="69.3" text-anchor="end" class="ax">$9,804</text><line x1="52" x2="372" y1="10.0" y2="10.0" stroke="rgba(255,255,255,.06)"/><text x="44" y="14.0" text-anchor="end" class="ax">$10,185</text><text x="52.0" y="192" text-anchor="start" class="ax">Nov 13</text><text x="97.7" y="192" text-anchor="middle" class="ax">Nov 16</text><text x="143.4" y="192" text-anchor="middle" class="ax">Nov 17</text><text x="189.1" y="192" text-anchor="middle" class="ax">Nov 18</text><text x="234.9" y="192" text-anchor="middle" class="ax">Nov 19</text><text x="280.6" y="192" text-anchor="middle" class="ax">Nov 20</text><text x="326.3" y="192" text-anchor="middle" class="ax">Nov 23</text><text x="372.0" y="192" text-anchor="end" class="ax">Nov 24</text><polyline vector-effect="non-scaling-stroke" points="52.0,36.9 97.7,57.6 143.4,80.9 189.1,96.4 234.9,126.8 280.6,152.3 326.3,111.3 372.0,100.4" fill="none" stroke="#A39D8E" stroke-width="1.5" stroke-dasharray="4 3"/><polyline vector-effect="non-scaling-stroke" points="52.0,36.9 97.7,33.7 143.4,49.6 189.1,41.5 234.9,68.2 280.6,74.2 326.3,74.2 372.0,74.2" fill="none" stroke="#E2C067" stroke-width="2" stroke-linejoin="round"/><circle cx="372.0" cy="74.2" r="4.5" fill="#E2C067"/><circle cx="52.0" cy="36.9" r="8" class="hot"><title>Fri Nov 13
 Your account: $10,000.00
 DIA: $10,000.00</title></circle><circle cx="97.7" cy="33.7" r="8" class="hot"><title>Mon Nov 16
@@ -237,16 +300,16 @@ Your account: $9,743.56
 DIA: $9,487.96</title></circle><circle cx="372.0" cy="74.2" r="8" class="hot"><title>Tue Nov 24
 Your account: $9,743.56
 DIA: $9,563.36</title></circle></svg></section>
-<section class="sec"><h2>The rules</h2><ul class="rules">
+<section class="sec" id="rules"><h2>The rules</h2><ul class="rules">
 <li><b>Every Friday</b>Rank the Dow Jones by 3-month gain.</li>
 <li><b>Buy</b>Own the top 5, with equal money in each new stock.</li>
 <li><b>Sell</b>When a stock falls below rank 10.</li>
 <li><b>Safety switch</b>When DIA closes below its 200-day average, sell everything and wait in cash.</li></ul></section>
-<div class="folds">
+<div class="folds" id="more">
 <details class="fold"><summary>Safety switch chart</summary><div class="in">
 <p class="lead">DIA is below the dashed line, so the rules sit in cash. Shaded days are below the line. Today DIA is 499.74 and its 200-day average is 507.60.</p>
-<div class="key"><span class="sw" style="--c:#F4F0E6">DIA</span><span class="sw dash" style="--c:#C8A951">200-day average</span></div>
-<svg viewBox="0 0 380 200" class="chart" role="img" aria-label="DIA 499.74 against its 200-day average 507.60; shaded where it closed below the line"><line x1="40" x2="372" y1="176.0" y2="176.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="180.0" text-anchor="end" class="ax">476</text><line x1="40" x2="372" y1="120.7" y2="120.7" stroke="rgba(255,255,255,.06)"/><text x="32" y="124.7" text-anchor="end" class="ax">500</text><line x1="40" x2="372" y1="65.3" y2="65.3" stroke="rgba(255,255,255,.06)"/><text x="32" y="69.3" text-anchor="end" class="ax">524</text><line x1="40" x2="372" y1="10.0" y2="10.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="14.0" text-anchor="end" class="ax">548</text><rect x="355.5" y="10" width="16.5" height="166" fill="rgba(255,90,78,.16)"/><text x="40.0" y="192" class="ax">Jun</text><text x="66.9" y="192" class="ax">Jul</text><text x="132.7" y="192" class="ax">Aug</text><text x="195.5" y="192" class="ax">Sep</text><text x="258.3" y="192" class="ax">Oct</text><text x="324.1" y="192" class="ax">Nov</text><polyline vector-effect="non-scaling-stroke" points="40.0,163.7 43.0,163.0 46.0,162.2 49.0,161.5 52.0,160.8 55.0,160.1 57.9,159.4 60.9,158.6 63.9,157.9 66.9,157.2 69.9,156.4 72.9,155.6 75.9,154.8 78.9,154.1 81.9,153.4 84.9,152.7 87.9,151.9 90.8,151.2 93.8,150.4 96.8,149.7 99.8,149.0 102.8,148.4 105.8,147.7 108.8,147.1 111.8,146.5 114.8,145.9 117.8,145.3 120.8,144.6 123.7,144.0 126.7,143.2 129.7,142.5 132.7,141.7 135.7,140.8 138.7,139.8 141.7,138.9 144.7,138.1 147.7,137.3 150.7,136.4 153.7,135.6 156.6,134.9 159.6,134.2 162.6,133.5 165.6,132.8 168.6,132.2 171.6,131.6 174.6,130.9 177.6,130.1 180.6,129.4 183.6,128.7 186.6,127.9 189.5,127.2 192.5,126.6 195.5,126.1 198.5,125.4 201.5,124.7 204.5,123.9 207.5,123.1 210.5,122.4 213.5,121.7 216.5,120.9 219.5,120.2 222.5,119.7 225.4,119.2 228.4,118.7 231.4,118.2 234.4,117.7 237.4,117.3 240.4,116.8 243.4,116.5 246.4,116.0 249.4,115.6 252.4,115.2 255.4,115.0 258.3,114.7 261.3,114.4 264.3,114.1 267.3,113.6 270.3,113.3 273.3,112.9 276.3,112.6 279.3,112.2 282.3,111.8 285.3,111.5 288.3,111.1 291.2,110.7 294.2,110.2 297.2,109.7 300.2,109.3 303.2,108.9 306.2,108.6 309.2,108.2 312.2,107.9 315.2,107.5 318.2,107.2 321.2,106.9 324.1,106.6 327.1,106.3 330.1,105.8 333.1,105.5 336.1,105.3 339.1,104.9 342.1,104.6 345.1,104.2 348.1,103.8 351.1,103.4 354.1,103.1 357.0,103.0 360.0,102.9 363.0,102.9 366.0,103.0 369.0,103.1 372.0,103.1" fill="none" stroke="#C8A951" stroke-width="1.5" stroke-dasharray="5 3"/><polyline vector-effect="non-scaling-stroke" points="40.0,82.9 43.0,84.7 46.0,81.1 49.0,82.2 52.0,77.8 55.0,76.0 57.9,79.5 60.9,70.4 63.9,68.8 66.9,68.8 69.9,56.1 72.9,50.9 75.9,54.7 78.9,67.9 81.9,64.6 84.9,60.9 87.9,64.0 90.8,63.5 93.8,60.5 96.8,63.1 99.8,72.4 102.8,79.1 105.8,70.8 108.8,70.9 111.8,83.0 114.8,77.2 117.8,71.4 120.8,58.4 123.7,85.0 126.7,70.8 129.7,64.3 132.7,48.3 135.7,27.0 138.7,21.4 141.7,32.2 144.7,28.8 147.7,30.3 150.7,34.3 153.7,34.6 156.6,32.8 159.6,35.4 162.6,41.4 165.6,44.4 168.6,41.2 171.6,56.9 174.6,46.0 177.6,42.7 180.6,39.0 183.6,41.3 186.6,39.0 189.5,39.4 192.5,47.5 195.5,56.4 198.5,49.7 201.5,35.1 204.5,41.7 207.5,55.7 210.5,64.9 213.5,72.6 216.5,60.9 219.5,63.9 222.5,71.5 225.4,85.4 228.4,78.2 231.4,83.9 234.4,74.8 237.4,79.0 240.4,87.5 243.4,91.3 246.4,80.1 249.4,88.2 252.4,90.8 255.4,100.9 258.3,100.7 261.3,95.0 264.3,92.6 267.3,86.9 270.3,95.1 273.3,93.7 276.3,83.3 279.3,79.2 282.3,83.1 285.3,84.5 288.3,71.6 291.2,76.4 294.2,76.8 297.2,64.2 300.2,56.5 303.2,56.0 306.2,71.2 309.2,67.4 312.2,66.7 315.2,63.5 318.2,68.0 321.2,81.0 324.1,75.9 327.1,81.1 330.1,43.9 333.1,87.6 336.1,92.4 339.1,66.6 342.1,70.3 345.1,64.0 348.1,68.6 351.1,67.0 354.1,84.3 357.0,103.7 360.0,116.7 363.0,142.0 366.0,164.6 369.0,130.4 372.0,121.3" fill="none" stroke="#F4F0E6" stroke-width="1.5" stroke-linejoin="round"/><circle cx="372.0" cy="121.3" r="4" fill="#F4F0E6"/></svg></div></details>
+<div class="key"><span class="sw" style="--c:#F4F0E6">DIA</span><span class="sw dash" style="--c:#E2B04A">200-day average</span></div>
+<svg viewBox="0 0 380 200" class="chart" role="img" aria-label="DIA 499.74 against its 200-day average 507.60; shaded where it closed below the line"><line x1="40" x2="372" y1="176.0" y2="176.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="180.0" text-anchor="end" class="ax">476</text><line x1="40" x2="372" y1="120.7" y2="120.7" stroke="rgba(255,255,255,.06)"/><text x="32" y="124.7" text-anchor="end" class="ax">500</text><line x1="40" x2="372" y1="65.3" y2="65.3" stroke="rgba(255,255,255,.06)"/><text x="32" y="69.3" text-anchor="end" class="ax">524</text><line x1="40" x2="372" y1="10.0" y2="10.0" stroke="rgba(255,255,255,.06)"/><text x="32" y="14.0" text-anchor="end" class="ax">548</text><rect x="355.5" y="10" width="16.5" height="166" fill="rgba(255,90,78,.16)"/><text x="40.0" y="192" class="ax">Jun</text><text x="66.9" y="192" class="ax">Jul</text><text x="132.7" y="192" class="ax">Aug</text><text x="195.5" y="192" class="ax">Sep</text><text x="258.3" y="192" class="ax">Oct</text><text x="324.1" y="192" class="ax">Nov</text><polyline vector-effect="non-scaling-stroke" points="40.0,163.7 43.0,163.0 46.0,162.2 49.0,161.5 52.0,160.8 55.0,160.1 57.9,159.4 60.9,158.6 63.9,157.9 66.9,157.2 69.9,156.4 72.9,155.6 75.9,154.8 78.9,154.1 81.9,153.4 84.9,152.7 87.9,151.9 90.8,151.2 93.8,150.4 96.8,149.7 99.8,149.0 102.8,148.4 105.8,147.7 108.8,147.1 111.8,146.5 114.8,145.9 117.8,145.3 120.8,144.6 123.7,144.0 126.7,143.2 129.7,142.5 132.7,141.7 135.7,140.8 138.7,139.8 141.7,138.9 144.7,138.1 147.7,137.3 150.7,136.4 153.7,135.6 156.6,134.9 159.6,134.2 162.6,133.5 165.6,132.8 168.6,132.2 171.6,131.6 174.6,130.9 177.6,130.1 180.6,129.4 183.6,128.7 186.6,127.9 189.5,127.2 192.5,126.6 195.5,126.1 198.5,125.4 201.5,124.7 204.5,123.9 207.5,123.1 210.5,122.4 213.5,121.7 216.5,120.9 219.5,120.2 222.5,119.7 225.4,119.2 228.4,118.7 231.4,118.2 234.4,117.7 237.4,117.3 240.4,116.8 243.4,116.5 246.4,116.0 249.4,115.6 252.4,115.2 255.4,115.0 258.3,114.7 261.3,114.4 264.3,114.1 267.3,113.6 270.3,113.3 273.3,112.9 276.3,112.6 279.3,112.2 282.3,111.8 285.3,111.5 288.3,111.1 291.2,110.7 294.2,110.2 297.2,109.7 300.2,109.3 303.2,108.9 306.2,108.6 309.2,108.2 312.2,107.9 315.2,107.5 318.2,107.2 321.2,106.9 324.1,106.6 327.1,106.3 330.1,105.8 333.1,105.5 336.1,105.3 339.1,104.9 342.1,104.6 345.1,104.2 348.1,103.8 351.1,103.4 354.1,103.1 357.0,103.0 360.0,102.9 363.0,102.9 366.0,103.0 369.0,103.1 372.0,103.1" fill="none" stroke="#E2B04A" stroke-width="1.5" stroke-dasharray="5 3"/><polyline vector-effect="non-scaling-stroke" points="40.0,82.9 43.0,84.7 46.0,81.1 49.0,82.2 52.0,77.8 55.0,76.0 57.9,79.5 60.9,70.4 63.9,68.8 66.9,68.8 69.9,56.1 72.9,50.9 75.9,54.7 78.9,67.9 81.9,64.6 84.9,60.9 87.9,64.0 90.8,63.5 93.8,60.5 96.8,63.1 99.8,72.4 102.8,79.1 105.8,70.8 108.8,70.9 111.8,83.0 114.8,77.2 117.8,71.4 120.8,58.4 123.7,85.0 126.7,70.8 129.7,64.3 132.7,48.3 135.7,27.0 138.7,21.4 141.7,32.2 144.7,28.8 147.7,30.3 150.7,34.3 153.7,34.6 156.6,32.8 159.6,35.4 162.6,41.4 165.6,44.4 168.6,41.2 171.6,56.9 174.6,46.0 177.6,42.7 180.6,39.0 183.6,41.3 186.6,39.0 189.5,39.4 192.5,47.5 195.5,56.4 198.5,49.7 201.5,35.1 204.5,41.7 207.5,55.7 210.5,64.9 213.5,72.6 216.5,60.9 219.5,63.9 222.5,71.5 225.4,85.4 228.4,78.2 231.4,83.9 234.4,74.8 237.4,79.0 240.4,87.5 243.4,91.3 246.4,80.1 249.4,88.2 252.4,90.8 255.4,100.9 258.3,100.7 261.3,95.0 264.3,92.6 267.3,86.9 270.3,95.1 273.3,93.7 276.3,83.3 279.3,79.2 282.3,83.1 285.3,84.5 288.3,71.6 291.2,76.4 294.2,76.8 297.2,64.2 300.2,56.5 303.2,56.0 306.2,71.2 309.2,67.4 312.2,66.7 315.2,63.5 318.2,68.0 321.2,81.0 324.1,75.9 327.1,81.1 330.1,43.9 333.1,87.6 336.1,92.4 339.1,66.6 342.1,70.3 345.1,64.0 348.1,68.6 351.1,67.0 354.1,84.3 357.0,103.7 360.0,116.7 363.0,142.0 366.0,164.6 369.0,130.4 372.0,121.3" fill="none" stroke="#F4F0E6" stroke-width="1.5" stroke-linejoin="round"/><circle cx="372.0" cy="121.3" r="4" fill="#F4F0E6"/></svg></div></details>
 <details class="fold bt"><summary>How the rules did since 2016</summary><div class="in"><p class="lead">$10,000 run through the same rules every week since 2016, with 0.1% trading costs
 and dividends included. Drag across the chart to read any date.</p>
 <div class="key"><span class="you">The rules</span><span class="fund solid">Just holding DIA</span></div>
@@ -297,8 +360,8 @@ function draw(){
   el('path',{d:path(2),fill:'none',stroke:GREY,'stroke-width':1.25,'stroke-opacity':.85,'stroke-linejoin':'round'},svg);
   el('path',{d:path(1),fill:'none',stroke:GOLD,'stroke-width':1.75,'stroke-linejoin':'round'},svg);
   var v=el('line',{y1:pt,y2:h-pb,stroke:'rgba(244,240,230,.35)',visibility:'hidden'},svg),
-      d1=el('circle',{r:4.5,fill:GOLD,stroke:'#1B1812','stroke-width':2,visibility:'hidden'},svg),
-      d2=el('circle',{r:3.5,fill:GREY,stroke:'#1B1812','stroke-width':2,visibility:'hidden'},svg);
+      d1=el('circle',{r:4.5,fill:GOLD,stroke:'#14120D','stroke-width':2,visibility:'hidden'},svg),
+      d2=el('circle',{r:3.5,fill:GREY,stroke:'#14120D','stroke-width':2,visibility:'hidden'},svg);
   function at(e){var b=svg.getBoundingClientRect(),px=(e.clientX-b.left)/b.width*w;return Math.max(0,Math.min(n-1,Math.round((px-pl)/(w-pl-pr)*(n-1))));}
   function show(i){var r=data[i];[v,d1,d2].forEach(function(e){e.setAttribute('visibility','visible');});
     v.setAttribute('x1',x(i));v.setAttribute('x2',x(i));d1.setAttribute('cx',x(i));d1.setAttribute('cy',y(r[1]));d2.setAttribute('cx',x(i));d2.setAttribute('cy',y(r[2]));read(r);}
@@ -337,9 +400,24 @@ draw();
 <td><span class="tag buy">Buy</span></td>
 <td><b>V</b></td><td>$425.76</td><td>$2,000</td><td></td></tr></table></div></div></details>
 </div>
-<p class="note">Pretend money only. Trades happen at each Friday's closing price, with no fees. Dividends are paid into the account's cash, and the index fund comparison includes its dividends. Prices in US$. Today and this week are worked out from the shares held; nothing is traded or recorded until the week's last close. Updated Nov 26, 2026 at 11:18pm New York time. Past and paper results don't guarantee future returns.</p>
+<p class="note">Pretend money only. Trades happen at each Friday's closing price, with no fees. Dividends are paid into the account's cash, and the index fund comparison includes its dividends. Prices in US$. Today and this week are worked out from the shares held; nothing is traded or recorded until the week's last close. Updated Nov 27, 2026 at 7:24pm New York time. Past and paper results don't guarantee future returns.</p>
 </main>
 </div></div>
 <script>(function(){var t=Date.now();document.addEventListener('visibilitychange',function(){
-if(document.visibilityState==='visible'&&Date.now()-t>5*60*1000)location.reload();});})();</script>
+if(document.visibilityState==='visible'&&Date.now()-t>5*60*1000)location.reload();});})();
+/* Light up the section you're reading, in the side menu and the phone strip */
+(function(){var links=[].slice.call(document.querySelectorAll('[data-sec]'));if(!links.length)return;
+var ids=[];links.forEach(function(a){var i=a.getAttribute('data-sec');if(ids.indexOf(i)<0)ids.push(i);});
+var secs=ids.map(function(i){return document.getElementById(i);}).filter(Boolean),cur=null,busy=false,want=null;
+links.forEach(function(a){a.addEventListener('click',function(){want=a.getAttribute('data-sec');});});
+['wheel','touchstart','keydown'].forEach(function(e){window.addEventListener(e,function(){want=null;},{passive:true});});
+function pick(){busy=false;var bar=document.querySelector('.strip'),off=(bar&&bar.offsetHeight?bar.offsetHeight:0)+40,id=null;
+var done=window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4;
+secs.forEach(function(s){if(s.getBoundingClientRect().top<=off)id=s.id;});if(done&&id)id=secs[secs.length-1].id;if(want)id=want;
+if(id===cur)return;cur=id;links.forEach(function(a){var hit=a.getAttribute('data-sec')===id;a.classList.toggle('on',hit);
+if(hit&&a.parentNode.classList.contains('secs')){var r=a.parentNode;r.scrollLeft=Math.max(0,a.offsetLeft-r.offsetWidth/2+a.offsetWidth/2);}});}
+window.addEventListener('scroll',function(){if(!busy){busy=true;requestAnimationFrame(pick);}},{passive:true});pick();})();
+/* "Show all" buttons under long lists */
+[].forEach.call(document.querySelectorAll('button.more'),function(b){var list=b.previousElementSibling,a=b.textContent,c=b.getAttribute('data-less');
+b.hidden=false;b.addEventListener('click',function(){var open=list.classList.toggle('open');b.textContent=open?c:a;b.setAttribute('aria-expanded',open);});});</script>
 </body></html>

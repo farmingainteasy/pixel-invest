@@ -6,6 +6,7 @@ import html
 import json
 import math
 import os
+import re
 from datetime import datetime
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -16,16 +17,21 @@ import logo
 from company_info import name, sector
 
 # Pixel Ag dark palette
+# Pixel Ag's dark palette: near-black page, cream writing, the header an ink band trimmed in gold.
+# Gold is your account (lines, dots, links) and the index fund dashed grey. Green is ahead/up,
+# red behind/down, amber a heads-up. Gold is the brand, never a "chosen" state.
 PAGE, PANEL, PANEL2, PANEL3 = "#0B0A07", "#1B1812", "#14120D", "#262219"
+INK, GOLD = "#1C1A14", "#C8A951"            # the header band and its rule
 LINE, LINE2 = "rgba(255,255,255,.10)", "rgba(255,255,255,.06)"
 T1, T3, T4, T5 = "#F4F0E6", "#C4BDAA", "#A39D8E", "#7E7866"
-GOLD, GOLD_TEXT = "#C8A951", "#E2C067"
+YOU, FUND = "#E2C067", "#A39D8E"
 GREEN, RED, AMBER = "#6BD35A", "#FF6B5F", "#E2B04A"
 SECTOR_COLORS = ["#6BD35A", "#E2C067", "#6FA0D8", "#E0875A", "#A8B86A", "#5FB3AC",
                  "#B98BC0", "#E2B04A", "#8E9BAA", "#B89470", "#9FD08A", "#D8C08A"]
 
 
 SYM, LABEL = "$", "QQQ"      # set per market by set_market()
+SHOW_FIRST = 5               # long stock lists show this many, with a "Show all" button for the rest
 
 
 def money(x, cents=True):
@@ -242,6 +248,14 @@ def range_bar(r):
             f'<span aria-hidden="true">{money(hi, False)}</span><span class="off" aria-hidden="true">{note}</span></div>')
 
 
+def clipped(rows_html, n):
+    """A list of n rows that shows SHOW_FIRST of them, with a button for the rest."""
+    if n <= SHOW_FIRST:
+        return f'<div class="rows">{rows_html}</div>'
+    return (f'<div class="rows clip">{rows_html}</div><button class="more" type="button" hidden aria-expanded="false" '
+            f'data-less="Show the first {SHOW_FIRST} only">Show all {n}</button>')
+
+
 def bar_note(bars):
     """Says once, under a list, what the bars are."""
     return ('<p class="note">The bar under each stock runs from its 52-week low to its 52-week high, '
@@ -284,8 +298,8 @@ def account_chart(acct, w=380, h=200):
     return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="Your account against the same money in {LABEL}, '
             f'{money(a.iloc[-1])} vs {money(q.iloc[-1])}">{grid}{xl}'
             f'<polyline vector-effect="non-scaling-stroke" points="{pts(q)}" fill="none" stroke="{T4}" stroke-width="1.5" stroke-dasharray="4 3"/>'
-            f'<polyline vector-effect="non-scaling-stroke" points="{pts(a)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="2" stroke-linejoin="round"/>'
-            f'<circle cx="{xs[-1]:.1f}" cy="{y(a.iloc[-1]):.1f}" r="4.5" fill="{GOLD_TEXT}"/>{dots}</svg>')
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(a)}" fill="none" stroke="{YOU}" stroke-width="2" stroke-linejoin="round"/>'
+            f'<circle cx="{xs[-1]:.1f}" cy="{y(a.iloc[-1]):.1f}" r="4.5" fill="{YOU}"/>{dots}</svg>')
 
 
 def switch_chart(sw, w=380, h=200):
@@ -320,7 +334,7 @@ def switch_chart(sw, w=380, h=200):
     last_q, last_s = sw["qqq"].iloc[-1], sw["sma"].iloc[-1]
     return (f'<svg viewBox="0 0 {w} {h}" class="chart" role="img" aria-label="{LABEL} {last_q:.2f} against its '
             f'200-day average {last_s:.2f}; shaded where it closed below the line">{grid}{"".join(shade)}{"".join(months)}'
-            f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["sma"])}" fill="none" stroke="{GOLD}" stroke-width="1.5" stroke-dasharray="5 3"/>'
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["sma"])}" fill="none" stroke="{AMBER}" stroke-width="1.5" stroke-dasharray="5 3"/>'
             f'<polyline vector-effect="non-scaling-stroke" points="{pts(sw["qqq"])}" fill="none" stroke="{T1}" stroke-width="1.5" stroke-linejoin="round"/>'
             f'<circle cx="{xs[-1]:.1f}" cy="{y(last_q):.1f}" r="4" fill="{T1}"/></svg>')
 
@@ -343,7 +357,7 @@ def backtest_chart(bt, w=380, h=210):
             f'<text x="{pl}" y="{h - 8}" class="ax">{c[0][0][:4]}</text>'
             f'<text x="{w - pr}" y="{h - 8}" text-anchor="end" class="ax">{c[-1][0][:4]}</text>'
             f'<polyline vector-effect="non-scaling-stroke" points="{pts(2)}" fill="none" stroke="{T4}" stroke-width="1.25" stroke-linejoin="round"/>'
-            f'<polyline vector-effect="non-scaling-stroke" points="{pts(1)}" fill="none" stroke="{GOLD_TEXT}" stroke-width="1.5" stroke-linejoin="round"/></svg>')
+            f'<polyline vector-effect="non-scaling-stroke" points="{pts(1)}" fill="none" stroke="{YOU}" stroke-width="1.5" stroke-linejoin="round"/></svg>')
 
 
 def sector_bar(holdings, cash):
@@ -366,22 +380,99 @@ def sector_bar(holdings, cash):
 # --------------------------------------------------------------------------
 # Page shell: shared head, styles and navigation for every page
 # --------------------------------------------------------------------------
-def page_shell(title, rel, markets, current, header, main):
-    """rel = path back to the site root ('' for Home, '../' for a market page)."""
-    def link(m):
-        s = summary_state(m)
-        here = ' class="on" aria-current="page"' if m["slug"] == current else ""
-        return (f'<a href="{rel}{m["slug"]}/"{here}>{esc(m["name"])} '
-                f'<small class="{s[1]}">{s[0]}</small></a>')
-    side = "".join(link(m) for m in markets)
-    on = ' class="on" aria-current="page"'
-    chips = "" if current is None else "".join(
-        f'<a href="{rel}{m["slug"]}/"{on if m["slug"] == current else ""}>{esc(m["name"])}</a>' for m in markets)
+def standing_of(m):
+    """A market's place in the race against its index fund, for the menus and the board:
+    txt '+$662', cls 'pos'/'neg'/'flat' (or its status class before it trades), words for
+    screen readers, frac = the gap as a share of the money put in (sets the bar's length),
+    and state ('In cash', 'Invested', 'Starts Nov 30')."""
+    s = _SUMMARIES.get(m["slug"])
+    label, cls = summary_state(m)
+    state = "In cash" if label == "Cash" else label
+    if not m.get("active", True) or not s or "value" not in s:
+        return dict(txt="Soon", cls="wait", words=state, frac=None, state=state)
+    if "lead" in s:                       # set by the market's own page as it's built
+        diff = s["lead"]
+    else:
+        day = s.get("day")
+        diff = (day["value"] - day["bench_value"]) if day else (s["value"] - s["bench_value"])
+    fund, sym = m.get("bench_label", ""), m.get("symbol", "$")
+    frac = diff / s["capital"] if s.get("capital") else None
+    amt = f"{sym}{abs(diff):,.0f}"
+    if abs(diff) < 0.5:
+        return dict(txt="Level", cls="flat", words=f"level with {fund}", frac=0.0, state=state)
+    if diff > 0:
+        return dict(txt=f"+{amt}", cls="pos", words=f"{amt} ahead of {fund}", frac=frac, state=state)
+    return dict(txt=f"&minus;{amt}", cls="neg", words=f"{amt} behind {fund}", frac=frac, state=state)
+
+
+def lanes(markets, rel, current, sub=""):
+    """One lane per market: its name, how far it's ahead of (+) or behind (-) its index fund,
+    and a bar running right of the centre line when ahead, left when behind. The longest bar
+    is the market furthest from its fund, measured as a share of the money put in, so a C$
+    and a US$ account compare fairly. `sub` (section links) goes under the current market."""
+    st = [(m, standing_of(m)) for m in markets]
+    widest = max([abs(x["frac"]) for _, x in st if x["frac"]] + [1e-9])
+    out = []
+    for m, x in st:
+        here = m["slug"] == current
+        w = 0 if not x["frac"] else max(abs(x["frac"]) / widest * 100, 3)
+        bar = f'<i class="{x["cls"]}" style="--w:{w:.1f}%"></i>' if x["frac"] is not None else ""
+        out.append(f'<a class="lane{" on" if here else ""}" href="{rel}{m["slug"]}/"'
+                   f'{" aria-current=page" if here else ""} aria-label="{esc(m["name"])}, {x["words"]}">'
+                   f'<span class="ln"><span class="full">{esc(m["name"])}</span>'
+                   f'<span class="short">{esc(m.get("short", m["name"]))}</span></span>'
+                   f'<span class="st">{esc(x["state"])}</span>'
+                   f'<span class="amt fig {x["cls"]}">{x["txt"]}</span>'
+                   f'<span class="gauge" aria-hidden="true">{bar}</span></a>'
+                   f'{sub if here else ""}')
+    return "".join(out)
+
+
+def board(markets, rel=""):
+    """Home's race board: every market against its own index fund, tap a lane to open it."""
+    return (f'<nav class="board" aria-label="Each market against its index fund">'
+            f'<div class="bkey" aria-hidden="true"><span>Behind</span><span>Ahead</span></div>'
+            f'{lanes(markets, rel, None)}</nav>')
+
+
+def menus(rel, markets, current, sections=()):
+    """The side menu (computer) and the pinned strip (phone, market pages only), each between
+    markers so refresh_menus can swap in newer scores once every market has updated."""
+    links = "".join(f'<a href="#{i}" data-sec="{i}">{esc(lab)}</a>' for i, lab in sections)
+    sub = f'<div class="sub" aria-label="On this page">{links}</div>' if links else ""
+    here = ' aria-current="page"' if current is None else ""
+    side = (f'<a class="home{" on" if current is None else ""}" href="{rel or "./"}"{here}>All markets</a>'
+            f'{lanes(markets, rel, current, sub)}')
+    strip = ""
+    if current is not None:
+        n = len(markets) + 1
+        strip = (f'<nav class="strip" aria-label="Markets"><div class="wrap"><div class="lanes" style="--n:{n}">'
+                 f'<a class="lane all" href="{rel}"><span class="ln">All</span>'
+                 f'<span class="amt">{len(markets)} markets</span></a>{lanes(markets, rel, current)}</div>'
+                 f'{f"<div class=secs>{links}</div>" if links else ""}</div></nav>')
+    return f"<!--side-->{side}<!--/side-->", f"<!--bar-->{strip}<!--/bar-->"
+
+
+def refresh_menus(page, rel, markets, current):
+    """A built page with its menus rebuilt from the latest scores (its section links kept)."""
+    seen = {}
+    for i, lab in re.findall(r'<a href="#([\w-]+)" data-sec="\1">([^<]*)</a>', page):
+        seen.setdefault(i, html.unescape(lab))
+    side, bar = menus(rel, markets, current, list(seen.items()))
+    page = re.sub(r"<!--side-->.*?<!--/side-->", lambda _: side, page, count=1, flags=re.S)
+    return re.sub(r"<!--bar-->.*?<!--/bar-->", lambda _: bar, page, count=1, flags=re.S)
+
+
+def page_shell(title, rel, markets, current, header, main, sections=()):
+    """rel = path back to the site root ('' for Home, '../' for a market page).
+    sections = (id, label) pairs for the 'jump to' links on a market page."""
+    side, bar = menus(rel, markets, current, sections)
     return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<script>document.documentElement.className="js"</script>
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#1C1A14">
+<meta name="theme-color" content="{INK}">
 <meta name="apple-mobile-web-app-title" content="Pixel Invest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -390,87 +481,142 @@ def page_shell(title, rel, markets, current, header, main):
 <link rel="apple-touch-icon" href="{rel}apple-touch-icon.png">
 <link rel="manifest" href="{rel}site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Inter:wght@800&display=swap" rel="stylesheet">
 <style>
-/* Pixel Ag's dark palette in every theme. One column on phone and computer; on a computer
-   the markets also sit in a sidebar. Gold is always your account, grey dashed its index fund. */
-:root{{color-scheme:dark;--sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}}
+/* Pixel Invest. One typeface, Archivo: regular width for words, narrow and heavy for the
+   figures that answer "am I ahead?", wide for headings. Ultramarine is always your account,
+   dashed grey its index fund; green ahead, red behind, amber a heads-up for Friday.
+   The race board (each market a lane, its bar left or right of the centre line) is the one
+   loud thing; it is the Home hero, the side menu on a computer and the pinned strip on a phone. */
+:root{{color-scheme:dark;--sans:Archivo,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}}
 *{{box-sizing:border-box}}
 html{{background:{PAGE}}}
-body{{margin:0;background:{PAGE};color:{T1};font-family:var(--sans);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}}
-a{{color:{GOLD_TEXT}}}
-a:focus-visible,summary:focus-visible,button:focus-visible{{outline:2px solid {GOLD};outline-offset:3px;border-radius:6px}}
-.wrap{{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}}
-.pos{{color:{GREEN}}} .neg{{color:{RED}}} .amb{{color:{AMBER}}}
+body{{margin:0;background:{PAGE};color:{T1};font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}}
+a{{color:{YOU}}}
+a:focus-visible,summary:focus-visible,button:focus-visible{{outline:2px solid {YOU};outline-offset:2px;border-radius:4px}}
+.wrap{{max-width:680px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}}
+.pos{{color:{GREEN}}} .neg{{color:{RED}}} .amb{{color:{AMBER}}} .flat{{color:{T3}}} .wait{{color:{AMBER}}}
+.fig{{font-stretch:76%;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:0}}
 
-/* Header: the scoreboard */
-.hdr{{background:#1C1A14;border-bottom:4px solid {GOLD};padding-top:max(14px,env(safe-area-inset-top))}}
-.hin{{display:flex;flex-direction:column;padding-bottom:20px}}
-.back{{font-size:14px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;min-height:40px;align-self:flex-start;margin-bottom:4px}}
-.brandrow{{display:flex;align-items:center;gap:12px;margin-bottom:18px}}
-.brandrow svg{{width:40px;height:40px;flex:none}}
-.brand{{margin:0;font-size:17px;font-weight:700;letter-spacing:-.01em;color:{T1}}}
-.tagline{{margin:0;font-size:13px;color:{T4}}}
-.mtop{{display:flex;justify-content:space-between;align-items:center;gap:12px}}
-.mname{{margin:0;font-size:17px;font-weight:700;letter-spacing:-.01em}}
-.msub{{margin:2px 0 0;font-size:13px;color:{T4}}}
-.verdict{{margin:14px 0 0;font-size:32px;font-weight:800;letter-spacing:-.035em;line-height:1.08;font-variant-numeric:tabular-nums;text-wrap:balance}}
-.worth{{margin:6px 0 0;font-size:14px;color:{T3};font-variant-numeric:tabular-nums}}
-.state{{font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;white-space:nowrap}}
-.state.on,small.on{{color:#8BE07C}} .state.on{{background:rgba(107,211,90,.14)}}
-.state.off,small.off{{color:#FF9A90}} .state.off{{background:rgba(255,90,78,.16)}}
-.state.wait,small.wait{{color:{GOLD_TEXT}}} .state.wait{{background:rgba(226,192,103,.14)}}
-.asof{{margin:10px 0 0;font-size:12px;color:{T4};display:flex;align-items:baseline;gap:7px}}
-.dot{{width:7px;height:7px;border-radius:50%;background:{GREEN};flex:none;align-self:flex-start;margin-top:5px;animation:blink 2s ease-in-out infinite}}
-@keyframes blink{{50%{{opacity:.3}}}}
+/* Header: the scoreboard, closed by a heavy rule */
+.hdr{{background:{INK};border-bottom:4px solid {GOLD};padding-top:max(22px,env(safe-area-inset-top))}}
+.hin{{display:flex;flex-direction:column;padding-bottom:22px}}
+.brandrow{{display:flex;align-items:center;gap:12px;margin-bottom:24px;color:{T1};text-decoration:none}}
+.brandrow svg{{width:34px;height:34px;flex:none}}
+/* Market pages on a phone: the logo above the pinned strip, a link back to Home */
+.topbrand{{background:{INK};padding-top:max(16px,env(safe-area-inset-top))}}
+.topbrand .brandrow{{margin:0;padding-bottom:6px;align-self:flex-start;display:inline-flex}}
+.topbrand + .strip{{padding-top:0}}
+.topbrand ~ .hdr{{padding-top:20px}}
+.brand{{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;font-weight:800;letter-spacing:-.01em;color:#fff}}
+.tagline{{margin:1px 0 0;font-size:13px;color:{T4}}}
+.mtop{{display:flex;justify-content:space-between;align-items:baseline;gap:12px}}
+.mname{{margin:0;font-size:19px;font-weight:700;font-stretch:115%}}
+.msub{{margin:2px 0 0;font-size:14px;color:{T4}}}
+.verdict{{margin:12px 0 0;font-size:46px;font-weight:800;font-stretch:70%;line-height:.96;font-variant-numeric:tabular-nums;text-wrap:balance}}
+.worth{{margin:10px 0 0;font-size:15px;color:{T3};font-variant-numeric:tabular-nums}}
+.state{{font-size:12px;font-weight:600;padding:3px 8px;border-radius:4px;white-space:nowrap;background:{PANEL2};color:{T3}}}
+.state.on{{color:{GREEN};background:rgba(107,211,90,.14)}} .state.off{{color:#FF9A90;background:rgba(255,90,78,.16)}} .state.wait{{color:{AMBER};background:rgba(226,176,74,.14)}}
+.asof{{margin:12px 0 0;font-size:13px;color:{T4};display:flex;align-items:baseline;gap:7px}}
+.dot{{width:7px;height:7px;border-radius:50%;background:{GREEN};flex:none;align-self:flex-start;margin-top:6px;animation:blink 2s ease-in-out infinite}}
+@keyframes blink{{50%{{opacity:.25}}}}
 @media(prefers-reduced-motion:reduce){{.dot{{animation:none}}}}
 .fxnote{{margin:4px 0 0;font-size:12px;color:{T5}}}
 
 /* You against the index fund */
-table.vs{{width:100%;border-collapse:collapse;margin-top:16px;font-variant-numeric:tabular-nums}}
-.vs th,.vs td{{padding:8px 0;border-top:1px solid {LINE2};white-space:nowrap;text-align:right;font-size:15px}}
-.vs thead th{{border-top:0;padding-top:0;font-size:12px;font-weight:600}}
+table.vs{{width:100%;border-collapse:collapse;margin-top:18px;font-variant-numeric:tabular-nums}}
+.vs th,.vs td{{padding:9px 0;border-top:1px solid {LINE};white-space:nowrap;text-align:right;font-size:15px}}
+.vs thead th{{border-top:0;padding:0 0 6px;font-size:12px;font-weight:600}}
 .vs tbody th{{text-align:left;font-weight:500;color:{T3};font-size:14px}}
 .vs td b{{font-weight:700}} .vs td small{{font-size:12px;color:{T4};margin-left:6px}}
 .vs td:last-child,.vs thead th:last-child{{padding-left:18px;width:1%}} .vs td:last-child{{color:{T3}}}
 .you,.fund{{white-space:nowrap}}
-.you{{color:{GOLD_TEXT}}} .fund{{color:{T4}}}
+.you{{color:{YOU}}} .fund{{color:{T4}}}
 .you::before,.fund::before{{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px}}
-.you::before{{background:{GOLD_TEXT}}}
-.fund::before{{background:repeating-linear-gradient(90deg,{T4} 0 4px,transparent 4px 7px)}} .fund.solid::before{{background:{T4}}}
+.you::before{{background:{YOU}}}
+.fund::before{{background:repeating-linear-gradient(90deg,{FUND} 0 4px,transparent 4px 7px)}} .fund.solid::before{{background:{FUND}}}
 .sw{{color:{T3};white-space:nowrap}} .sw::before{{content:"";display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px;background:var(--c)}}
 .sw.dash::before{{background:repeating-linear-gradient(90deg,var(--c) 0 4px,transparent 4px 7px)}}
 
-/* Market buttons (phone) and sidebar (computer) */
+/* The race: a lane per market, a bar from the centre line (right = ahead of its fund) */
+.lane{{text-decoration:none;color:{T3}}}
+.lane .short,.lane .st{{display:none}}
+.gauge{{position:relative;display:block}}
+.gauge::before{{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:{T1};opacity:.5}}
+.gauge i{{position:absolute;top:0;bottom:0;width:calc(var(--w) / 2)}}
+.gauge i.pos{{left:50%;background:{GREEN};border-radius:0 2px 2px 0}}
+.gauge i.neg{{right:50%;background:{RED};border-radius:2px 0 0 2px}}
+.gauge i.flat{{left:50%;width:0}}
+
+/* Home: the board */
+.board{{margin-top:22px}}
+.bkey{{display:grid;grid-template-columns:7.4rem minmax(0,1fr) 4.8rem;column-gap:12px;font-size:12px;color:{T5};padding-bottom:6px}}
+.bkey span{{grid-column:2;grid-row:1;justify-self:end;padding-right:calc(50% + 8px)}}
+.bkey span + span{{justify-self:start;padding:0 0 0 calc(50% + 8px)}}
+.board .lane{{display:grid;grid-template-columns:7.4rem minmax(0,1fr) 4.8rem;grid-template-rows:auto auto;column-gap:12px;align-items:center;min-height:62px;padding:9px 0;border-top:1px solid {LINE};color:{T1}}}
+.board .lane:last-child{{border-bottom:1px solid {LINE}}}
+.board .ln{{grid-column:1;grid-row:1;font-size:15px;font-weight:650;align-self:end}}
+.board .st{{display:block;grid-column:1;grid-row:2;font-size:12px;color:{T4};align-self:start}}
+.board .gauge{{grid-column:2;grid-row:1/3;align-self:stretch;margin-block:-9px}}
+.board .gauge i{{top:50%;bottom:auto;height:20px;margin-top:-10px}}
+.board .amt{{grid-column:3;grid-row:1/3;text-align:right;font-size:24px;line-height:1}}
+.board .lane:hover .ln{{text-decoration:underline;text-underline-offset:3px}}
+
+/* Phone: the pinned strip on a market page, with links to the page's sections */
 .side{{display:none}}
-.switch{{display:flex;gap:6px;overflow-x:auto;background:{PANEL2};border-bottom:1px solid {LINE};padding-block:10px;scrollbar-width:none}}
-.switch a{{flex:none;font-size:13px;font-weight:700;text-decoration:none;color:{T3};border:1px solid {LINE};border-radius:999px;padding:8px 14px;min-height:36px;display:inline-flex;align-items:center}}
-.switch a.on{{background:{GOLD};color:#1C1A14;border-color:{GOLD}}}
+.strip{{position:sticky;top:0;z-index:20;background:{INK};border-bottom:1px solid {LINE};padding-top:env(safe-area-inset-top)}}
+.strip .lanes{{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr))}}
+.strip .lane{{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:54px;padding:8px 2px 9px;color:{T4}}}
+.strip .ln .full{{display:none}} .strip .ln .short{{display:inline}}
+.strip .ln{{font-size:13px;font-weight:600}}
+.strip .amt{{font-size:14px;line-height:1.2;white-space:nowrap}}
+.strip .all .amt{{font-size:12px;font-weight:500;color:{T5};line-height:1.4}}
+.strip .gauge{{width:72%;height:5px;margin-top:4px}}
+.strip .gauge::before{{top:-2px;bottom:-2px}}
+.strip .lane.on{{color:{T1}}}
+.strip .lane.on::after{{content:"";position:absolute;left:12%;right:12%;bottom:0;height:3px;background:{T1};border-radius:2px 2px 0 0}}
+.secs{{display:flex;gap:20px;overflow-x:auto;scrollbar-width:none;border-top:1px solid {LINE2}}}
+.secs::-webkit-scrollbar{{display:none}}
+.secs a{{flex:none;font-size:13px;font-weight:500;color:{T4};text-decoration:none;padding:9px 0 7px;border-bottom:2px solid transparent}}
+.secs a.on{{color:{T1};border-bottom-color:{T1}}}
+main [id]{{scroll-margin-top:104px}}
+
+/* Computer: the board becomes the side menu */
 @media(min-width:900px){{
- .app{{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100vh}}
- .side{{display:flex;flex-direction:column;gap:4px;background:#1C1A14;border-right:1px solid {LINE};padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto}}
- .side .brandrow{{padding:0 6px 14px;border-bottom:4px solid {GOLD};margin-bottom:10px}}
- .side a{{display:flex;justify-content:space-between;align-items:center;gap:8px;text-decoration:none;color:{T3};font-size:14px;font-weight:600;padding:10px;border-radius:10px;min-height:44px}}
- .side a small{{font-size:12px;font-weight:600}}
- .side a.on{{background:{PANEL};color:{T1};box-shadow:inset 3px 0 0 {GOLD}}}
- .side a:hover{{background:{PANEL}}}
- .switch,.hdr .back,.hdr .brandrow{{display:none}}
- .hdr{{padding-top:28px}}
+ .app{{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}}
+ .side{{display:flex;flex-direction:column;background:{INK};border-right:1px solid {LINE};padding:22px 14px;position:sticky;top:0;height:100vh;overflow-y:auto}}
+ .side .brandrow{{margin:0 6px 14px;padding-bottom:16px;border-bottom:4px solid {GOLD}}}
+ .side .home{{font-size:14px;font-weight:600;color:{T3};text-decoration:none;padding:9px 10px;border-radius:6px}}
+ .side .home.on{{color:{T1};background:{PANEL}}}
+ .side .home:hover,.side .lane:hover{{background:{PANEL}}}
+ .side .lane{{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;row-gap:8px;padding:11px 10px 12px;border-radius:6px;margin-top:2px}}
+ .side .ln{{font-size:14px;font-weight:600}}
+ .side .amt{{font-size:17px}}
+ .side .gauge{{grid-column:1/-1;height:6px}}
+ .side .gauge::before{{top:-3px;bottom:-3px}}
+ .side .lane.on{{background:{PANEL};color:{T1};box-shadow:inset 3px 0 0 {T1}}}
+ .side .sub{{display:flex;flex-direction:column;margin:4px 0 10px 13px;border-left:1px solid {LINE}}}
+ .side .sub a{{font-size:13px;color:{T4};text-decoration:none;padding:6px 12px;margin-left:-1px;border-left:2px solid transparent}}
+ .side .sub a:hover{{color:{T1}}}
+ .side .sub a.on{{color:{T1};font-weight:600;border-left-color:{T1}}}
+ .strip,.hdr .brandrow,.topbrand{{display:none}}
+ .hdr{{padding-top:34px}}
+ main [id]{{scroll-margin-top:24px}}
 }}
 
 /* Page body */
-main.wrap{{padding-top:24px;padding-bottom:48px;display:flex;flex-direction:column;gap:36px}}
+main.wrap{{padding-top:28px;padding-bottom:56px;display:flex;flex-direction:column;gap:40px}}
 .sec{{display:flex;flex-direction:column;gap:12px}}
-h2{{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em;text-wrap:balance}}
-h3{{margin:8px 0 0;font-size:15px;font-weight:700}}
-.lead{{margin:0;font-size:14px;color:{T3}}}
-.heads{{display:flex;flex-direction:column;gap:3px;background:rgba(226,176,74,.10);border:1px solid rgba(226,176,74,.32);border-radius:12px;padding:12px 14px;font-size:14px;color:{T1}}}
+h2{{margin:0;font-size:18px;font-weight:700;font-stretch:115%;text-wrap:balance}}
+h3{{margin:10px 0 0;font-size:15px;font-weight:650}}
+.lead{{margin:0;font-size:15px;color:{T3};max-width:62ch}}
+.heads{{display:flex;flex-direction:column;gap:3px;background:rgba(226,176,74,.10);border:1px solid rgba(226,176,74,.32);border-radius:8px;padding:12px 14px;font-size:14px;color:{T1}}}
 .heads b{{color:{AMBER};font-size:15px}}
 .key{{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px}}
 .chart{{width:100%;height:auto;display:block;shape-rendering:geometricPrecision}} .chart .ax{{fill:{T4};font-size:11px;font-family:var(--sans)}}
-.chart .hot{{fill:transparent;cursor:crosshair}} .chart .hot:hover{{fill:{GOLD_TEXT};fill-opacity:.3}}
+.chart .hot{{fill:transparent;cursor:crosshair}} .chart .hot:hover{{fill:{YOU};fill-opacity:.25}}
 .empty{{margin:0;color:{T3};font-size:14px}}
-.note{{font-size:12px;color:{T5};line-height:1.6;margin:0}}
+.note{{font-size:12px;color:{T5};line-height:1.6;margin:0;max-width:72ch}}
 
 /* Stock rows */
 .rows{{display:flex;flex-direction:column}}
@@ -481,67 +627,90 @@ h3{{margin:8px 0 0;font-size:15px;font-weight:700}}
 .row .r{{text-align:right;font-size:13px;color:{T4};white-space:nowrap;font-variant-numeric:tabular-nums}}
 .row .st{{font-size:13px;color:{T3}}} .st.ok{{color:{GREEN}}} .st.keep{{color:{AMBER}}} .st.sell{{color:{RED}}}
 .yr{{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:7px;font-size:12px;color:{T4};white-space:nowrap;font-variant-numeric:tabular-nums}}
-.yr .track{{flex:1;min-width:60px;position:relative;height:4px;border-radius:2px;background:rgba(255,255,255,.16)}}
-.yr .track i{{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:{GOLD_TEXT};box-shadow:0 0 0 2px {PAGE}}}
+.yr .track{{flex:1;min-width:60px;position:relative;height:4px;border-radius:2px;background:{PANEL3}}}
+.yr .track i{{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:{T1};box-shadow:0 0 0 2px {PAGE}}}
 .yr > span:first-child{{min-width:3.4em}} .yr > span:nth-child(3){{min-width:3.4em;text-align:right}}
 .yr .off{{min-width:7.6em;text-align:right;color:{T3}}}
-.chip{{font-weight:700;font-size:13px;padding:3px 9px;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums}}
-.chip.pos{{background:rgba(107,211,90,.14);color:{GREEN}}} .chip.neg{{background:rgba(255,90,78,.14);color:{RED}}} .chip.flat{{background:{PANEL3};color:{T3}}}
-.tag{{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;vertical-align:1px}}
+.chip{{font-size:16px;font-stretch:76%;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}}
+.chip.pos{{color:{GREEN}}} .chip.neg{{color:{RED}}} .chip.flat{{color:{T3}}}
+.tag{{font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;vertical-align:1px}}
 .tag.buy{{background:rgba(107,211,90,.14);color:{GREEN}}} .tag.sell{{background:rgba(255,90,78,.14);color:{RED}}}
-.stack{{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px}}
-.legend{{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:{T3}}} .legend i{{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}}
-.rules{{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14px}} .rules b{{display:block;font-size:13px;color:{GOLD_TEXT}}}
+.js .rows.clip:not(.open) .row:nth-child(n+{SHOW_FIRST + 1}){{display:none}}
+.js .rows.clip:not(.open) .row:nth-child({SHOW_FIRST}){{border-bottom:1px solid {LINE2}}}
+button.more{{align-self:flex-start;font:inherit;font-size:14px;font-weight:600;color:{T1};background:transparent;border:1.5px solid {T1};border-radius:6px;padding:8px 16px;min-height:40px;cursor:pointer}}
+button.more:hover{{background:{PANEL}}}
+.stack{{display:flex;height:14px;border-radius:3px;overflow:hidden;gap:2px}}
+.legend{{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:{T3}}} .legend i{{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}}
+.rules{{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:15px}} .rules b{{display:block;font-size:14px;font-weight:700;font-stretch:115%;color:{T1}}}
 
 /* Folded extras */
 .folds{{display:flex;flex-direction:column;border-top:1px solid {LINE}}}
 details.fold{{border-bottom:1px solid {LINE}}}
-details.fold summary{{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:54px;font-weight:600;font-size:16px}}
+details.fold summary{{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;font-weight:650;font-size:16px}}
 details.fold summary::-webkit-details-marker{{display:none}}
-details.fold summary::after{{content:"+";color:{GOLD_TEXT};font-size:22px;font-weight:400;line-height:1}}
+details.fold summary::after{{content:"+";color:{T1};font-size:22px;font-weight:400;line-height:1}}
 details.fold[open] summary::after{{content:"\\2212"}}
-.fold .in{{display:flex;flex-direction:column;gap:12px;padding-bottom:20px}}
+.fold .in{{display:flex;flex-direction:column;gap:12px;padding-bottom:22px}}
 .stats{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
-.stat{{background:{PANEL};border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:2px}}
-.stat .k{{font-size:12px;color:{T4}}} .stat .v{{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}} .stat small{{color:{T4};font-weight:500}}
+.stat{{background:{PANEL};border:1px solid {LINE2};border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}}
+.stat .k{{font-size:12px;color:{T4}}} .stat .v{{font-size:20px;font-stretch:76%;font-weight:800;font-variant-numeric:tabular-nums}} .stat small{{color:{T4};font-weight:500;font-stretch:100%;font-size:12px}}
 .warn{{margin:0;font-size:13px;line-height:1.5;color:{T3}}}
 .trades{{overflow-x:auto}}
 .trades table{{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}}
 .trades th{{text-align:left;color:{T4};font-weight:600;font-size:12px;padding:8px;border-bottom:1px solid {LINE}}}
 .trades td{{padding:9px 8px;border-bottom:1px solid {LINE2};white-space:nowrap;font-variant-numeric:tabular-nums}}
+.trades .chip{{font-size:14px}}
 .bt-read,.wk-read{{display:flex;flex-direction:column;gap:2px}}
 .bt-read{{min-height:56px}}
-.bt-read .rv,.wk-read .rv{{font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}}
+.bt-read .rv,.wk-read .rv{{font-size:28px;font-stretch:76%;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.05}}
 .bt-read .rs,.wk-read .rs{{font-size:13px;color:{T3};font-variant-numeric:tabular-nums}}
-.wk-read{{min-height:46px}} .wk-read .rv{{font-size:20px}}
-.pill{{font-weight:700;font-size:12px;padding:2px 8px;border-radius:7px;margin-left:6px;white-space:nowrap}}
+.wk-read{{min-height:46px}} .wk-read .rv{{font-size:22px}}
+.pill{{font-weight:700;font-size:12px;padding:2px 7px;border-radius:4px;margin-left:6px;white-space:nowrap}}
 .pill.pos{{background:rgba(107,211,90,.14);color:{GREEN}}} .pill.neg{{background:rgba(255,90,78,.14);color:{RED}}}
 .bt-plot,.wk-plot{{touch-action:pan-y;user-select:none;-webkit-user-select:none}}
 .bt-plot svg,.wk-plot svg{{display:block;width:100%;height:auto;overflow:visible}}
 .bt-plot text,.wk-plot text{{font-family:var(--sans);font-variant-numeric:tabular-nums}}
 .bt-chips{{display:flex;gap:6px}}
-.bt-chips button{{font:inherit;font-size:13px;font-weight:700;color:{T3};background:transparent;border:1px solid {LINE};border-radius:999px;padding:7px 14px;min-height:36px;cursor:pointer}}
-.bt-chips button[aria-pressed="true"]{{background:{GOLD};color:#1C1A14;border-color:{GOLD}}}
+.bt-chips button{{font:inherit;font-size:13px;font-weight:600;color:{T3};background:transparent;border:1px solid {LINE};border-radius:6px;padding:7px 14px;min-height:36px;cursor:pointer}}
+.bt-chips button[aria-pressed="true"]{{background:{T1};color:{PAGE};border-color:{T1}}}
 
-/* Home */
-.mcards{{display:flex;flex-direction:column;gap:12px}}
-.mcard{{display:block;text-decoration:none;color:inherit;background:{PANEL};border:1px solid {LINE};border-radius:16px;padding:16px}}
-.mcard:hover{{border-color:rgba(226,192,103,.4)}}
-.mcard .verdict{{font-size:24px;margin-top:12px}}
-.mcard .worth{{margin-top:4px}}
-.mcard table.vs{{margin-top:12px}}
-.mcard .heads{{margin-top:14px}}
-.mcard .last{{margin:12px 0 0;font-size:13px;color:{T4}}}
+/* Home: one block per market under the board */
+.mcards{{display:flex;flex-direction:column}}
+.mcard{{display:block;text-decoration:none;color:inherit;padding:26px 0 28px;border-top:1px solid {LINE}}}
+.mcard:first-child{{border-top:0;padding-top:4px}}
+.mcard .verdict{{font-size:32px;margin-top:10px}}
+.mcard .worth{{margin-top:6px}}
+.mcard table.vs{{margin-top:14px}}
+.mcard .heads{{margin-top:16px}}
+.mcard .last{{margin:12px 0 0;font-size:14px;color:{T4}}}
+.mcard .go{{display:inline-block;margin-top:12px;font-size:14px;font-weight:600;color:{YOU}}}
+.mcard:hover .go{{text-decoration:underline;text-underline-offset:3px}}
 </style></head><body><div class="app">
-<nav class="side" aria-label="Markets"><div class="brandrow">{logo.svg()}<div class="brand">Pixel Invest</div></div>
-<a href="{rel or './'}"{' class="on" aria-current="page"' if current is None else ""}>All markets</a>{side}</nav>
+<nav class="side" aria-label="Markets"><a class="brandrow" href="{rel or './'}">{logo.svg()}<span class="brand">Pixel Invest</span></a>
+{side}</nav>
 <div class="content">
+{"" if current is None else f'<div class="topbrand"><div class="wrap"><a class="brandrow" href="{rel}">{logo.svg()}<span class="brand">Pixel Invest</span></a></div></div>'}
+{bar}
 {header}
-{f'<nav class="switch wrap" aria-label="Markets">{chips}</nav>' if chips else ""}
 {main}
 </div></div>
 <script>(function(){{var t=Date.now();document.addEventListener('visibilitychange',function(){{
-if(document.visibilityState==='visible'&&Date.now()-t>5*60*1000)location.reload();}});}})();</script>
+if(document.visibilityState==='visible'&&Date.now()-t>5*60*1000)location.reload();}});}})();
+/* Light up the section you're reading, in the side menu and the phone strip */
+(function(){{var links=[].slice.call(document.querySelectorAll('[data-sec]'));if(!links.length)return;
+var ids=[];links.forEach(function(a){{var i=a.getAttribute('data-sec');if(ids.indexOf(i)<0)ids.push(i);}});
+var secs=ids.map(function(i){{return document.getElementById(i);}}).filter(Boolean),cur=null,busy=false,want=null;
+links.forEach(function(a){{a.addEventListener('click',function(){{want=a.getAttribute('data-sec');}});}});
+['wheel','touchstart','keydown'].forEach(function(e){{window.addEventListener(e,function(){{want=null;}},{{passive:true}});}});
+function pick(){{busy=false;var bar=document.querySelector('.strip'),off=(bar&&bar.offsetHeight?bar.offsetHeight:0)+40,id=null;
+var done=window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4;
+secs.forEach(function(s){{if(s.getBoundingClientRect().top<=off)id=s.id;}});if(done&&id)id=secs[secs.length-1].id;if(want)id=want;
+if(id===cur)return;cur=id;links.forEach(function(a){{var hit=a.getAttribute('data-sec')===id;a.classList.toggle('on',hit);
+if(hit&&a.parentNode.classList.contains('secs')){{var r=a.parentNode;r.scrollLeft=Math.max(0,a.offsetLeft-r.offsetWidth/2+a.offsetWidth/2);}}}});}}
+window.addEventListener('scroll',function(){{if(!busy){{busy=true;requestAnimationFrame(pick);}}}},{{passive:true}});pick();}})();
+/* "Show all" buttons under long lists */
+[].forEach.call(document.querySelectorAll('button.more'),function(b){{var list=b.previousElementSibling,a=b.textContent,c=b.getAttribute('data-less');
+b.hidden=false;b.addEventListener('click',function(){{var open=list.classList.toggle('open');b.textContent=open?c:a;b.setAttribute('aria-expanded',open);}});}});</script>
 </body></html>"""
 
 
@@ -643,8 +812,8 @@ function draw(){
   el('path',{d:path(2),fill:'none',stroke:GREY,'stroke-width':1.25,'stroke-opacity':.85,'stroke-linejoin':'round'},svg);
   el('path',{d:path(1),fill:'none',stroke:GOLD,'stroke-width':1.75,'stroke-linejoin':'round'},svg);
   var v=el('line',{y1:pt,y2:h-pb,stroke:'rgba(244,240,230,.35)',visibility:'hidden'},svg),
-      d1=el('circle',{r:4.5,fill:GOLD,stroke:'#1B1812','stroke-width':2,visibility:'hidden'},svg),
-      d2=el('circle',{r:3.5,fill:GREY,stroke:'#1B1812','stroke-width':2,visibility:'hidden'},svg);
+      d1=el('circle',{r:4.5,fill:GOLD,stroke:'#14120D','stroke-width':2,visibility:'hidden'},svg),
+      d2=el('circle',{r:3.5,fill:GREY,stroke:'#14120D','stroke-width':2,visibility:'hidden'},svg);
   function at(e){var b=svg.getBoundingClientRect(),px=(e.clientX-b.left)/b.width*w;return Math.max(0,Math.min(n-1,Math.round((px-pl)/(w-pl-pr)*(n-1))));}
   function show(i){var r=data[i];[v,d1,d2].forEach(function(e){e.setAttribute('visibility','visible');});
     v.setAttribute('x1',x(i));v.setAttribute('x2',x(i));d1.setAttribute('cx',x(i));d1.setAttribute('cy',y(r[1]));d2.setAttribute('cx',x(i));d2.setAttribute('cy',y(r[2]));read(r);}
@@ -663,7 +832,7 @@ draw();
 
 
 def rules_block(cfg):
-    return f'''<section class="sec"><h2>The rules</h2><ul class="rules">
+    return f'''<section class="sec" id="rules"><h2>The rules</h2><ul class="rules">
 <li><b>Every Friday</b>Rank the {esc(cfg["name"])} by 3-month gain.</li>
 <li><b>Buy</b>Own the top {cfg["top_n"]}, with equal money in each new stock.</li>
 <li><b>Sell</b>When a stock falls below rank {cfg["exit_rank"]}.</li>
@@ -679,7 +848,6 @@ def market_header(cfg, state, body):
     """A market page's header: back link, name and badge, then `body` (the standing and table)."""
     label, cls = state
     return f'''<header class="hdr"><div class="wrap hin">
-<a class="back" href="../">&#8249; All markets</a>
 <div class="mtop"><h1 class="mname">{esc(cfg["name"])}</h1><span class="state {cls}">{label}</span></div>
 <p class="msub">{esc(cfg["about"])}, up against {LABEL}</p>
 {body}
@@ -769,7 +937,7 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
         srows = "".join(row(esc(t["ticker"]), esc(name(t["ticker"])), chip(t["gain_pct"]),
                             f'<span class="st">Sold at {money(t["price"])}</span>')
                         for t in sells.to_dict("records"))
-        parts.append(f'<h3>Sold at the close on {when}</h3><div class="rows">{srows}</div>')
+        parts.append(f'<h3>Sold at the close on {when}</h3>{clipped(srows, len(sells))}')
     if holdings:
         parts.append(f'<h3>Where your money is</h3>{sector_bar(holdings, status["cash"])}')
     else:
@@ -778,11 +946,12 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
                             '<span class="st">3-month gain</span>', extra=bar(t)) for t in nxt)
         parts.append(f'<h3>Next buys if the switch turns back on</h3>'
                      f'<p class="lead">If {LABEL} closes above {money(status["sma"])} on a Friday, '
-                     f'today\'s top {top_n} by 3-month gain are bought at that close.</p><div class="rows">{nrows}</div>'
+                     f'today\'s top {top_n} by 3-month gain are bought at that close.</p>'
+                     f'{clipped(nrows, len(nxt))}'
                      f'{bar_note(bars)}')
     if record:
         parts.append(f'<p class="lead">{". ".join(record)}.</p>')
-    stocks_html = f'<section class="sec"><h2>{title}</h2><p class="lead">{lead}</p>{"".join(parts)}</section>'
+    stocks_html = f'<section class="sec" id="stocks"><h2>{title}</h2><p class="lead">{lead}</p>{"".join(parts)}</section>'
 
     # The safety switch chart
     b = cfg["benchmark"]
@@ -812,18 +981,18 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
     latest_sw = (day_info or {}).get("switch")         # the switch at the latest prices
     heads = switch_heads_up({"risk_on": latest_sw["on"] if latest_sw else on, "held": len(holdings)},
                             latest_sw["gap"] if latest_sw else gap, week_closed(day_info))
-    week_html = (f'<section class="sec"><h2>This week</h2>{week_chart(curve)}</section>' if curve and len(curve) > 1 else "")
+    week_html = (f'<section class="sec" id="week"><h2>This week</h2>{week_chart(curve)}</section>' if curve and len(curve) > 1 else "")
     main = f'''<main class="wrap">
 {heads}
 {week_html}
 {stocks_html}
-<section class="sec"><h2>Since you started</h2><p class="lead">Started {short_date(start)} with {money(start_val, False)}. Tap a point for that day.</p>
+<section class="sec" id="since"><h2>Since you started</h2><p class="lead">Started {short_date(start)} with {money(start_val, False)}. Tap a point for that day.</p>
 {key()}{acct_html}</section>
 {rules_block(cfg)}
-<div class="folds">
+<div class="folds" id="more">
 <details class="fold"><summary>Safety switch chart</summary><div class="in">
 <p class="lead">{switch_lead} Today {LABEL} is {status["qqq"]:.2f} and its {cfg["sma_days"]}-day average is {status["sma"]:.2f}.</p>
-<div class="key"><span class="sw" style="--c:{T1}">{LABEL}</span><span class="sw dash" style="--c:{GOLD}">{cfg["sma_days"]}-day average</span></div>
+<div class="key"><span class="sw" style="--c:{T1}">{LABEL}</span><span class="sw dash" style="--c:{AMBER}">{cfg["sma_days"]}-day average</span></div>
 {switch_chart(sw)}</div></details>
 {backtest_block(cfg, bt, open_=False)}
 <details class="fold"><summary>Every trade ({len(trades)})</summary><div class="in"><div class="trades"><table>
@@ -831,8 +1000,11 @@ def build_dashboard(cfg, acct, trades, holdings, status, watch, last_rebal, pric
 </div>
 {updated_note(cfg)}
 </main>'''
-    _SUMMARIES[cfg["slug"]] = {**(_SUMMARIES.get(cfg["slug"]) or {}), "risk_on": on, "held": len(holdings)}
-    page = page_shell(f"{esc(cfg['name'])} &middot; Pixel Invest", "../", markets, cfg["slug"], header, main)
+    _SUMMARIES[cfg["slug"]] = {**(_SUMMARIES.get(cfg["slug"]) or {}), "risk_on": on, "held": len(holdings),
+                               "value": val, "bench_value": bench, "lead": val - bench}
+    sections = [("week", "This week")] if week_html else []
+    sections += [("stocks", "Stocks"), ("since", "Since start"), ("rules", "Rules"), ("more", "More")]
+    page = page_shell(f"{esc(cfg['name'])} &middot; Pixel Invest", "../", markets, cfg["slug"], header, main, sections)
     return page, now_val, qqq_val, week
 
 
@@ -870,7 +1042,7 @@ def signed_usd(x):
     return "$0.00" if abs(x) < 0.005 else f'{"+" if x > 0 else "&minus;"}${abs(x):,.2f}'
 
 
-def home_total(markets, fx=None):
+def home_total(markets, fx=None, race=""):
     """All the accounts added up in US$ (C$ converted at `fx`, today's rate): how far ahead of
     the index funds, what they're worth, and today, this week and since each started."""
     rate = {"US$": 1.0}
@@ -915,7 +1087,7 @@ def home_total(markets, fx=None):
     return (f'<section aria-label="All your accounts together">'
             f'{standing(pl - bpl, "the index funds", usd)}'
             f'<p class="worth">Your {len(rows)} accounts are worth {usd(val)}, from {usd(cap)} put in</p>'
-            f'{vs_table(table, "Index funds")}{as_of(latest, every=True)}'
+            f'{race}{vs_table(table, "Index funds")}{as_of(latest, every=True)}'
             f'{fxnote}</section>')
 
 
@@ -944,14 +1116,16 @@ def build_home(markets, summary_path, fx=None):
                     f'<p class="worth">Worth {money(val, False)}</p>'
                     f'{vs_table(spans(day, s["capital"], val, bench, pd.Timestamp(s["start"]), signed_money), LABEL)}'
                     f'{heads_for(s, day)}'
-                    f'<p class="last">Last trades: {esc(s["week"])}</p>')
+                    f'<p class="last">Last trades: {esc(s["week"])}</p>'
+                    f'<span class="go">Open {esc(m["name"])}</span>')
         else:
             msg = (f"First trades at the close on {pd.Timestamp(m['start_date']):%a %b} {pd.Timestamp(m['start_date']).day}"
                    if m.get("active", True) and m.get("start_date") else "Starts once its size is picked from the test")
             body = (f'<p class="verdict">Not trading yet</p><p class="worth">{msg}</p>'
                     f'<p class="last">See how the rules tested.</p>')
         cards.append(f'<a class="mcard" href="{m["slug"]}/">{top}{body}</a>')
-    total = home_total(markets, fx)
+    race = board(markets)
+    total = home_total(markets, fx, race) or race
     header = f'''<header class="hdr"><div class="wrap hin">
 <div class="brandrow">{logo.svg()}<div><h1 class="brand">Pixel Invest</h1>
 <p class="tagline">Pretend money, up against the index funds</p></div></div>

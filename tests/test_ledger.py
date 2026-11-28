@@ -384,3 +384,34 @@ def test_heads_up_after_fridays_close_says_what_the_weekend_does():
     assert "Selling everything" in dashboard.heads_for(s, fri(live=True, as_of="2026-11-20T16:00",
                                                             switch={"on": False, "gap": -0.3}))
     assert dashboard.heads_for(s, None) == ""
+
+
+def test_race_lanes_show_each_market_against_its_fund():
+    import dashboard
+    ms = [{"slug": "x-a", "name": "A", "short": "A", "bench_label": "QQQ", "symbol": "$", "active": True},
+          {"slug": "x-b", "name": "B", "short": "B", "bench_label": "XIU", "symbol": "C$", "active": True}]
+    dashboard._SUMMARIES["x-a"] = {"risk_on": False, "held": 0, "capital": 10_000, "value": 9_800, "bench_value": 9_300}
+    dashboard._SUMMARIES["x-b"] = {"risk_on": True, "held": 4, "capital": 10_000, "value": 9_000, "bench_value": 9_250,
+                                   "day": {"value": 9_100, "bench_value": 9_350}}
+    a, b = dashboard.standing_of(ms[0]), dashboard.standing_of(ms[1])
+    assert (a["txt"], a["cls"], a["state"]) == ("+$500", "pos", "In cash")
+    assert (b["txt"], b["cls"], b["state"]) == ("&minus;C$250", "neg", "Invested")    # latest prices win
+    html_ = dashboard.lanes(ms, "../", "x-a")
+    assert 'class="lane on" href="../x-a/" aria-current=page' in html_
+    assert '<i class="pos" style="--w:100.0%">' in html_ and '<i class="neg" style="--w:50.0%">' in html_
+    for k in ("x-a", "x-b"):
+        del dashboard._SUMMARIES[k]
+
+
+def test_refresh_menus_brings_in_later_scores_and_keeps_section_links():
+    import dashboard
+    ms = [{"slug": "x-a", "name": "A", "bench_label": "QQQ", "symbol": "$", "active": True}]
+    dashboard._SUMMARIES["x-a"] = {"risk_on": False, "held": 0, "capital": 10_000, "value": 10_100, "bench_value": 10_000}
+    page = dashboard.page_shell("t", "../", ms, "x-a", "<header></header>", "<main></main>",
+                                [("week", "This week"), ("rules", "Rules")])
+    assert "+$100" in page
+    dashboard._SUMMARIES["x-a"]["value"] = 9_900
+    new = dashboard.refresh_menus(page, "../", ms, "x-a")
+    assert "+$100" not in new and "&minus;$100" in new
+    assert new.count('data-sec="week"') == page.count('data-sec="week"') == 2      # side menu + phone strip
+    del dashboard._SUMMARIES["x-a"]
