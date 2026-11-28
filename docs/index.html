@@ -11,14 +11,14 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Inter:wght@800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* Pixel Invest. One typeface, Archivo: regular width for words, narrow and heavy for the
-   figures that answer "am I ahead?", wide for headings. Ultramarine is always your account,
+/* Pixel Invest. Inter throughout, like Pixel Ag: heavy and tightly set for the figures
+   that answer "am I ahead?". Ultramarine is always your account,
    dashed grey its index fund; green ahead, red behind, amber a heads-up for Friday.
    The race board (each market a lane, its bar left or right of the centre line) is the one
    loud thing; it is the Home hero, the side menu on a computer and the pinned strip on a phone. */
-:root{color-scheme:dark;--sans:Archivo,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+:root{color-scheme:dark;--sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 *{box-sizing:border-box}
 html{background:#0B0A07}
 body{margin:0;background:#0B0A07;color:#F4F0E6;font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -26,7 +26,7 @@ a{color:#E2C067}
 a:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid #E2C067;outline-offset:2px;border-radius:4px}
 .wrap{max-width:680px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
 .pos{color:#6BD35A} .neg{color:#FF6B5F} .amb{color:#E2B04A} .flat{color:#C4BDAA} .wait{color:#E2B04A}
-.fig{font-stretch:76%;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:0}
+.fig{font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 
 /* Header: the scoreboard, closed by a heavy rule */
 .hdr{background:#1C1A14;border-bottom:4px solid #C8A951;padding-top:max(22px,env(safe-area-inset-top))}
@@ -38,12 +38,12 @@ a:focus-visible,summary:focus-visible,button:focus-visible{outline:2px solid #E2
 .topbrand .brandrow{margin:0;padding-bottom:6px;align-self:flex-start;display:inline-flex}
 .topbrand + .strip{padding-top:0}
 .topbrand ~ .hdr{padding-top:20px}
-.brand{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;font-weight:800;letter-spacing:-.01em;color:#fff}
+.brand{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em;color:#fff}
 .tagline{margin:1px 0 0;font-size:13px;color:#A39D8E}
 .mtop{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
-.mname{margin:0;font-size:19px;font-weight:700;font-stretch:115%}
+.mname{margin:0;font-size:19px;font-weight:700;letter-spacing:-.015em}
 .msub{margin:2px 0 0;font-size:14px;color:#A39D8E}
-.verdict{margin:12px 0 0;font-size:46px;font-weight:800;font-stretch:70%;line-height:.96;font-variant-numeric:tabular-nums;text-wrap:balance}
+.verdict{margin:12px 0 0;font-size:34px;font-weight:800;letter-spacing:-.035em;line-height:1.08;font-variant-numeric:tabular-nums;text-wrap:balance}
 .worth{margin:10px 0 0;font-size:15px;color:#C4BDAA;font-variant-numeric:tabular-nums}
 .state{font-size:12px;font-weight:600;padding:3px 8px;border-radius:4px;white-space:nowrap;background:#14120D;color:#C4BDAA}
 .state.on{color:#6BD35A;background:rgba(107,211,90,.14)} .state.off{color:#FF9A90;background:rgba(255,90,78,.16)} .state.wait{color:#E2B04A;background:rgba(226,176,74,.14)}
@@ -85,11 +85,11 @@ table.vs{width:100%;border-collapse:collapse;margin-top:18px;font-variant-numeri
 .bkey span + span{justify-self:start;padding:0 0 0 calc(50% + 8px)}
 .board .lane{display:grid;grid-template-columns:7.4rem minmax(0,1fr) 4.8rem;grid-template-rows:auto auto;column-gap:12px;align-items:center;min-height:62px;padding:9px 0;border-top:1px solid rgba(255,255,255,.10);color:#F4F0E6}
 .board .lane:last-child{border-bottom:1px solid rgba(255,255,255,.10)}
-.board .ln{grid-column:1;grid-row:1;font-size:15px;font-weight:650;align-self:end}
+.board .ln{grid-column:1;grid-row:1;font-size:15px;font-weight:600;align-self:end}
 .board .st{display:block;grid-column:1;grid-row:2;font-size:12px;color:#A39D8E;align-self:start}
 .board .gauge{grid-column:2;grid-row:1/3;align-self:stretch;margin-block:-9px}
 .board .gauge i{top:50%;bottom:auto;height:20px;margin-top:-10px}
-.board .amt{grid-column:3;grid-row:1/3;text-align:right;font-size:24px;line-height:1}
+.board .amt{grid-column:3;grid-row:1/3;text-align:right;font-size:19px;line-height:1}
 .board .lane:hover .ln{text-decoration:underline;text-underline-offset:3px}
 
 /* Phone: the pinned strip on a market page, with links to the page's sections */
@@ -99,7 +99,7 @@ table.vs{width:100%;border-collapse:collapse;margin-top:18px;font-variant-numeri
 .strip .lane{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;min-height:54px;padding:8px 2px 9px;color:#A39D8E}
 .strip .ln .full{display:none} .strip .ln .short{display:inline}
 .strip .ln{font-size:13px;font-weight:600}
-.strip .amt{font-size:14px;line-height:1.2;white-space:nowrap}
+.strip .amt{font-size:12px;line-height:1.3;white-space:nowrap}
 .strip .all .amt{font-size:12px;font-weight:500;color:#7E7866;line-height:1.4}
 .strip .gauge{width:72%;height:5px;margin-top:4px}
 .strip .gauge::before{top:-2px;bottom:-2px}
@@ -121,7 +121,7 @@ main [id]{scroll-margin-top:104px}
  .side .home:hover,.side .lane:hover{background:#1B1812}
  .side .lane{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;row-gap:8px;padding:11px 10px 12px;border-radius:6px;margin-top:2px}
  .side .ln{font-size:14px;font-weight:600}
- .side .amt{font-size:17px}
+ .side .amt{font-size:14px}
  .side .gauge{grid-column:1/-1;height:6px}
  .side .gauge::before{top:-3px;bottom:-3px}
  .side .lane.on{background:#1B1812;color:#F4F0E6;box-shadow:inset 3px 0 0 #F4F0E6}
@@ -137,8 +137,8 @@ main [id]{scroll-margin-top:104px}
 /* Page body */
 main.wrap{padding-top:28px;padding-bottom:56px;display:flex;flex-direction:column;gap:40px}
 .sec{display:flex;flex-direction:column;gap:12px}
-h2{margin:0;font-size:18px;font-weight:700;font-stretch:115%;text-wrap:balance}
-h3{margin:10px 0 0;font-size:15px;font-weight:650}
+h2{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+h3{margin:10px 0 0;font-size:15px;font-weight:600}
 .lead{margin:0;font-size:15px;color:#C4BDAA;max-width:62ch}
 .heads{display:flex;flex-direction:column;gap:3px;background:rgba(226,176,74,.10);border:1px solid rgba(226,176,74,.32);border-radius:8px;padding:12px 14px;font-size:14px;color:#F4F0E6}
 .heads b{color:#E2B04A;font-size:15px}
@@ -161,36 +161,36 @@ h3{margin:10px 0 0;font-size:15px;font-weight:650}
 .yr .track i{position:absolute;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#F4F0E6;box-shadow:0 0 0 2px #0B0A07}
 .yr > span:first-child{min-width:3.4em} .yr > span:nth-child(3){min-width:3.4em;text-align:right}
 .yr .off{min-width:7.6em;text-align:right;color:#C4BDAA}
-.chip{font-size:16px;font-stretch:76%;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.chip{font-size:14px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
 .chip.pos{color:#6BD35A} .chip.neg{color:#FF6B5F} .chip.flat{color:#C4BDAA}
 .tag{font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;vertical-align:1px}
 .tag.buy{background:rgba(107,211,90,.14);color:#6BD35A} .tag.sell{background:rgba(255,90,78,.14);color:#FF6B5F}
 .stack{display:flex;height:14px;border-radius:3px;overflow:hidden;gap:2px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:#C4BDAA} .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
-.rules{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:15px} .rules b{display:block;font-size:14px;font-weight:700;font-stretch:115%;color:#F4F0E6}
+.rules{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;font-size:15px} .rules b{display:block;font-size:13px;font-weight:700;color:#E2C067}
 
 /* Folded extras */
 .folds{display:flex;flex-direction:column;border-top:1px solid rgba(255,255,255,.10)}
 details.fold{border-bottom:1px solid rgba(255,255,255,.10)}
-details.fold summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;font-weight:650;font-size:16px}
+details.fold summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:56px;font-weight:600;font-size:16px}
 details.fold summary::-webkit-details-marker{display:none}
 details.fold summary::after{content:"+";color:#F4F0E6;font-size:22px;font-weight:400;line-height:1}
 details.fold[open] summary::after{content:"\2212"}
 .fold .in{display:flex;flex-direction:column;gap:12px;padding-bottom:22px}
 .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .stat{background:#1B1812;border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
-.stat .k{font-size:12px;color:#A39D8E} .stat .v{font-size:20px;font-stretch:76%;font-weight:800;font-variant-numeric:tabular-nums} .stat small{color:#A39D8E;font-weight:500;font-stretch:100%;font-size:12px}
+.stat .k{font-size:12px;color:#A39D8E} .stat .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums} .stat small{color:#A39D8E;font-weight:500;font-size:12px}
 .warn{margin:0;font-size:13px;line-height:1.5;color:#C4BDAA}
 .trades{overflow-x:auto}
 .trades table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
 .trades th{text-align:left;color:#A39D8E;font-weight:600;font-size:12px;padding:8px;border-bottom:1px solid rgba(255,255,255,.10)}
 .trades td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;font-variant-numeric:tabular-nums}
-.trades .chip{font-size:14px}
+.trades .chip{font-size:13px}
 .bt-read,.wk-read{display:flex;flex-direction:column;gap:2px}
 .bt-read{min-height:56px}
-.bt-read .rv,.wk-read .rv{font-size:28px;font-stretch:76%;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.05}
+.bt-read .rv,.wk-read .rv{font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.05}
 .bt-read .rs,.wk-read .rs{font-size:13px;color:#C4BDAA;font-variant-numeric:tabular-nums}
-.wk-read{min-height:46px} .wk-read .rv{font-size:22px}
+.wk-read{min-height:46px} .wk-read .rv{font-size:20px}
 .pill{font-weight:700;font-size:12px;padding:2px 7px;border-radius:4px;margin-left:6px;white-space:nowrap}
 .pill.pos{background:rgba(107,211,90,.14);color:#6BD35A} .pill.neg{background:rgba(255,90,78,.14);color:#FF6B5F}
 .bt-plot,.wk-plot{touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -204,7 +204,7 @@ details.fold[open] summary::after{content:"\2212"}
 .mcards{display:flex;flex-direction:column}
 .mcard{display:block;text-decoration:none;color:inherit;padding:26px 0 28px;border-top:1px solid rgba(255,255,255,.10)}
 .mcard:first-child{border-top:0;padding-top:4px}
-.mcard .verdict{font-size:32px;margin-top:10px}
+.mcard .verdict{font-size:24px;margin-top:10px}
 .mcard .worth{margin-top:6px}
 .mcard table.vs{margin-top:14px}
 .mcard .heads{margin-top:16px}
